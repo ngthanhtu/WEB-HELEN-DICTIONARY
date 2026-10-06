@@ -95,6 +95,8 @@ Các trình duyệt hỗ trợ tiếp tục dùng Web Speech API (`SpeechRecogni
 
 `/api/speech/status` trả `configured` để xác nhận có cấu hình key, không xác nhận key/quota hợp lệ. `/api/speech` nhận bản ghi ngắn và trả từ nhận diện; giới hạn production 10 yêu cầu/phút/IP. Dùng chung key/model Gemini với tính năng AI, không cần thêm API key. Thiếu quyền micro, không nghe rõ, lỗi mạng và chờ quá lâu đều có thông báo ngắn. Nếu thiếu quyền, kiểm tra quyền micro của website trong Safari rồi thử lại. Tham khảo Web Speech: https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition.
 
+Khi nhận diện dùng alias Flash Lite, server đọc danh sách model một lần để chọn bản Lite hiện có và đặt chế độ suy nghĩ thấp theo đúng phiên bản. Không chọn Pro hoặc đổi model ID đã cấu hình cụ thể. Thời gian chờ cục bộ vẫn tối đa 6 giây, tách khỏi deadline gửi cho máy chủ Google. Định nghĩa dài bị nguồn dịch rút thành tên khái niệm tiếng Việt được chuyển sang dịch đủ câu; bản dịch định nghĩa và giải nghĩa đầu mục có cache riêng.
+
 ## Minh họa ngữ cảnh bằng Gemini
 
 Phần **AI contexts** trong **Explore more** cho phép chọn một nghĩa rồi tạo hội thoại song ngữ, tình huống thực tế, ghi chú sử dụng và prompt tiếng Anh cho video hoạt hình. Hội thoại/tình huống có loa dùng giọng đang chọn; prompt có nút sao chép để dùng ở công cụ tạo video. Bản dịch theo ngôn ngữ **Meanings in**. Nội dung có nhãn AI tạo, không được dùng thay cho dữ liệu định nghĩa của nguồn từ điển.

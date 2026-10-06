@@ -329,7 +329,7 @@ try {
 } catch {}
 async function tr(texts, from, to, context = {}) {
   if(context.kind==='headword' && from==='en' && to==='vi' && texts.length===1 && lastResult?.offlineGloss && lastResult.word.toLowerCase()===String(texts[0]).toLowerCase())return [lastResult.offlineGloss];
-  const key=JSON.stringify([texts,from,to,context.kind || '',context.definition || '']), saved=translations.get(key);
+  const key=JSON.stringify([texts,from,to,context.kind || '',context.definition || '']), saved=translations.get(key) || (offline() && context.kind==='definition'?translations.get(JSON.stringify([texts,from,to,'',''])):undefined);
   const savedValues=saved?.values.length===texts.length?saved.values:null;
   if(savedValues && (Date.now()-saved.at<86400000 || offline()))return savedValues.slice();
   if(offline())throw new Error('Bản dịch này chưa được lưu. Kết nối mạng để tải.');
@@ -486,6 +486,7 @@ function setupSpeechSearch() {
   };
   button.addEventListener('click',()=>{
     if(speechActive) {speech?.finishListening?.();return;}
+    if(!canRecord())refreshRecorder();
     if(globalThis.navigator?.onLine===false) {finishLoading(status,'Ngoại tuyến: hãy gõ từ hoặc dùng micro trên bàn phím.');return;}
     if(canRecord() && (isIOS() || speechUseRecorder || !canRecognize())) {startRecording();return;}
     if(!canRecognize()) {availability();return;}
@@ -705,7 +706,7 @@ function render(d, scroll = true) {
           const to = $('#target').value;
           if (lang !== to) {
             translating=true;showLoading(box,'Translating…');box.hidden=false;eye.setAttribute('aria-busy','true');eye.setAttribute('data-target',to);eye.disabled=true;eye.innerHTML=HAMSTER;
-            try {const translated=(await tr([s.definition],'en',to))[0];if($('#target').value!==to){box.hidden=true;return;}finishLoading(box,translated);lang=to;}
+            try {const translated=(await tr([s.definition],'en',to,{kind:'definition'}))[0];if($('#target').value!==to){box.hidden=true;return;}finishLoading(box,translated);lang=to;}
             catch(error) {if($('#target').value!==to){box.hidden=true;return;}finishLoading(box,shortError(error,'Chưa dịch được câu này. Bấm mắt để thử lại.'));return;}
             finally {translating=false;eye.disabled=false;eye.removeAttribute('aria-busy');eye.textContent='👁';box.removeAttribute('aria-busy');}
           }

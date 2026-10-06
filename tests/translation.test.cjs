@@ -41,6 +41,19 @@ test('translation keeps its local deadline separate from the Google server deadl
   }});
   assert.equal(await service.translate('around the middle','en','vi'),'vi:around the middle');
 });
+
+test('full definitions reject abbreviated concept names while headword glosses keep their separate cache',async()=>{
+  const definition='a substance formed during a chemical process before the desired product is obtained';
+  const complete='Một chất được tạo thành trong một quá trình hóa học trước khi thu được sản phẩm mong muốn.';
+  let generated=0;
+  const service=createTranslationService({apiKey:'test-only',fetchImpl:async(url,request)=>{
+    if(String(url).includes('mymemory'))return Response.json({responseStatus:200,responseData:{translatedText:'chất trung gian'}});
+    generated++;const input=JSON.parse(JSON.parse(request.body).contents[0].parts[0].text);assert.equal(input.texts[0].purpose,'dictionaryDefinition');return gemini(request,()=>complete);
+  }});
+  assert.equal(await service.translate(definition,'en','vi'),'chất trung gian');
+  assert.equal(await service.translate(definition,'en','vi',{kind:'definition'}),complete);
+  assert.equal(await service.translate(definition,'en','vi',{kind:'definition'}),complete);assert.equal(generated,1);
+});
 test('Gemini quota, malformed or unchanged output are not stored as successful translations', async () => {
   let calls = 0;
   const service = createTranslationService({ apiKey: 'test-only', fetchImpl: async (url, request) => {

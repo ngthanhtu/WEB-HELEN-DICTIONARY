@@ -36,20 +36,21 @@ test('speech distinguishes missing configuration, silence and provider quota wit
   assert.equal(count,1);
 });
 
-test('speech respects explicit models and replaces retired default with an available Flash model',async t=>{
+test('speech resolves the floating Lite alias to a low-thinking version and respects explicit model IDs',async t=>{
   const original=global.fetch;t.after(()=>{global.fetch=original;});let called=[];
   global.fetch=async(input,options)=>{
     const url=new URL(input);called.push(url.pathname);
     if(!options.body) return Response.json({models:[{name:'models/gemini-3.1-flash-lite',supportedGenerationMethods:['generateContent']}]});
-    if(url.pathname.includes('gemini-flash-lite-latest:')) return Response.json({error:{code:404,message:'Retired model',status:'NOT_FOUND'}},{status:404});
+    if(url.pathname.includes('custom-retired-model:')) return Response.json({error:{code:404,message:'Retired model',status:'NOT_FOUND'}},{status:404});
+    assert.deepEqual(JSON.parse(options.body).generationConfig.thinkingConfig,{thinkingLevel:'MINIMAL'});
     return answer('loan');
   };
   const service=createSpeechService({apiKey:'test-only'});
   assert.equal((await service.transcribe(clip)).text,'loan');
   assert.equal(service.model,'gemini-3.1-flash-lite');
-  assert.equal(called.length,3);
+  assert.equal(called.length,2);
   called=[];
-  await assert.rejects(createSpeechService({apiKey:'test-only',model:'gemini-flash-lite-latest'}).transcribe(clip),error=>error.status===503);
+  await assert.rejects(createSpeechService({apiKey:'test-only',model:'custom-retired-model'}).transcribe(clip),error=>error.status===503);
   assert.equal(called.length,1);
 });
 

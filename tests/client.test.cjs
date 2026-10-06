@@ -274,7 +274,7 @@ test('a pending definition error cannot reopen a translation after changing the 
 test('expired saved translations still open offline and an unsaved sentence gives an immediate message',async()=>{
   const key=JSON.stringify([['An intermediate stage.'],'en','vi','','']);
   const p=page({'helen-translations':JSON.stringify([{key,at:Date.now()-172800000,values:['Một giai đoạn trung gian.']}])},null,{navigator:{onLine:false}});
-  assert.deepEqual(Array.from(await vm.runInContext("tr(['An intermediate stage.'],'en','vi')",p.context)),['Một giai đoạn trung gian.']);
+  assert.deepEqual(Array.from(await vm.runInContext("tr(['An intermediate stage.'],'en','vi',{kind:'definition'})",p.context)),['Một giai đoạn trung gian.']);
   await assert.rejects(vm.runInContext("tr(['A new sentence.'],'en','vi')",p.context),/chưa được lưu/);
   assert.equal(p.requests.filter(request=>request.url.includes('/api/translate')).length,0);
   assert.match(p.element('#voice-status').textContent,/Ngoại tuyến/);
