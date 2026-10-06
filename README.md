@@ -28,3 +28,7 @@ node --test tests/*.test.cjs
 Các kiểm thử API và trình duyệt giả lập dịch vụ ngoài, không tiêu hao quota ElevenLabs. Kiểm tra thực tế riêng bằng `/api/voices`, `/api/lookup` và `/api/translate` sau khi có quyền mạng và thông tin tài khoản hợp lệ. `/env` phải trả về 404.
 
 Để chạy trên máy cá nhân, tải đầy đủ repository (bao gồm package.json và package-lock.json), tạo `.env` tại thư mục server với `ELEVENLABS_API_KEY` của bạn và `ELEVENLABS_VOICE_ID=EXAVITQu4vr4xnSDxMaL`, rồi chạy `npm ci` và `npm start`. Mở trang tại localhost:3000. Nếu giọng cũ đã lưu không dùng được, chọn Sarah trong mục Voice; ứng dụng không tự thay lựa chọn. Không mở index.html trực tiếp bằng file://.
+
+## Giao diện và lưu lựa chọn
+
+Ảnh Helen1.jpg được dùng làm nền mờ dưới lớp nền trắng bán trong suốt. Công tắc Light/Dark ở thanh đầu trang lấy cảm hứng từ Uiverse.io (Javierrocadev) và được chuyển sang CSS thuần. Chế độ hiển thị, từ đang nhập, ngôn ngữ nhập, ngôn ngữ đích và giọng đều được lưu trong localStorage của trình duyệt. Khi tải lại trang, ứng dụng điền lại từ và gọi tra cứu để khôi phục kết quả mới nhất; bước này cần server và dịch vụ từ điển hoạt động. Xóa ô tìm kiếm sẽ xóa từ đã lưu.

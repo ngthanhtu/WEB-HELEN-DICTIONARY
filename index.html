@@ -12,15 +12,30 @@
   --radius-sm:20px;--radius-md:25px;--radius-pill:9999px;
   --shadow-1:rgba(0,0,0,.3) 4px 4px 10px 0;--shadow-inset:rgba(0,0,0,.1) 1px 1px 2px 0 inset;
   --font:Arial,Helvetica,sans-serif;
+  --page-panel:rgba(255,255,255,.9); --photo-opacity:.16;
 }
+/* Toggle adapted from Uiverse.io by Javierrocadev. */
+:root{color-scheme:light;--bar-bg:#1d2a57;--translation-bg:#f4f2fb;--border:#d9dce6;--error-bg:#fff1f1;--error-text:#8a1f1f}
+:root[data-theme="dark"]{color-scheme:dark;--surface-base:#121827;--page-panel:rgba(18,24,39,.92);--text-primary:#e7edff;--text-tertiary:#b9c5da;--link:#c1a8ff;--surface-muted:#244b3b;--text-green:#c5f6d6;--surface-strong:#222e44;--bar-bg:#101a30;--translation-bg:#29243e;--border:#35415a;--error-bg:#40242c;--error-text:#ffc5cd;--photo-opacity:.12}
+.theme-control{display:inline-flex;align-items:center;gap:10px;cursor:pointer;position:relative}
+.theme-control input{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+.theme-track{position:relative;display:inline-block;width:96px;height:48px;flex:none;border-radius:999px;background:linear-gradient(90deg,#fb7185,#7f1d1d);box-shadow:1px 3px 0 #000;transition:background .3s}
+.theme-track::after{content:"";position:absolute;top:4px;left:4px;width:40px;height:40px;border-radius:50%;background:conic-gradient(from 135deg,#b2a9a9,#b2a8a8,#fff,#d7dbd9,#fff,#b2a8a8);transition:transform .3s}
+.theme-control input:checked + .theme-track{background:linear-gradient(90deg,#10b981,#064e3b)}
+.theme-control input:checked + .theme-track::after{transform:translateX(48px) rotate(180deg)}
+.theme-control input:focus-visible + .theme-track{outline:3px solid var(--accent);outline-offset:4px}
+#voice-status{flex-basis:100%;font-size:14px}
 *{box-sizing:border-box}
-body{margin:0;font:400 16px/1.5 var(--font);color:var(--text-primary);background:var(--surface-base)}
+body{margin:0;font:400 16px/1.5 var(--font);color:var(--text-primary);background:var(--surface-base);position:relative;isolation:isolate;min-height:100vh}
+body::before{content:"";position:fixed;inset:-12px;z-index:-1;background:url("Helen1.jpg") center/cover no-repeat;filter:blur(7px);opacity:var(--photo-opacity);pointer-events:none}
+.hero,main{background:var(--page-panel);border-radius:var(--radius-md)}
 a,button,select,input{font:inherit}
 :focus-visible{outline:3px solid var(--link);outline-offset:2px}
-.bar{background:var(--text-primary);color:var(--text-inverse);display:flex;align-items:center;justify-content:space-between;padding:var(--space-4) var(--space-6);gap:var(--space-5);flex-wrap:wrap}
+.bar{background:var(--bar-bg);color:var(--text-inverse);display:flex;align-items:center;justify-content:space-between;padding:var(--space-4) var(--space-6);gap:var(--space-5);flex-wrap:wrap}
 .brand{font-weight:700;font-size:20px;display:flex;align-items:center;gap:var(--space-3)}
 .brand i{width:14px;height:14px;border-radius:50%;background:var(--accent);display:inline-block}
-.bar select{background:var(--surface-base);color:var(--text-primary);border:0;border-radius:var(--radius-pill);padding:var(--space-3) var(--space-5);min-height:40px}
+.bar label{min-width:0;max-width:100%;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bar select{max-width:100%;background:var(--surface-base);color:var(--text-primary);border:0;border-radius:var(--radius-pill);padding:var(--space-3) var(--space-5);min-height:40px}
 .hero{display:grid;grid-template-columns:1.3fr 1fr;gap:var(--space-7);align-items:center;padding:var(--space-7) var(--space-6);max-width:1200px;margin:auto}
 .hero h1{font-size:44px;line-height:52.8px;font-weight:400;margin:0 0 var(--space-5);max-width:16ch}
 .hero p{margin:0 0 var(--space-6);max-width:52ch;color:var(--text-tertiary)}
@@ -29,26 +44,26 @@ a,button,select,input{font:inherit}
 .search input{flex:1;min-width:0;border:0;background:transparent;padding:0 var(--space-3);color:var(--text-primary);min-height:44px}
 .search input:focus-visible{outline:0}
 .search:focus-within{outline:3px solid var(--link);outline-offset:2px}
-.btn{border:0;border-radius:var(--radius-pill);padding:var(--space-3) var(--space-6);min-height:44px;min-width:44px;font-weight:700;cursor:pointer;background:var(--accent);color:var(--text-primary);transition:transform .15s}
+.btn{border:0;border-radius:var(--radius-pill);padding:var(--space-3) var(--space-6);min-height:44px;min-width:44px;font-weight:700;cursor:pointer;background:var(--accent);color:#1d2a57;transition:transform .15s}
 .btn:hover{background:var(--surface-muted)}.btn:active{transform:scale(.97)}.btn:disabled{opacity:.5;cursor:not-allowed}
 .img-slot{aspect-ratio:4/3;border-radius:var(--radius-md);background:var(--surface-base);border:2px dashed var(--text-primary);overflow:hidden}
 .img-slot img{width:100%;height:100%;object-fit:cover;display:block}
 main{max-width:900px;margin:0 auto;padding:0 var(--space-6) var(--space-7)}
 .status{padding:var(--space-5);border-radius:var(--radius-sm);background:var(--surface-muted);color:var(--text-green);margin:var(--space-5) 0}
-.status.error{background:#fff1f1;color:#8a1f1f;border:2px solid #8a1f1f}
+.status.error{background:var(--error-bg);color:var(--error-text);border:2px solid var(--error-text)}
 .entry{border-top:4px solid var(--accent);padding-top:var(--space-5);margin-top:var(--space-6)}
 .hw{display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-4)}
 .hw h2{font-size:36px;margin:0;font-weight:700}
 .ipa{font-size:18px;color:var(--link)}
-.say{width:44px;height:44px;border-radius:50%;border:0;background:var(--text-primary);color:var(--text-inverse);cursor:pointer;font-size:18px}
+.say{width:44px;height:44px;border-radius:50%;border:0;background:var(--bar-bg);color:var(--text-inverse);cursor:pointer;font-size:18px}
 .say[aria-busy=true]{opacity:.6}
 .pos{display:inline-block;background:var(--surface-strong);color:var(--text-inverse);border-radius:var(--radius-pill);padding:var(--space-2) var(--space-4);font-size:14px;margin:var(--space-5) 0 var(--space-3)}
-.sense{display:grid;grid-template-columns:1fr auto;gap:var(--space-3) var(--space-4);padding:var(--space-4) 0;border-bottom:1px solid #d9dce6}
+.sense{display:grid;grid-template-columns:1fr auto;gap:var(--space-3) var(--space-4);padding:var(--space-4) 0;border-bottom:1px solid var(--border)}
 .def{font-weight:700;overflow-wrap:anywhere}
 .ex{color:var(--text-tertiary);font-style:italic;margin-top:var(--space-2);grid-column:1}
 .eye{width:44px;height:44px;border-radius:50%;border:2px solid var(--text-primary);background:var(--surface-base);cursor:pointer;color:var(--text-primary);grid-row:1/3;grid-column:2}
 .eye[aria-pressed=true]{background:var(--surface-muted)}
-.tr{grid-column:1/3;background:#f4f2fb;border-radius:var(--radius-sm);padding:var(--space-3) var(--space-4);color:var(--link);overflow-wrap:anywhere}
+.tr{grid-column:1/3;background:var(--translation-bg);border-radius:var(--radius-sm);padding:var(--space-3) var(--space-4);color:var(--link);overflow-wrap:anywhere}
 .tr[hidden]{display:none}
 .syn{margin-top:var(--space-3);font-size:14px}
 .src{font-size:13px;color:var(--text-tertiary);margin-top:var(--space-5)}
@@ -64,6 +79,12 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
     <select id="target" aria-label="Translate meanings into"></select>
   </label>
   <label>Voice <select id="voice" aria-label="Pronunciation voice"><option value="">Loading voices…</option></select></label>
+  <!-- Toggle adapted from Uiverse.io by Javierrocadev -->
+  <label class="theme-control">
+    <input id="theme-toggle" type="checkbox" role="switch" aria-label="Dark mode">
+    <span class="theme-track" aria-hidden="true"></span>
+    <span id="theme-label">Light mode</span>
+  </label>
   <span id="voice-status" role="status"></span>
 </header>
 
@@ -94,7 +115,20 @@ const $ = s => document.querySelector(s);
 const opt = (sel, def) => { sel.innerHTML = Object.entries(LANGS).map(([k,v]) => `<option value="${k}">${v}</option>`).join(''); sel.value = def; };
 const stored = key => { try { return localStorage.getItem(key); } catch { return null; } };
 const remember = (key, value) => { try { localStorage.setItem(key, value); } catch {} };
-opt($('#target'), LANGS[stored('helen-target')] ? stored('helen-target') : 'vi'); opt($('#from'), 'en');
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  $('#theme-toggle').checked = theme === 'dark';
+  $('#theme-label').textContent = theme === 'dark' ? 'Dark mode' : 'Light mode';
+}
+applyTheme(stored('helen-theme') === 'dark' ? 'dark' : 'light');
+$('#theme-toggle').addEventListener('change', () => {
+  const theme = $('#theme-toggle').checked ? 'dark' : 'light';
+  applyTheme(theme); remember('helen-theme', theme);
+});
+opt($('#target'), LANGS[stored('helen-target')] ? stored('helen-target') : 'vi'); opt($('#from'), LANGS[stored('helen-from')] ? stored('helen-from') : 'en');
+$('#q').value = stored('helen-query') || '';
+$('#q').addEventListener('input', () => remember('helen-query', $('#q').value));
+$('#from').addEventListener('change', () => remember('helen-from', $('#from').value));
 let selectedVoice = stored('helen-voice');
 async function loadVoices() {
   const sel = $('#voice');
@@ -137,16 +171,22 @@ async function tr(texts, from, to) {
 }
 function msg(t, err) { $('#out').innerHTML = `<div class="status ${err?'error':''}" role="${err?'alert':'status'}">${esc(t)}</div>`; }
 
-$('#form').addEventListener('submit', async e => {
-  e.preventDefault();
+let searchRequest = 0;
+async function searchWord({ scroll = true } = {}) {
   const word = $('#q').value.trim(); if (!word) return;
+  const from = $('#from').value, request = ++searchRequest;
+  remember('helen-query', $('#q').value); remember('helen-from', from);
+  lastResult = null; ++targetRequest;
   msg('Searching…');
   try {
-    const r = await fetch(`${API}/api/lookup?word=${encodeURIComponent(word)}&from=${$('#from').value}`);
-    const d = await r.json(); if (!r.ok) return msg(d.error, true);
-    render(d);
-  } catch { msg('Cannot reach the server. Check that it is running.', true); }
-});
+    const r = await fetch(`${API}/api/lookup?word=${encodeURIComponent(word)}&from=${encodeURIComponent(from)}`);
+    const d = await r.json();
+    if (request !== searchRequest) return;
+    if (!r.ok) return msg(d.error, true);
+    render(d, scroll);
+  } catch { if (request === searchRequest) msg('Cannot reach the server. Check that it is running.', true); }
+}
+$('#form').addEventListener('submit', e => { e.preventDefault(); searchWord(); });
 
 async function updateWordTranslation() {
   const request = ++targetRequest, to = $('#target').value, result = lastResult;
@@ -157,7 +197,7 @@ async function updateWordTranslation() {
     if (request === targetRequest && result === lastResult) box.textContent = `${LANGS[to]}: ${translated}`;
   } catch { if (request === targetRequest) box.textContent = 'Word translation failed. Try again.'; }
 }
-function render(d) {
+function render(d, scroll = true) {
   lastResult = d;
   const out = $('#out'); out.innerHTML = '';
   if (d.from !== 'en') out.insertAdjacentHTML('beforeend', `<div class="status">“${esc(d.query)}” in English: <strong>${esc(d.word)}</strong></div>`);
@@ -190,7 +230,7 @@ function render(d) {
     out.append(el);
   });
   if (d.entries[0].source) out.insertAdjacentHTML('beforeend', `<p class="src">Source: ${esc(d.entries[0].source)}</p>`);
-  out.querySelector('h2')?.scrollIntoView({behavior:'smooth', block:'center'});
+  if (scroll) out.querySelector('h2')?.scrollIntoView({behavior:'smooth', block:'center'});
 }
 // Changing the target language closes open translations so they refresh on next tap.
 $('#target').addEventListener('change', () => {
@@ -199,6 +239,8 @@ $('#target').addEventListener('change', () => {
   document.querySelectorAll('.eye').forEach(b => { b.setAttribute('aria-pressed', 'false'); b.setAttribute('aria-label', 'Show translation'); b.textContent = '👁'; });
   updateWordTranslation();
 });
+// Re-run the saved lookup so results remain current after a reload.
+if ($('#q').value.trim()) searchWord({ scroll: false });
 </script>
 </body>
 </html>
