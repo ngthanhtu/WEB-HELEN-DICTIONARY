@@ -124,11 +124,11 @@ async function speak(text, btn) {
   btn.setAttribute('aria-busy', 'true');
   try {
     const r = await fetch(`${API}/api/tts?text=${encodeURIComponent(text)}${selectedVoice ? `&voice=${encodeURIComponent(selectedVoice)}` : ''}`);
-    if (!r.ok) throw 0;
+    if (!r.ok) { const failure = await r.json().catch(() => ({})); throw new Error(failure.error || `Voice request failed (HTTP ${r.status}).`); }
     audio?.pause(); if (audioURL) URL.revokeObjectURL(audioURL);
     audioURL = URL.createObjectURL(await r.blob()); audio = new Audio(audioURL); await audio.play();
-  } catch {
-    $('#voice-status').textContent = 'Selected voice is unavailable. Check your ElevenLabs plan or choose another voice. Your selection has been kept.';
+  } catch (e) {
+    $('#voice-status').textContent = `${e.message || 'Selected voice is unavailable.'} Your selection has been kept.`;
   } finally { btn.removeAttribute('aria-busy'); }
 }
 async function tr(texts, from, to) {

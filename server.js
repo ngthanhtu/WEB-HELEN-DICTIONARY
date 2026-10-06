@@ -2,6 +2,8 @@
 require('dns').setDefaultResultOrder('ipv4first');
 const express = require('express');
 const path = require('path');
+// Injected variables take precedence; .env takes precedence over legacy env.
+require('dotenv').config({ path: [path.join(__dirname, '.env'), path.join(__dirname, 'env')], quiet: true });
 const app = express();
 const PORT = process.env.PORT || 3000;
 const KEY = process.env.ELEVENLABS_API_KEY;
@@ -137,12 +139,14 @@ app.get('/api/tts', async (req, res) => {
       }, 15000);
       if (!r || !r.ok) {
         console.error(`TTS failed: voice=${voice} status=${r ? r.status : 'no response'} ${r ? (await r.text()).slice(0, 300) : ''}`);
-        throw new Error('tts failed');
+        const error = new Error(r ? `ElevenLabs rejected the selected voice (HTTP ${r.status}). Check key permissions, voice access and quota.` : 'Cannot connect to ElevenLabs.');
+        error.upstreamStatus = r?.status;
+        throw error;
       }
       return Buffer.from(await r.arrayBuffer());
     });
     res.set('Content-Type', 'audio/mpeg').set('Cache-Control', 'no-store').send(buf);
-  } catch (e) { res.status(502).json({ error: 'Voice service is unavailable.' }); }
+  } catch (e) { res.status(502).json({ error: e.message || 'Voice service is unavailable.', upstream_status: e.upstreamStatus }); }
 });
 
 app.listen(PORT, () => console.log(`Helen Dictionary v4 on http://localhost:${PORT}\nElevenLabs key: ${KEY ? 'set' : 'MISSING'} | Voice ID in use: ${VOICE}`));
