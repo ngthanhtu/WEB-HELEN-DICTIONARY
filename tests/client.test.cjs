@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const fs = require('node:fs');
 const script = fs.readFileSync(require('node:path').join(__dirname,'../index.html'),'utf8').split('<script>')[1].split('</script>')[0];
-function page(saved = {}, lookupFetch = null, browser = {}) {
+function page(saved = {}, lookupFetch = null, browser = {}, actionFetch = null) {
   const elements = new Map(), created = [];
   const element = id => {
     if (!elements.has(id)) elements.set(id,{value:'',textContent:'',events:{},innerHTML:'',append(){},insertAdjacentHTML(){},querySelector(){return null;},add(option){(this.options ||= []).push(option);},replaceChildren(){this.options=[];},setAttribute(name,value){(this.attributes ||= {})[name]=value;},getAttribute(name){return this.attributes?.[name];},removeAttribute(name){if(this.attributes) delete this.attributes[name];},addEventListener(name,fn){const before=this.events[name];this.events[name]=(...args)=>{before?.(...args);return fn(...args);};}});
@@ -12,6 +12,7 @@ function page(saved = {}, lookupFetch = null, browser = {}) {
   const requests=[];
   const context = vm.createContext({document:{documentElement:{dataset:{}},createElement:()=>{ const node=element(`#created-${created.length}`), children=new Map(); node.querySelectorAll=sel=>[node.querySelector(sel)]; node.querySelector=sel=>{if(!children.has(sel)) children.set(sel,element(`#child-${created.length}-${sel}`)); return children.get(sel);}; created.push(node); return node; },querySelector:element,querySelectorAll:()=>[]}, localStorage:{getItem:k=>saved[k],setItem:(k,v)=>saved[k]=v}, Image:class {}, Option:class {constructor(text,value){this.text=text;this.value=value;}}, URL, Audio:class {}, setTimeout, clearTimeout, fetch:async(url,options)=>{
     requests.push({url,options});
+    if(actionFetch) {const reply=actionFetch(url,options);if(reply!==undefined) return reply;}
     if(url.includes('/api/context/status')) return {ok:true,json:async()=>({configured:false})};
     if(url.includes('/api/voices')) return {ok:true,json:async()=>({in_use:'Rachel',voices:[{name:'Rachel',voice_id:'Rachel',category:'premade',dialect:'Ame'},{name:'Sarah',voice_id:'Sarah',category:'premade',dialect:'Eng'}]})};
     if(url.includes('/api/spelling')) return {ok:true,json:async()=>({word:new URL(url,'http://test').searchParams.get('word'),suggestions:['experience','experiment']})};
@@ -186,4 +187,36 @@ test('voice search handles permission errors and ignores canceled results after 
   recognizer.onresult({results:[Object.assign([{transcript:'wrong'}],{isFinal:true})]});
   assert.equal(p.element('#q').value,'loan');assert.equal(p.saved['helen-query'],'loan');
   assert.ok(!p.requests.some(request=>request.url.includes('/api/lookup')));
+});
+function savedLesson(definition='Money lent temporarily.') {
+  return {word:'loan',pos:'noun',definition,language:'vi',title:'A bank loan',provider:'Gemini',usageNote:'Khoản vay cần được hoàn trả.',videoPrompt:'Animate a bank loan.',scenario:{text:'Anna requests a loan.',translation:'Anna xin một khoản vay.'},dialogue:Array.from({length:4},(_,i)=>({speaker:i%2?'Mark':'Anna',text:i?'Please repay it.':'I need a loan.',translation:i?'Hãy hoàn trả khoản vay.':'Tôi cần một khoản vay.'}))};
+}
+test('AI contexts restore instantly after reload and never cross a different sense or language',async()=>{
+  const data=savedLesson(), p=page({'helen-ai-contexts':JSON.stringify([{at:Date.now(),data}])});
+  await new Promise(resolve=>setImmediate(resolve));
+  vm.runInContext(`createAISection({word:'loan',meanings:[{pos:'noun',senses:[{definition:${JSON.stringify(data.definition)}},{definition:'A borrowed object.'}]}]})`,p.context);
+  const panel=p.created.find(node=>node.className==='ai-study'), button=panel.querySelector('.ai-generate'), select=panel.querySelector('.ai-sense');
+  assert.equal(button.textContent,'View saved context');assert.equal(button.disabled,false);
+  await button.onclick();assert.ok(!p.requests.some(request=>request.url.endsWith('/api/context')));
+  p.element('#target').value='ja';p.element('#target').events.change();assert.equal(button.textContent,'Generate context');
+  p.element('#target').value='vi';select.value='0:1';select.events.change();assert.equal(button.textContent,'Generate context');
+  select.value='0:0';select.events.change();assert.equal(button.textContent,'View saved context');
+});
+test('expired or malformed AI cache entries are ignored and failures are never persisted',()=>{
+  const saved=[{at:Date.now()-86400001,data:savedLesson()},{at:Date.now(),data:{...savedLesson(),dialogue:[]}},{at:Date.now()+60000,data:savedLesson()}];
+  assert.equal(vm.runInContext('aiLessons.size',page({'helen-ai-contexts':JSON.stringify(saved)}).context),0);
+  const p=page({'helen-ai-contexts':'invalid JSON'});
+  vm.runInContext("aiLessons.set('failure',{error:'Offline'});aiLessons.set('pending',{busy:true});persistAILessons()",p.context);
+  assert.deepEqual(JSON.parse(p.saved['helen-ai-contexts']),[]);
+});
+test('audio loading is animated while pending and cleaned up after an error without changing voice',async()=>{
+  let complete;
+  const p=page({'helen-voice':'Sarah'},null,{},url=>url.includes('/api/tts')?new Promise(resolve=>complete=resolve):undefined);
+  await new Promise(resolve=>setImmediate(resolve));
+  const button=p.element('#test-speaker');button.innerHTML='🔊';
+  const waiting=vm.runInContext("speak('loan',document.querySelector('#test-speaker'))",p.context);
+  assert.match(button.innerHTML,/wheel-and-hamster/);assert.equal(button.disabled,true);assert.equal(p.element('#audio-status').hidden,false);
+  complete({ok:false,status:503,json:async()=>({error:'Voice offline.'})});await waiting;
+  assert.equal(button.innerHTML,'🔊');assert.equal(button.disabled,false);assert.equal(button.getAttribute('aria-busy'),undefined);
+  assert.equal(p.element('#audio-status').hidden,true);assert.equal(p.saved['helen-voice'],'Sarah');
 });

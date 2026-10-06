@@ -17,6 +17,11 @@ test('serves the application without exposing the env file', async () => {
   assert.equal((await fetch(base)).status, 200);
   assert.equal((await fetch(`${base}/env`)).status, 404);
 });
+test('serves the supplied loading animation stylesheet',async()=>{
+  await ready;const response=await fetch(`${base}/assets/hamster.css`);
+  assert.equal(response.status,200);assert.match(response.headers.get('content-type'),/text\/css/);
+  const css=await response.text();assert.match(css,/@keyframes hamster/);assert.match(css,/prefers-reduced-motion/);
+});
 test('uses each requested language and isolates cached translations', async () => {
   for (const to of ['fr', 'ja', 'es', 'zh-CN']) assert.deepEqual((await (await translate('hello', to)).json()).translations, [`${to}:hello`]);
 });

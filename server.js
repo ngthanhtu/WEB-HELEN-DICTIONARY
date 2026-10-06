@@ -33,6 +33,7 @@ app.use(express.json());
 app.get('/healthz', (req, res) => res.json({ status: 'ok', version: process.env.RENDER_GIT_COMMIT?.slice(0, 7) || 'local', voiceConfigured: Boolean(KEY), aiConfigured:contexts.configured }));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.use('/images', express.static(path.join(__dirname, 'public', 'images'), { dotfiles: 'deny', index: false }));
+app.use('/assets', express.static(path.join(__dirname, 'public', 'assets'), { dotfiles: 'deny', index: false }));
 for (const image of ['Helennn.jpg', 'pexels-mart-production-7550534.jpg']) {
   app.get(`/${image}`, (req, res, next) => {
     res.sendFile(path.join(__dirname, image), error => {

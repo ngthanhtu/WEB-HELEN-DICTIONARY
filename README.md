@@ -79,7 +79,7 @@ Kiểm tra sau triển khai: tra `experimence` → bấm `experiment` → kiểm
 
 Khi tra một từ tiếng Anh, trình duyệt chờ ngắn rồi gọi `/api/spelling?word=...` nếu yêu cầu tra cứu vẫn đang chạy. Danh sách từ gần giống được tính từ WordNet ngay trên server và hiển thị dưới nhãn **Gợi ý nhanh**; đây chỉ là gợi ý cách viết trong lúc các nguồn trực tuyến xác minh từ. Kết quả tra chính xác vẫn có ưu tiên: khi có định nghĩa, giao diện hiển thị từ đã nhập; khi xác nhận không có kết quả, nhãn gợi ý chuyển thành thông báo không khớp. Bấm gợi ý sẽ tra đúng từ đã chọn. Chỉ sử dụng dữ liệu WordNet cho từ tiếng Anh để tránh gợi ý sai ngôn ngữ. Server làm nóng danh sách chính tả khi khởi động; gọi `/api/spelling?word=experiment` trả danh sách rỗng, còn `experimence` trả các gợi ý gần nhất.
 
-Nút mắt và loa, ô ngôn ngữ, giọng và ô tìm kiếm có viền sáng, bóng nhẹ và phản hồi khi hover/focus. Màu được điều chỉnh cho cả Light/Dark. Từ yêu thích và lịch sử có thẻ nổi bật; nội dung từ liên quan, ví dụ bổ sung và collocations nằm trong thẻ **Khám phá thêm**, mặc định đóng. Bấm tiêu đề hoặc dùng bàn phím để mở; khi dữ liệu bổ sung tải xong, trạng thái mở được giữ. Loại từ, định nghĩa, ví dụ trong từng nghĩa và quan hệ đồng/trái nghĩa của từng nghĩa vẫn đọc được ngay trên trang.
+Nút mắt và loa, ô ngôn ngữ, giọng và ô tìm kiếm có viền sáng, bóng nhẹ và phản hồi khi hover/focus. Màu được điều chỉnh cho cả Light/Dark. Từ yêu thích và lịch sử có thẻ nổi bật; nội dung từ liên quan, ví dụ bổ sung và collocations nằm trong thẻ **Explore more**, mặc định đóng. Bấm tiêu đề hoặc dùng bàn phím để mở; khi dữ liệu bổ sung tải xong, trạng thái mở được giữ. Loại từ, định nghĩa, ví dụ trong từng nghĩa và quan hệ đồng/trái nghĩa của từng nghĩa vẫn đọc được ngay trên trang.
 
 ## Dịch từ dễ nhầm giữa tiếng Anh và tiếng Việt
 
@@ -93,7 +93,7 @@ Dùng Web Speech API (`SpeechRecognition` hoặc `webkitSpeechRecognition`), ph�
 
 ## Minh họa ngữ cảnh bằng Gemini
 
-Phần **Minh họa ngữ cảnh** trong **Khám phá thêm** cho phép chọn một nghĩa rồi tạo hội thoại song ngữ, tình huống thực tế, ghi chú sử dụng và prompt tiếng Anh cho video hoạt hình. Hội thoại/tình huống có loa dùng giọng đang chọn; prompt có nút sao chép để dùng ở công cụ tạo video. Bản dịch theo ngôn ngữ **Meanings in**. Nội dung có nhãn AI tạo, không được dùng thay cho dữ liệu định nghĩa của nguồn từ điển.
+Phần **AI contexts** trong **Explore more** cho phép chọn một nghĩa rồi tạo hội thoại song ngữ, tình huống thực tế, ghi chú sử dụng và prompt tiếng Anh cho video hoạt hình. Hội thoại/tình huống có loa dùng giọng đang chọn; prompt có nút sao chép để dùng ở công cụ tạo video. Bản dịch theo ngôn ngữ **Meanings in**. Nội dung có nhãn AI tạo, không được dùng thay cho dữ liệu định nghĩa của nguồn từ điển.
 
 Ứng dụng dùng SDK Google Gen AI chính thức (`@google/genai`), yêu cầu Node.js 20 trở lên; Render tiếp tục dùng Node.js 24. Không cần thêm Python. Server tự lấy định nghĩa tương ứng từ nguồn từ điển và truyền cho Gemini; client chỉ gửi từ, chỉ số nghĩa và ngôn ngữ. API key chỉ nằm ở server.
 
@@ -102,8 +102,18 @@ Bật trên Render:
 1. Tạo API key ở https://aistudio.google.com/app/api-keys.
 2. Render → Web Service → **Environment** → thêm **GEMINI_API_KEY** và dán key vào ô Value bảo mật; Save/Deploy. Không commit hoặc gửi key trong chat.
 3. Để **GEMINI_MODEL** trống để dùng `gemini-flash-lite-latest`, đã xác minh hoạt động trên Render. Alias này theo bản Flash Lite hiện hành của Google. Nếu Google báo model mặc định không còn khả dụng (404), server kiểm tra danh sách model và ưu tiên Flash Lite bản ổn định còn hỗ trợ tạo nội dung. Không chọn Pro/image/audio và không đổi model khi lỗi quyền hoặc quota. Có thể đặt **GEMINI_MODEL** để cố định model được tài khoản hỗ trợ. Local dùng các biến tương tự trong `.env`.
-4. `/healthz` có `aiConfigured`, `/api/context/status` có `configured`; chúng xác nhận đã cấu hình key, không kiểm tra key/quota. Mở trang, tra loan, mở Khám phá thêm, chọn nghĩa và bấm Tạo ngữ cảnh để kiểm tra thực tế.
+4. `/healthz` có `aiConfigured`, `/api/context/status` có `configured`; chúng xác nhận đã cấu hình key, không kiểm tra key/quota. Mở trang, tra loan, mở Explore more → AI contexts, chọn nghĩa và bấm Generate context để kiểm tra thực tế.
 
-Gemini chỉ được gọi khi bấm tạo. Các yêu cầu trùng được dùng chung; kết quả cache theo từ, nghĩa, ngôn ngữ trong 24 giờ, tối đa 200 mục trên mỗi tiến trình. Restart Render sẽ mất cache. Giới hạn production: 6 yêu cầu tạo mỗi phút/IP, tối đa 2200 token đầu ra/yêu cầu, không tự retry khi quota báo lỗi. Free tier/hạn mức phụ thuộc tài khoản, model và chính sách Google; kiểm tra trong AI Studio. Chưa có key thì giao diện ghi rõ AI chưa bật; key/quota không hợp lệ thì báo lỗi và không hiển thị bài học giả.
+Gemini chỉ được gọi khi bấm tạo. Các yêu cầu trùng được dùng chung; kết quả cache theo từ, nghĩa, ngôn ngữ trong 24 giờ, tối đa 200 mục trên mỗi tiến trình. Restart Render sẽ mất cache trên server. Giới hạn production: 6 yêu cầu tạo mỗi phút/IP, tối đa 1400 token đầu ra/yêu cầu, không tự retry khi quota báo lỗi. Free tier/hạn mức phụ thuộc tài khoản, model và chính sách Google; kiểm tra trong AI Studio. Chưa có key thì giao diện ghi rõ AI chưa bật; key/quota không hợp lệ thì báo lỗi và không hiển thị bài học giả.
 
 Cloud có allowlist cần thêm `generativelanguage.googleapis.com` khi kiểm tra Gemini thật. Tham khảo SDK: https://github.com/googleapis/js-genai.
+
+## Loading, tốc độ AI và các mục mở rộng
+
+Yêu cầu Gemini được rút gọn: đúng 4 lượt hội thoại ngắn, một câu tình huống, ghi chú sử dụng ngắn và prompt video 45–65 từ. Vẫn giữ nghĩa từ được chọn, bản dịch từng phần và các nút loa. Đầu ra ngắn giúp giảm thời gian tạo; không tự tạo trước khi người dùng bấm để tránh thêm lượt gọi. Mục tiêu dưới 5 giây phụ thuộc mạng, Gemini và việc Render free vừa khởi động lại.
+
+Trình duyệt lưu tối đa 20 bài AI thành công trong 24 giờ dưới `helen-ai-contexts`. Bài đã lưu được hiển thị ngay sau reload mà không gọi Gemini; cache phân biệt từ, từ loại, **định nghĩa** và ngôn ngữ dịch. Bài lỗi, đang tạo, hết hạn hoặc dữ liệu lưu hỏng không được dùng. Cache chỉ ở trình duyệt này, không đồng bộ sang thiết bị khác; vẫn xem lại bài đã lưu khi dịch vụ AI chưa được bật.
+
+Hoạt ảnh hamster do người dùng cung cấp (Uiverse.io by Nawsome) nằm trong `public/assets/hamster.css`, phục vụ tại `/assets/hamster.css`. Các trạng thái chờ tra cứu, kiểm tra chính tả, tải giọng, dịch từ/định nghĩa, chuẩn bị âm thanh, tạo AI, tải dữ liệu bổ sung và ảnh đều có loading phù hợp kích thước. Khi hoàn tất hoặc lỗi, loading dừng; nút trở lại hoạt động. `prefers-reduced-motion` tắt chuyển động và giữ thông báo trạng thái.
+
+Trong **Explore more**, các mục Related words, More examples, Collocations, Common word combinations (Datamuse), Short dialogue, Real-life scenario và Animated video prompt có tiêu đề tiếng Anh. Chú thích và bản dịch vẫn theo ngôn ngữ đang dùng. Hover/focus làm nổi màu, viền và bóng; không đổi độ rộng. Bấm tiêu đề hoặc Enter/Space để mở, dấu + chuyển thành dấu đóng. Trạng thái mở của các mục được giữ khi dữ liệu bổ sung tải xong. Giao diện được kiểm tra cả desktop, mobile và dark mode.
