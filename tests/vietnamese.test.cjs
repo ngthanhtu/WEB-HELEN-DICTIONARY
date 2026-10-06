@@ -1,7 +1,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const {vietnameseGloss,usableTranslation}=require('../lib/vietnamese');
-const {createContextService,validateContext}=require('../lib/context-ai');
+const {createContextService,validateContext,replacementModel}=require('../lib/context-ai');
 test('English learner glosses distinguish Vietnamese-looking spellings and preserve polysemy',()=>{
   assert.match(vietnameseGloss('Loan'),/khoản vay.*cho vay.*cho mượn/);
   assert.match(vietnameseGloss('may'),/có thể.*tháng Năm/);
@@ -19,4 +19,9 @@ test('AI without a key fails explicitly instead of inventing generated data',asy
   const service=createContextService({});assert.equal(service.configured,false);
   await assert.rejects(service.generate({word:'loan',language:'vi'}),error=>error.status===501);
   assert.throws(()=>validateContext({dialogue:[]},'loan'));
+});
+test('retired-model selection prefers stable Flash Lite text models and excludes expensive or unrelated models',()=>{
+  const model=(name,supportedActions=['generateContent'])=>({name:`models/${name}`,supportedActions});
+  assert.equal(replacementModel([model('gemini-3-pro'),model('gemini-3.1-flash-lite-preview'),model('gemini-3.1-flash-lite'),model('gemini-3-flash'),model('gemini-3-flash-image'),model('gemini-embedding',['embedContent'])]),'gemini-3.1-flash-lite');
+  assert.equal(replacementModel([model('gemini-pro'),model('gemini-embedding',['embedContent'])]),undefined);
 });

@@ -101,7 +101,7 @@ Bật trên Render:
 
 1. Tạo API key ở https://aistudio.google.com/app/api-keys.
 2. Render → Web Service → **Environment** → thêm **GEMINI_API_KEY** và dán key vào ô Value bảo mật; Save/Deploy. Không commit hoặc gửi key trong chat.
-3. Mặc định dùng `gemini-2.5-flash-lite` để ưu tiên tốc độ/chi phí; có thể đặt **GEMINI_MODEL** thành model được tài khoản hỗ trợ. Local dùng các biến tương tự trong `.env`.
+3. Để **GEMINI_MODEL** trống, server bắt đầu bằng `gemini-2.5-flash-lite`. Nếu Google báo model mặc định không còn khả dụng (404), server kiểm tra danh sách model và ưu tiên Flash Lite bản ổn định còn hỗ trợ tạo nội dung. Không chọn Pro/image/audio và không đổi model khi lỗi quyền hoặc quota. Có thể đặt **GEMINI_MODEL** để cố định model được tài khoản hỗ trợ. Local dùng các biến tương tự trong `.env`.
 4. `/healthz` có `aiConfigured`, `/api/context/status` có `configured`; chúng xác nhận đã cấu hình key, không kiểm tra key/quota. Mở trang, tra loan, mở Khám phá thêm, chọn nghĩa và bấm Tạo ngữ cảnh để kiểm tra thực tế.
 
 Gemini chỉ được gọi khi bấm tạo. Các yêu cầu trùng được dùng chung; kết quả cache theo từ, nghĩa, ngôn ngữ trong 24 giờ, tối đa 200 mục trên mỗi tiến trình. Restart Render sẽ mất cache. Giới hạn production: 6 yêu cầu tạo mỗi phút/IP, tối đa 2200 token đầu ra/yêu cầu, không tự retry khi quota báo lỗi. Free tier/hạn mức phụ thuộc tài khoản, model và chính sách Google; kiểm tra trong AI Studio. Chưa có key thì giao diện ghi rõ AI chưa bật; key/quota không hợp lệ thì báo lỗi và không hiển thị bài học giả.

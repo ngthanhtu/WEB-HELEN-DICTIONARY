@@ -205,3 +205,10 @@ test('AI quota errors and malformed generated lessons are surfaced without a fak
     assert.equal(response.status,status);assert.equal((await response.json()).dialogue,undefined);
   }
 });
+test('an unavailable default Gemini model is replaced by an available Flash Lite model',async()=>{
+  await ready;
+  const response=await fetch(`${base}/api/context`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word:'ai-model-retired',language:'vi'})});
+  assert.equal(response.status,200);
+  assert.equal((await response.json()).model,'gemini-3.1-flash-lite');
+  assert.equal((await (await fetch(`${base}/api/context/status`)).json()).model,'gemini-3.1-flash-lite');
+});
