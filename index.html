@@ -12,13 +12,13 @@
   --radius-sm:20px;--radius-md:25px;--radius-pill:9999px;
   --shadow-1:rgba(0,0,0,.3) 4px 4px 10px 0;--shadow-inset:rgba(0,0,0,.1) 1px 1px 2px 0 inset;
   --font:Arial,Helvetica,sans-serif;
-  --page-panel:rgba(255,255,255,.9); --photo-opacity:.16;
-  --page-image:none; /* IMAGE 1: replace none with url("/images/background.jpg") */
-  --lookup-image:none; /* IMAGE 2: replace none with url("/images/lookup.jpg") */
+  --page-panel:rgba(255,255,255,.9); --page-wash:rgba(255,255,255,.72); --lookup-wash:rgba(255,255,255,.68);
+  --page-image:url("/pexels-mart-production-7550534.jpg"); /* IMAGE 1: full-page background */
+  --lookup-image:url("/Helennn.jpg"); /* IMAGE 2: heading-through-search background */
 }
 /* Toggle adapted from Uiverse.io by Javierrocadev. */
 :root{color-scheme:light;--bar-bg:#1d2a57;--translation-bg:#f4f2fb;--border:#d9dce6;--error-bg:#fff1f1;--error-text:#8a1f1f}
-:root[data-theme="dark"]{color-scheme:dark;--surface-base:#121827;--page-panel:rgba(18,24,39,.92);--text-primary:#e7edff;--text-tertiary:#b9c5da;--link:#c1a8ff;--surface-muted:#244b3b;--text-green:#c5f6d6;--surface-strong:#222e44;--bar-bg:#101a30;--translation-bg:#29243e;--border:#35415a;--error-bg:#40242c;--error-text:#ffc5cd;--photo-opacity:.12}
+:root[data-theme="dark"]{color-scheme:dark;--surface-base:#121827;--page-panel:rgba(18,24,39,.92);--text-primary:#e7edff;--text-tertiary:#b9c5da;--link:#c1a8ff;--surface-muted:#244b3b;--text-green:#c5f6d6;--surface-strong:#222e44;--bar-bg:#101a30;--translation-bg:#29243e;--border:#35415a;--error-bg:#40242c;--error-text:#ffc5cd;--page-wash:rgba(18,24,39,.82);--lookup-wash:rgba(18,24,39,.75)}
 .theme-control{display:inline-flex;align-items:center;gap:10px;cursor:pointer;position:relative}
 .theme-control input{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
 .theme-track{position:relative;display:inline-block;width:96px;height:48px;flex:none;border-radius:999px;background:linear-gradient(90deg,#fb7185,#7f1d1d);box-shadow:1px 3px 0 #000;transition:background .3s}
@@ -28,9 +28,8 @@
 .theme-control input:focus-visible + .theme-track{outline:3px solid var(--accent);outline-offset:4px}
 #voice-status{flex-basis:100%;font-size:14px}
 *{box-sizing:border-box}
-body{margin:0;font:400 16px/1.5 var(--font);color:var(--text-primary);background:var(--surface-base);position:relative;isolation:isolate;min-height:100vh}
-body::before{content:"";position:fixed;inset:-12px;z-index:-1;background-image:var(--page-image);background-position:center;background-size:cover;background-repeat:no-repeat;filter:blur(7px);opacity:var(--photo-opacity);pointer-events:none}
-.hero,main{background:var(--page-panel);border-radius:var(--radius-md)}
+body{margin:0;font:400 16px/1.5 var(--font);color:var(--text-primary);background-color:var(--surface-base);background-image:linear-gradient(var(--page-wash),var(--page-wash)),var(--page-image);background-position:center;background-size:cover;background-repeat:no-repeat;background-attachment:fixed;min-height:100vh}
+main{background:var(--page-panel);border-radius:var(--radius-md)}
 a,button,select,input{font:inherit}
 :focus-visible{outline:3px solid var(--link);outline-offset:2px}
 .bar{background:var(--bar-bg);color:var(--text-inverse);display:flex;align-items:center;justify-content:space-between;padding:var(--space-4) var(--space-6);gap:var(--space-5);flex-wrap:wrap}
@@ -39,8 +38,7 @@ a,button,select,input{font:inherit}
 .bar label{min-width:0;max-width:100%;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .bar select{max-width:100%;background:var(--surface-base);color:var(--text-primary);border:0;border-radius:var(--radius-pill);padding:var(--space-3) var(--space-5);min-height:40px}
 .hero{display:grid;grid-template-columns:1.3fr 1fr;gap:var(--space-7);align-items:center;padding:var(--space-7) var(--space-6);max-width:1200px;margin:auto}
-.lookup-panel{position:relative;isolation:isolate;overflow:hidden;border-radius:var(--radius-md);padding:var(--space-5)}
-.lookup-panel::before{content:"";position:absolute;inset:0;z-index:-1;background-image:var(--lookup-image);background-position:center;background-size:cover;opacity:.3;pointer-events:none}
+.lookup-panel{overflow:hidden;border-radius:var(--radius-md);padding:var(--space-6);background-color:var(--surface-base);background-image:linear-gradient(var(--lookup-wash),var(--lookup-wash)),var(--lookup-image);background-size:cover;background-position:35% center;box-shadow:var(--shadow-1)}
 .hero h1{font-size:44px;line-height:52.8px;font-weight:400;margin:0 0 var(--space-5);max-width:16ch}
 .hero p{margin:0 0 var(--space-6);max-width:52ch;color:var(--text-tertiary)}
 .search{display:flex;gap:var(--space-3);background:var(--surface-base);border:2px solid var(--text-primary);border-radius:var(--radius-pill);padding:var(--space-2);box-shadow:var(--shadow-inset)}
@@ -218,9 +216,10 @@ function render(d, scroll = true) {
       el.insertAdjacentHTML('beforeend', `<span class="pos">${esc(m.pos)}</span>`);
       m.senses.forEach(s => {
         const row = document.createElement('div'); row.className = 'sense';
-        row.innerHTML = `<div class="def">${esc(s.definition)}</div>${s.example ? `<div class="ex">“${esc(s.example)}” <button class="say example-say" type="button" aria-label="Hear example sentence">🔊</button></div>` : ''}
+        row.innerHTML = `<div class="def">${esc(s.definition)} <button class="say example-say definition-say" type="button" aria-label="Hear definition">🔊</button></div>${s.example ? `<div class="ex">“${esc(s.example)}” <button class="say example-say" type="button" aria-label="Hear example sentence">🔊</button></div>` : ''}
           <button class="eye" type="button" aria-pressed="false" aria-label="Show translation">👁</button><div class="tr" hidden></div>`;
-        if (s.example) row.querySelector('.example-say').onclick = ev => speak(s.example, ev.currentTarget);
+        row.querySelector('.definition-say').onclick = ev => speak(s.definition, ev.currentTarget);
+        if (s.example) row.querySelector('.ex .example-say').onclick = ev => speak(s.example, ev.currentTarget);
         const eye = row.querySelector('.eye'), box = row.querySelector('.tr');
         let lang = null;
         eye.onclick = async () => {

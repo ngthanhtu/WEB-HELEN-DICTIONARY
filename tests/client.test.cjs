@@ -4,13 +4,13 @@ const vm = require('node:vm');
 const fs = require('node:fs');
 const script = fs.readFileSync(require('node:path').join(__dirname,'../index.html'),'utf8').split('<script>')[1].split('</script>')[0];
 function page(saved = {}) {
-  const elements = new Map();
+  const elements = new Map(), created = [];
   const element = id => {
     if (!elements.has(id)) elements.set(id,{value:'',textContent:'',events:{},innerHTML:'',append(){},insertAdjacentHTML(){},querySelector(){return null;},add(){},replaceChildren(){},setAttribute(){},removeAttribute(){},addEventListener(name,fn){this.events[name]=fn;}});
     return elements.get(id);
   };
   const requests=[];
-  const context = vm.createContext({document:{documentElement:{dataset:{}},createElement:()=>({innerHTML:'',querySelector:()=>({}),insertAdjacentHTML(){},append(){}}),querySelector:element,querySelectorAll:()=>[]}, localStorage:{getItem:k=>saved[k],setItem:(k,v)=>saved[k]=v}, Image:class {}, Option:class {}, URL, Audio:class {}, fetch:async(url,options)=>{
+  const context = vm.createContext({document:{documentElement:{dataset:{}},createElement:()=>{ const node=element(`#created-${created.length}`), children=new Map(); node.querySelector=sel=>{if(!children.has(sel)) children.set(sel,element(`#child-${created.length}-${sel}`)); return children.get(sel);}; created.push(node); return node; },querySelector:element,querySelectorAll:()=>[]}, localStorage:{getItem:k=>saved[k],setItem:(k,v)=>saved[k]=v}, Image:class {}, Option:class {}, URL, Audio:class {}, fetch:async(url,options)=>{
     requests.push({url,options});
     if(url.includes('/api/voices')) return {ok:true,json:async()=>({in_use:'Rachel',voices:[{name:'Rachel',voice_id:'Rachel',category:'premade'},{name:'Sarah',voice_id:'Sarah',category:'premade'}]})};
     if(url.includes('/api/lookup')) { const query = new URL(url, 'http://test').searchParams; return {ok:true,json:async()=>({query:query.get('word'),word:'hello',from:query.get('from'),entries:[{word:'hello',meanings:[],source:'test'}]})}; }
@@ -18,7 +18,7 @@ function page(saved = {}) {
     const body=JSON.parse(options.body); return {ok:true,json:async()=>({translations:[`${body.to}:hello`]})};
   }});
   vm.runInContext(script,context);
-  return {context,element,requests,saved};
+  return {context,element,requests,saved,created};
 }
 test('selected voice survives a reload and TTS failure',async()=>{
   const p=page(); await vm.runInContext('loadVoices()',p.context);
@@ -63,4 +63,22 @@ test('restores the search text and source language and fetches results after rel
   const params=new URL(request.url,'http://test').searchParams;
   assert.equal(params.get('word'),'xin chào'); assert.equal(params.get('from'),'vi');
   assert.equal(vm.runInContext('lastResult.word',reloaded.context),'hello');
+});
+
+test('every definition has a working speaker independent of example speakers',async()=>{
+  const p=page();
+  const definitions=['The surroundings of a particular item of interest.', 'The software or hardware on a computer system.'];
+  const example='That program uses the Microsoft Windows environment.';
+  const data={from:'en',query:'environment',word:'environment',entries:[{word:'environment',source:'test',meanings:[{pos:'noun',synonyms:[],senses:[{definition:definitions[0],example:''},{definition:definitions[1],example}]}]}]};
+  vm.runInContext(`render(${JSON.stringify(data)}, false)`,p.context);
+  const rows=p.created.filter(n=>n.className==='sense');
+  assert.equal(rows.length,2);
+  for(let i=0;i<rows.length;i++){
+    assert.match(rows[i].innerHTML,/Hear definition/);
+    await rows[i].querySelector('.definition-say').onclick({currentTarget:p.element('#test-button')});
+    const request=p.requests.filter(r=>r.url.includes('/api/tts')).at(-1);
+    assert.equal(new URL(request.url,'http://test').searchParams.get('text'),definitions[i]);
+  }
+  await rows[1].querySelector('.ex .example-say').onclick({currentTarget:p.element('#test-button')});
+  assert.equal(new URL(p.requests.filter(r=>r.url.includes('/api/tts')).at(-1).url,'http://test').searchParams.get('text'),example);
 });

@@ -59,3 +59,12 @@ test('speaks full example sentences beyond the old 200-character truncation', as
   const response = await fetch(`${base}/api/tts?voice=Sarah&text=${encodeURIComponent(text)}`);
   assert.equal(response.status, 200); assert.equal(await response.text(), text);
 });
+
+test('serves both uploaded background images with image content types',async()=>{
+  await ready;
+  for(const name of ['Helennn.jpg','pexels-mart-production-7550534.jpg']){
+    const r=await fetch(`${base}/${name}`);
+    assert.equal(r.status,200); assert.match(r.headers.get('content-type'),/image\/jpeg/);
+    assert.ok((await r.arrayBuffer()).byteLength>1000);
+  }
+});

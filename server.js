@@ -14,6 +14,9 @@ const memo = async (k, fn) => { if (cache.has(k)) return cache.get(k); const v =
 app.use(express.json());
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.use('/images', express.static(path.join(__dirname, 'public', 'images'), { dotfiles: 'deny', index: false }));
+for (const image of ['Helennn.jpg', 'pexels-mart-production-7550534.jpg']) {
+  app.get(`/${image}`, (req, res) => res.sendFile(path.join(__dirname, image)));
+}
 app.get('/Helen1.jpg', (req, res) => res.sendFile(path.join(__dirname, 'Helen1.jpg')));
 
 // fetch with timeout; returns Response or null on timeout/network error

@@ -31,10 +31,12 @@ Các kiểm thử API và trình duyệt giả lập dịch vụ ngoài, không 
 
 ## Giao diện và lưu lựa chọn
 
-Ảnh Helen1.jpg được dùng làm nền mờ dưới lớp nền trắng bán trong suốt. Công tắc Light/Dark ở thanh đầu trang lấy cảm hứng từ Uiverse.io (Javierrocadev) và được chuyển sang CSS thuần. Chế độ hiển thị, từ đang nhập, ngôn ngữ nhập, ngôn ngữ đích và giọng đều được lưu trong localStorage của trình duyệt. Khi tải lại trang, ứng dụng điền lại từ và gọi tra cứu để khôi phục kết quả mới nhất; bước này cần server và dịch vụ từ điển hoạt động. Xóa ô tìm kiếm sẽ xóa từ đã lưu.
+Ảnh Pexels được dùng làm nền mờ dưới lớp phủ trắng bán trong suốt. Công tắc Light/Dark ở thanh đầu trang lấy cảm hứng từ Uiverse.io (Javierrocadev) và được chuyển sang CSS thuần. Chế độ hiển thị, từ đang nhập, ngôn ngữ nhập, ngôn ngữ đích và giọng đều được lưu trong localStorage của trình duyệt. Khi tải lại trang, ứng dụng điền lại từ và gọi tra cứu để khôi phục kết quả mới nhất; bước này cần server và dịch vụ từ điển hoạt động. Xóa ô tìm kiếm sẽ xóa từ đã lưu.
 
 ## Tự chèn ảnh và nghe câu ví dụ
 
-Đặt ảnh trong `public/images/`. Trong index.html, tìm `--page-image` (ảnh nền mờ toàn trang) và `--lookup-image` (ảnh sau phần Look up a word, độ rõ 30%). Cả hai mặc định là `none`; thay bằng `url("/images/ten-anh.jpg")`. Ảnh bên phải vẫn được cấu hình riêng trong `IMAGES.hero`. Không dùng đường dẫn tuyệt đối trên máy cá nhân.
+Đặt ảnh trong `public/images/`. Trong index.html, tìm `--page-image` (ảnh nền mờ toàn trang) và `--lookup-image` (ảnh sau toàn khối Look up a word đến Search). Cả hai đã gắn ảnh từ repository; có thể thay bằng `url("/images/ten-anh.jpg")`. Ảnh bên phải vẫn được cấu hình riêng trong `IMAGES.hero`. Không dùng đường dẫn tuyệt đối trên máy cá nhân.
 
 Nút loa bên cạnh từng câu ví dụ dùng giọng ElevenLabs đã chọn. Các câu thêm từ Free Dictionary API hiển thị trong Usage examples. API `api.dictionaryapi.dev` không cần key, bổ sung synonym/antonym theo từ loại và có thể làm nguồn định nghĩa dự phòng. Không phải từ nào cũng có từ trái nghĩa hoặc ví dụ; không coi mọi synonym là từ thay thế được trong mọi ngữ cảnh. TTS đọc tối đa 2000 ký tự mỗi lần, tính vào quota ElevenLabs.
+
+Ảnh nền đã được cấu hình trực tiếp từ hai file mới trong repository: `pexels-mart-production-7550534.jpg` cho toàn trang và `Helennn.jpg` cho khối tiêu đề đến thanh tìm kiếm. Server phục vụ riêng các ảnh này. Biến `--page-wash` và `--lookup-wash` điều chỉnh lớp phủ sáng/tối (alpha cao hơn làm ảnh mờ hơn). Mỗi câu định nghĩa cũng có nút loa riêng, ngoài các câu ví dụ.
