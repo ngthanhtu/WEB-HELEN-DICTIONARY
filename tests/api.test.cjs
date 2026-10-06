@@ -4,7 +4,7 @@ const { spawn } = require('node:child_process');
 const path = require('node:path');
 const base = 'http://127.0.0.1:3199';
 const server = spawn(process.execPath, ['--require', path.join(__dirname, 'mock-upstream.cjs'), 'server.js'], {
-  cwd: path.join(__dirname, '..'), env: { ...process.env, PORT: '3199', ELEVENLABS_API_KEY: 'test-only', ELEVENLABS_VOICE_ID: 'testDefault' }, stdio: ['ignore', 'pipe', 'pipe']
+  cwd: path.join(__dirname, '..'), env: { ...process.env, PORT: '3199', HELEN_DISABLE_WORDNET:'1', ELEVENLABS_API_KEY: 'test-only', ELEVENLABS_VOICE_ID: 'testDefault' }, stdio: ['ignore', 'pipe', 'pipe']
 });
 const ready = new Promise((resolve, reject) => { server.stdout.once('data', resolve); server.once('error', reject); server.once('exit', code => reject(new Error(`server exited ${code}`))); });
 after(() => server.kill());
@@ -45,8 +45,9 @@ test('lookup adds related words and examples while retaining the main definition
   assert.equal(response.status, 200);
   const data = await response.json();
   const meaning = data.entries[0].meanings[0];
-  assert.deepEqual(meaning.synonyms, ['joyful', 'glad', 'cheerful']);
-  assert.deepEqual(meaning.antonyms, ['sad', 'unhappy']);
+  assert.deepEqual(meaning.synonyms, ['joyful']);
+  assert.deepEqual(meaning.antonyms, ['sad']);
+  assert.ok(meaning.senses[0].synonyms.includes('glad'));
   assert.ok([...meaning.usageExamples,...meaning.senses.map(s=>s.example)].includes('She was happy to see her friend.'));
   assert.ok(['Wiktionary','Free Dictionary API'].includes(data.entries[0].source));
   const offline = await fetch(`${base}/api/lookup?word=offline&from=en&details=1`);
@@ -73,6 +74,7 @@ test('redirects missing local backgrounds to pinned GitHub images', async () => 
   const fs = require('node:fs');
   const tmp = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'helen-no-images-'));
   fs.copyFileSync(path.join(__dirname, '..', 'server.js'), path.join(tmp, 'server.js'));
+  fs.mkdirSync(path.join(tmp,'lib')); fs.copyFileSync(path.join(__dirname,'..','lib','lexicon.js'),path.join(tmp,'lib','lexicon.js'));
   const child = spawn(process.execPath, [path.join(tmp, 'server.js')], {
     env: {...process.env, PORT:'3201', NODE_PATH:path.join(__dirname,'..','node_modules')}, stdio:['ignore','pipe','pipe']
   });
@@ -122,7 +124,7 @@ test('returns definitions before slow metadata and later returns complete detail
   assert.ok(early.entries[0].meanings.length);
   const full=await (await fetch(`${base}/api/lookup?word=fast-result&from=en&details=1`)).json();
   assert.equal(full.enriching,false);
-  assert.ok(full.entries[0].meanings[0].synonyms.includes('cheerful'));
+  assert.ok(full.entries[0].meanings[0].relatedSynonyms.includes('cheerful'));
   const cached=await (await fetch(`${base}/api/lookup?word=fast-result&from=en`)).json();
   assert.equal(cached.enriching,false);
 });

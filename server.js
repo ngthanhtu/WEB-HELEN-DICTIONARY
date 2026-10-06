@@ -2,6 +2,7 @@
 require('dns').setDefaultResultOrder('ipv4first');
 const express = require('express');
 const path = require('path');
+const { wordnetMeanings } = require('./lib/lexicon');
 // Injected variables take precedence; .env takes precedence over legacy env.
 require('dotenv').config({ path: [path.join(__dirname, '.env'), path.join(__dirname, 'env')], quiet: true });
 const app = express();
@@ -121,9 +122,9 @@ async function relatedDictionary(word, timeout = 10000) {
     const unique = values => [...new Set(values.filter(v => typeof v === 'string' && v.trim()).map(clean))].slice(0, 12);
     return data.flatMap(entry => (entry.meanings || []).map(m => ({
       pos: String(m.partOfSpeech || '').toLowerCase(),
-      senses: (m.definitions || []).filter(d => d.definition).slice(0, 5).map(d => ({definition:clean(d.definition), example:clean(d.example)})),
-      synonyms: unique([...(m.synonyms || []), ...(m.definitions || []).flatMap(d => d.synonyms || [])]),
-      antonyms: unique([...(m.antonyms || []), ...(m.definitions || []).flatMap(d => d.antonyms || [])]),
+      senses: (m.definitions || []).filter(d => d.definition).slice(0, 5).map(d => ({definition:clean(d.definition), example:clean(d.example),examples:d.example?[clean(d.example)]:[],synonyms:unique(d.synonyms||[]),antonyms:unique(d.antonyms||[]),relationSource:'Free Dictionary API'})),
+      synonyms: unique(m.synonyms || []),
+      antonyms: unique(m.antonyms || []),
       usageExamples: unique((m.definitions || []).map(d => d.example))
     }))).filter(m => m.senses.length);
   } catch { return null; }
@@ -167,6 +168,7 @@ function beginLookup(word) {
   if (lookups.has(word)) return lookups.get(word);
   const related = relatedDictionary(word), relations = wordRelations(word), pronunciation = ipa(word);
   const candidates = [
+    [process.env.HELEN_DISABLE_WORDNET === '1' ? Promise.resolve([]) : wordnetMeanings(word).catch(() => null), 'Princeton WordNet'],
     [definitions(word), 'Wiktionary'], [related, 'Free Dictionary API'],
     [mwDefs(word), "Merriam-Webster's Learner's Dictionary"], [datamuseDefinitions(word), 'Datamuse']
   ];
@@ -190,8 +192,14 @@ function beginLookup(word) {
       const tag={noun:'n',verb:'v',adjective:'adj',adverb:'adv'}[m.pos];
       const forPos=list=>(list||[]).filter(x=>tag && x.tags.includes(tag)).map(x=>x.word);
       return {...m,relationsPending:false,
-        synonyms:unique([...(m.synonyms||[]),...matches.flatMap(r=>r.synonyms),...forPos(links.synonyms)]),
-        antonyms:unique([...(m.antonyms||[]),...matches.flatMap(r=>r.antonyms),...forPos(links.antonyms)]),
+        synonyms:unique([...(m.synonyms||[]),...matches.flatMap(r=>r.synonyms)]),
+        relatedSynonyms:unique(forPos(links.synonyms)),
+        antonyms:unique([...(m.antonyms||[]),...matches.flatMap(r=>r.antonyms)]),
+        relatedAntonyms:unique(forPos(links.antonyms)),
+        senses:m.senses.map(s => {
+          const same = matches.flatMap(r=>r.senses).filter(other=>other.definition.trim().toLowerCase()===s.definition.trim().toLowerCase());
+          return {...s,synonyms:unique([...(s.synonyms||[]),...same.flatMap(r=>r.synonyms||[])]),antonyms:unique([...(s.antonyms||[]),...same.flatMap(r=>r.antonyms||[])])};
+        }),
         relationsUnavailable:!extra && (links.synonyms===null || links.antonyms===null),
         usageExamples:unique(matches.flatMap(r=>r.usageExamples)).filter(e=>!m.senses.some(s=>s.example===e)).slice(0,4)};
     });

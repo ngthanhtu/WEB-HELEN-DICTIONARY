@@ -11,6 +11,8 @@
   "dependencies": {
     "dotenv": "^18.0.5",
     "express": "^4.19.2",
-    "express-rate-limit": "^8.7.1"
+    "express-rate-limit": "^8.7.1",
+    "node-wordnet": "^0.1.12",
+    "wordnet-db": "^3.1.14"
   }
 }
