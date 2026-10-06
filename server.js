@@ -167,16 +167,19 @@ const lookups = new Map();
 function beginLookup(word) {
   if (lookups.has(word)) return lookups.get(word);
   const related = relatedDictionary(word), relations = wordRelations(word), pronunciation = ipa(word);
+  const lexical = process.env.HELEN_DISABLE_WORDNET === '1' ? Promise.resolve([]) : wordnetMeanings(word).catch(() => null);
   const candidates = [
-    [process.env.HELEN_DISABLE_WORDNET === '1' ? Promise.resolve([]) : wordnetMeanings(word).catch(() => null), 'Princeton WordNet'],
     [definitions(word), 'Wiktionary'], [related, 'Free Dictionary API'],
     [mwDefs(word), "Merriam-Webster's Learner's Dictionary"], [datamuseDefinitions(word), 'Datamuse']
   ];
-  const first = Promise.any(candidates.map(async ([result, source]) => {
+  const first = lexical.then(meanings => {
+    if (meanings?.length) return {word,ipa:'',source:'Princeton WordNet',meanings:meanings.map(m=>({...m,relationsPending:true}))};
+    return Promise.any(candidates.map(async ([result, source]) => {
     const meanings = await result;
     if (!meanings?.length) throw new Error('No usable definitions');
     return {word, ipa:'', source, meanings:meanings.map(m => ({...m, relationsPending:true}))};
-  })).catch(async () => {
+    }));
+  }).catch(async () => {
     const meanings = await relatedDictionary(word, 15000);
     if (meanings?.length) return {word,ipa:'',source:'Free Dictionary API',meanings};
     const results = await Promise.all(candidates.map(([p]) => p));
