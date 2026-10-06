@@ -103,3 +103,12 @@ test('slow cloud dictionaries and malformed primary responses use the fallback',
     assert.equal((await response.json()).entries[0].source,'Free Dictionary API');
   }
 });
+
+test('uses exact-word Datamuse definitions when other dictionaries are unavailable',async()=>{
+  await ready;
+  const r=await fetch(`${base}/api/lookup?word=backup&from=en`);
+  assert.equal(r.status,200);
+  const d=await r.json();
+  assert.equal(d.entries[0].source,'Datamuse');
+  assert.equal(d.entries[0].meanings[0].senses[0].definition,'An independent definition.');
+});

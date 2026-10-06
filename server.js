@@ -129,6 +129,25 @@ async function relatedDictionary(word, timeout = 10000) {
   } catch { return null; }
 }
 
+// Exact-word Datamuse definitions provide another independent dictionary fallback.
+async function datamuseDefinitions(word) {
+  const r = await get(`https://api.datamuse.com/words?sp=${encodeURIComponent(word)}&md=d&max=10`, {}, 10000);
+  if (!r || !r.ok) return null;
+  try {
+    const data = await r.json();
+    const exact = Array.isArray(data) && data.find(entry => String(entry.word).toLowerCase() === word);
+    const byPos = {};
+    for (const definition of exact?.defs || []) {
+      if (typeof definition !== 'string') continue;
+      const [tag, ...parts] = definition.split('\t');
+      const pos = {n:'noun',v:'verb',adj:'adjective',adv:'adverb'}[tag] || 'word';
+      const text = clean(parts.join(' '));
+      if (text) (byPos[pos] ||= []).push({definition:text,example:''});
+    }
+    return Object.entries(byPos).map(([pos,senses]) => ({pos,senses:senses.slice(0,5),synonyms:[]}));
+  } catch { return null; }
+}
+
 // Datamuse complements dictionary entries with explicit synonym/antonym relations.
 async function wordRelations(word) {
   const load = async relation => {
@@ -152,10 +171,10 @@ app.get('/api/lookup', async (req, res) => {
     const word = (from === 'en' ? raw : await translate(raw, from, 'en')).trim().toLowerCase();
     let entries = cache.get(`d|${word}`);
     if (!entries) {
-      let [wk, ipaText, mw, related, relations] = await Promise.all([definitions(word), ipa(word), mwDefs(word), relatedDictionary(word), wordRelations(word)]); // all in parallel
+      let [wk, ipaText, mw, related, relations, backup] = await Promise.all([definitions(word), ipa(word), mwDefs(word), relatedDictionary(word), wordRelations(word), datamuseDefinitions(word)]); // all in parallel
       // Retry only when both primary sources failed, allowing slow cloud connections.
-      if (!mw && !wk?.length && related === null) related = await relatedDictionary(word, 15000);
-      const meanings = mw || (wk?.length ? wk : related?.length ? related : wk); // Merriam-Webster first, Wiktionary as fallback
+      if (!mw && !wk?.length && !backup?.length && related === null) related = await relatedDictionary(word, 15000);
+      const meanings = mw || (wk?.length ? wk : related?.length ? related : backup?.length ? backup : wk); // Merriam-Webster first, Wiktionary as fallback
       if (meanings === null) return res.status(502).json({ error: 'Cannot reach the dictionary service from this network. Check your connection and try again.' });
       if (!meanings.length) return res.status(404).json({ error: `No entry found for "${word}". Check the spelling.` });
       const enriched = meanings.map(m => {
@@ -170,7 +189,7 @@ app.get('/api/lookup', async (req, res) => {
           usageExamples: unique(matches.flatMap(r => r.usageExamples)).filter(e => !m.senses.some(s => s.example === e)).slice(0, 4)
         };
       });
-      entries = [{ word, ipa: ipaText, meanings: enriched, source: mw ? "Merriam-Webster's Learner's Dictionary" : wk?.length ? 'Wiktionary' : 'Free Dictionary API', relatedSource: [related?.length ? 'Free Dictionary API' : null, relations.synonyms !== null || relations.antonyms !== null ? 'Datamuse' : null].filter(Boolean).join(', ') || null }];
+      entries = [{ word, ipa: ipaText, meanings: enriched, source: mw ? "Merriam-Webster's Learner's Dictionary" : wk?.length ? 'Wiktionary' : related?.length ? 'Free Dictionary API' : 'Datamuse', relatedSource: [related?.length ? 'Free Dictionary API' : null, relations.synonyms !== null || relations.antonyms !== null ? 'Datamuse' : null].filter(Boolean).join(', ') || null }];
       cache.set(`d|${word}`, entries);
     }
     console.log(`lookup "${word}" ${Date.now() - t0}ms`);

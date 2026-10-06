@@ -10,6 +10,7 @@ global.fetch = async (input, opts = {}) => {
     return Response.json({responseStatus:failed ? 429 : 200, responseData:{translatedText:failed ? 'QUOTA ERROR' : `${to}:${text}`}});
   }
   if (url.hostname === 'api.datamuse.com') {
+    if (url.searchParams.has('sp')) return Response.json(url.searchParams.get('sp') === 'backup' ? [{word:'backup',defs:['n\tAn independent definition.']}] : []);
     const word=url.searchParams.get('rel_syn') || url.searchParams.get('rel_ant');
     if(word === 'offline') return new Response('',{status:503});
     return Response.json([{word:url.searchParams.has('rel_syn') ? 'cheerful' : 'unhappy',tags:['adj']},{word:'unrelated-noun',tags:['n']}]);
@@ -17,10 +18,11 @@ global.fetch = async (input, opts = {}) => {
   if (url.hostname === 'api.dictionaryapi.dev') {
     const word = url.pathname.split('/').pop();
     if (word === 'slow') await new Promise((resolve,reject)=>{const timer=setTimeout(resolve,3800);opts.signal?.addEventListener('abort',()=>{clearTimeout(timer);reject(new DOMException('Aborted','AbortError'));},{once:true});});
-    if (word === 'offline') return new Response('', {status:503});
+    if (word === 'offline' || word === 'backup') return new Response('', {status:503});
     return Response.json([{meanings:[{partOfSpeech:'adjective',synonyms:['joyful'],antonyms:['sad'],definitions:[{definition:'Feeling pleasure.',example:'She was happy to see her friend.',synonyms:['glad'],antonyms:[]}]}]}]);
   }
   if (url.hostname === 'en.wiktionary.org') {
+    if (url.pathname.endsWith('/backup')) return new Response('',{status:503});
     if (url.pathname.endsWith('/slow')) return new Response('',{status:503});
     if (url.pathname.endsWith('/malformed')) return new Response('invalid JSON');
     if (url.pathname.includes('/page/definition/')) return Response.json({en:[{partOfSpeech:'adjective',definitions:[{definition:'Feeling pleasure.'}]}]});
