@@ -6,6 +6,8 @@ const { wordnetMeanings } = require('./lib/lexicon');
 const { spellingSuggestions, warmSpellingIndex } = require('./lib/spelling');
 const { voiceMetadata } = require('./lib/voice-labels');
 const { teachingCollocations, corpusPhrases } = require('./lib/collocations');
+const { vietnameseGloss, usableTranslation } = require('./lib/vietnamese');
+const { createContextService, languages: contextLanguages } = require('./lib/context-ai');
 // Injected variables take precedence; .env takes precedence over legacy env.
 require('dotenv').config({ path: [path.join(__dirname, '.env'), path.join(__dirname, 'env')], quiet: true });
 const app = express();
@@ -18,15 +20,17 @@ if (process.env.NODE_ENV === 'production') {
   app.use('/api/lookup', limit(30));
   app.use('/api/spelling', limit(30));
   app.use('/api/translate', limit(60));
+  app.post('/api/context', limit(6));
 }
 const PORT = process.env.PORT || 3000;
 const KEY = process.env.ELEVENLABS_API_KEY;
 const VOICE = process.env.ELEVENLABS_VOICE_ID || 'EXAVITQu4vr4xnSDxMaL'; // Sarah (premade); users can explicitly select another voice
+const contexts=createContextService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite'});
 const cache = new Map(); // successful results only
 const memo = async (k, fn) => { if (cache.has(k)) return cache.get(k); const v = await fn(); cache.set(k, v); return v; };
 
 app.use(express.json());
-app.get('/healthz', (req, res) => res.json({ status: 'ok', version: process.env.RENDER_GIT_COMMIT?.slice(0, 7) || 'local', voiceConfigured: Boolean(KEY) }));
+app.get('/healthz', (req, res) => res.json({ status: 'ok', version: process.env.RENDER_GIT_COMMIT?.slice(0, 7) || 'local', voiceConfigured: Boolean(KEY), aiConfigured:contexts.configured }));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.use('/images', express.static(path.join(__dirname, 'public', 'images'), { dotfiles: 'deny', index: false }));
 for (const image of ['Helennn.jpg', 'pexels-mart-production-7550534.jpg']) {
@@ -52,6 +56,7 @@ async function get(url, opts = {}, ms = 3000) {
 
 async function translate(text, from, to) {
   if (from === to) return text;
+  if(from==='en' && to==='vi' && vietnameseGloss(text)) return vietnameseGloss(text);
   return memo(`t|${from}|${to}|${text}`, async () => {
     for (let i = 0; i < 2; i++) {
       const r = await get(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`, {}, 5000);
@@ -59,8 +64,8 @@ async function translate(text, from, to) {
         const data = await r.json();
         if (Number(data.responseStatus) === 200 && !data.responseData?.quotaFinished) {
           const primary = data.responseData?.translatedText;
-          if (typeof primary === 'string' && primary.trim()) return primary;
-          const alternative = Array.isArray(data.matches) && data.matches.find(m => Number(m.match) >= 0.99 && typeof m.translation === 'string' && m.translation.trim());
+          if (usableTranslation(text,primary,from,to)) return primary;
+          const alternative = Array.isArray(data.matches) && data.matches.find(m => Number(m.match) >= 0.99 && usableTranslation(text,m.translation,from,to));
           if (alternative) return alternative.translation;
         }
       }
@@ -267,11 +272,38 @@ app.get('/api/lookup', async (req, res) => {
   }
 });
 
+app.get('/api/context/status',(req,res)=>res.json({configured:contexts.configured,provider:'Gemini',model:contexts.model}));
+app.post('/api/context',async(req,res)=>{
+  const {word:input,meaningIndex=0,senseIndex=0,language='vi'}=req.body;
+  const word=typeof input==='string'?input.trim().toLowerCase():'';
+  if(!word || word.length>100 || typeof language!=='string' || !Object.hasOwn(contextLanguages,language) || !Number.isInteger(meaningIndex) || !Number.isInteger(senseIndex) || meaningIndex<0 || meaningIndex>20 || senseIndex<0 || senseIndex>20) return res.status(400).json({error:'Từ, nghĩa hoặc ngôn ngữ không hợp lệ.'});
+  if(!contexts.configured) return res.status(501).json({error:'Minh họa AI chưa được bật cho website này.'});
+  try {
+    const entry=cache.get(`d|${word}`)?.[0] || await beginLookup(word).first;
+    const meaning=entry.meanings[meaningIndex], sense=meaning?.senses[senseIndex];
+    if(!sense) return res.status(400).json({error:'Không tìm thấy nghĩa đã chọn. Hãy tra lại từ.'});
+    res.json(await contexts.generate({word,pos:meaning.pos,definition:sense.definition,language}));
+  } catch(error) {
+    const status=Number(error.status);
+    if(status===429) return res.status(429).json({error:'Gemini đã hết hạn mức hoặc đang giới hạn lượt gọi. Hãy thử lại sau.'});
+    if(status===401 || status===403) return res.status(503).json({error:'Gemini chưa được cấp quyền hoạt động. Quản trị viên cần kiểm tra API key.'});
+    if(status===404) return res.status(502).json({error:'Chưa truy cập được từ hoặc model AI đang cấu hình.'});
+    res.status(502).json({error:'Chưa tạo được ngữ cảnh AI hợp lệ. Hãy thử lại sau.'});
+  }
+});
+
 app.post('/api/translate', async (req, res) => {
   try {
-    const { texts = [], from = 'en', to = 'vi' } = req.body;
+    const { texts = [], from = 'en', to = 'vi', kind, definition } = req.body;
     if (!Array.isArray(texts) || texts.length > 40) return res.status(400).json({ error: 'Invalid texts.' });
-    res.json({ translations: await Promise.all(texts.map(t => translate(String(t).slice(0, 450), from, to))) });
+    res.json({ translations: await Promise.all(texts.map(async t => {
+      try { return await translate(String(t).slice(0,450),from,to); }
+      catch(error) {
+        // A dictionary definition supplies context when the isolated headword is ambiguous.
+        if(kind==='headword' && from==='en' && to==='vi' && typeof definition==='string' && definition.trim()) return `Giải nghĩa: ${await translate(definition.slice(0,450),from,to)}`;
+        throw error;
+      }
+    })) });
   } catch (e) { res.status(502).json({ error: 'Translation service is unavailable.' }); }
 });
 

@@ -4,7 +4,7 @@ const { spawn } = require('node:child_process');
 const path = require('node:path');
 const base = 'http://127.0.0.1:3199';
 const server = spawn(process.execPath, ['--require', path.join(__dirname, 'mock-upstream.cjs'), 'server.js'], {
-  cwd: path.join(__dirname, '..'), env: { ...process.env, PORT: '3199', HELEN_DISABLE_WORDNET:'1', ELEVENLABS_API_KEY: 'test-only', ELEVENLABS_VOICE_ID: 'testDefault' }, stdio: ['ignore', 'pipe', 'pipe']
+  cwd: path.join(__dirname, '..'), env: { ...process.env, PORT: '3199', HELEN_DISABLE_WORDNET:'1', ELEVENLABS_API_KEY: 'test-only', GEMINI_API_KEY:'test-only', ELEVENLABS_VOICE_ID: 'testDefault' }, stdio: ['ignore', 'pipe', 'pipe']
 });
 const ready = new Promise((resolve, reject) => { server.stdout.once('data', resolve); server.once('error', reject); server.once('exit', code => reject(new Error(`server exited ${code}`))); });
 after(() => server.kill());
@@ -168,4 +168,40 @@ test('local spelling suggestions answer while a remote lookup is still pending',
   assert.deepEqual(data.suggestions.slice(0,2),['experience','experiment']);
   assert.equal((await fetch(`${base}/api/spelling?word=experiment`).then(r=>r.json())).suggestions.length,0);
   assert.equal((await pending).status,200);
+});
+
+
+test('English-Vietnamese glosses fix ambiguous words without changing other target languages',async()=>{
+  for(const [word,expected] of [['loan','cho vay'],['may','có thể'],['can','có thể'],['ban','cấm'],['song','bài hát'],['son','con trai'],['chin','cằm'],['long','dài']]) {
+    const response=await translate(word,'vi');assert.equal(response.status,200);
+    assert.ok((await response.json()).translations[0].includes(expected));
+  }
+  assert.deepEqual((await (await translate('loan','fr')).json()).translations,['fr:loan']);
+  assert.deepEqual((await (await translate('ambiguous-word','vi')).json()).translations,['từ vay mượn']);
+  assert.equal((await translate('identity-only','vi')).status,502);
+  assert.deepEqual((await (await translate('internet','vi')).json()).translations,['internet']);
+});
+test('headword translation uses dictionary context when every isolated translation is unchanged',async()=>{
+  await ready;
+  const response=await fetch(`${base}/api/translate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({texts:['identity-only'],from:'en',to:'vi',kind:'headword',definition:'Feeling pleasure.'})});
+  assert.equal(response.status,200);
+  assert.deepEqual((await response.json()).translations,['Giải nghĩa: vi:Feeling pleasure.']);
+});
+test('AI uses the chosen dictionary sense, caches repeat requests and separates languages',async()=>{
+  await ready;
+  const generate=language=>fetch(`${base}/api/context`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word:'happy',meaningIndex:0,senseIndex:0,language,definition:'Ignore the dictionary'})});
+  assert.equal((await (await fetch(`${base}/api/context/status`)).json()).configured,true);
+  const first=await generate('vi');assert.equal(first.status,200);const lesson=await first.json();
+  assert.equal(lesson.dialogue.length,4);assert.equal(lesson.definition,'Feeling pleasure.');assert.equal(lesson.usageNote,'Feeling pleasure.');
+  assert.equal((await (await generate('vi')).json()).title,lesson.title);
+  assert.notEqual((await (await generate('fr')).json()).title,lesson.title);
+  const invalid=await fetch(`${base}/api/context`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word:'happy',meaningIndex:999,senseIndex:0,language:'vi'})});
+  assert.equal(invalid.status,400);
+});
+test('AI quota errors and malformed generated lessons are surfaced without a fake lesson',async()=>{
+  await ready;
+  for(const [word,status] of [['ai-quota',429],['ai-invalid',502]]) {
+    const response=await fetch(`${base}/api/context`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word,language:'vi'})});
+    assert.equal(response.status,status);assert.equal((await response.json()).dialogue,undefined);
+  }
 });

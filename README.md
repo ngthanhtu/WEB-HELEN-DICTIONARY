@@ -80,3 +80,30 @@ Kiểm tra sau triển khai: tra `experimence` → bấm `experiment` → kiểm
 Khi tra một từ tiếng Anh, trình duyệt chờ ngắn rồi gọi `/api/spelling?word=...` nếu yêu cầu tra cứu vẫn đang chạy. Danh sách từ gần giống được tính từ WordNet ngay trên server và hiển thị dưới nhãn **Gợi ý nhanh**; đây chỉ là gợi ý cách viết trong lúc các nguồn trực tuyến xác minh từ. Kết quả tra chính xác vẫn có ưu tiên: khi có định nghĩa, giao diện hiển thị từ đã nhập; khi xác nhận không có kết quả, nhãn gợi ý chuyển thành thông báo không khớp. Bấm gợi ý sẽ tra đúng từ đã chọn. Chỉ sử dụng dữ liệu WordNet cho từ tiếng Anh để tránh gợi ý sai ngôn ngữ. Server làm nóng danh sách chính tả khi khởi động; gọi `/api/spelling?word=experiment` trả danh sách rỗng, còn `experimence` trả các gợi ý gần nhất.
 
 Nút mắt và loa, ô ngôn ngữ, giọng và ô tìm kiếm có viền sáng, bóng nhẹ và phản hồi khi hover/focus. Màu được điều chỉnh cho cả Light/Dark. Từ yêu thích và lịch sử có thẻ nổi bật; nội dung từ liên quan, ví dụ bổ sung và collocations nằm trong thẻ **Khám phá thêm**, mặc định đóng. Bấm tiêu đề hoặc dùng bàn phím để mở; khi dữ liệu bổ sung tải xong, trạng thái mở được giữ. Loại từ, định nghĩa, ví dụ trong từng nghĩa và quan hệ đồng/trái nghĩa của từng nghĩa vẫn đọc được ngay trên trang.
+
+## Dịch từ dễ nhầm giữa tiếng Anh và tiếng Việt
+
+`loan` được giải nghĩa là “khoản vay; cho vay, cho mượn; từ vay mượn”, thay vì lặp lại chữ `loan`. `lib/vietnamese.js` có các giải nghĩa ngắn biên soạn cho các từ thường dễ nhầm như loan, may, can, ban, song, son, long, mine, bank… Khi dịch Anh–Việt, kết quả lặp nguyên văn tiếng Anh bị loại; ứng dụng thử kết quả dịch phù hợp khác. Các từ vay mượn được dùng nguyên dạng trong tiếng Việt như internet, email, taxi… vẫn được chấp nhận. Nếu dịch riêng đầu mục không có kết quả hợp lệ, định nghĩa của từ cung cấp ngữ cảnh để hiển thị giải nghĩa tiếng Việt. Đây là bước kiểm soát bản dịch, không bảo đảm mọi nghĩa của mọi từ đều được dịch hoàn hảo. Từ nhiều nghĩa vẫn cần đọc nghĩa được đánh số và ví dụ.
+
+## Tìm bằng giọng nói
+
+Bấm micro trên thanh tìm kiếm, cấp quyền micro khi trình duyệt hỏi và đọc từ bằng ngôn ngữ chọn ở bên trái thanh tìm kiếm. Chỉ kết quả nhận diện cuối cùng mới được dùng để tra cứu; bấm micro lần nữa để dừng. Gõ phím hoặc đổi ngôn ngữ nhập sẽ hủy lượt nghe đang chạy. Trình duyệt không hỗ trợ, thiếu micro, từ chối quyền, lỗi mạng hoặc không nghe được tiếng đều có thông báo riêng.
+
+Dùng Web Speech API (`SpeechRecognition` hoặc `webkitSpeechRecognition`), phù hợp với Chrome và các trình duyệt có hỗ trợ; cần HTTPS hoặc localhost. Dịch vụ nhận diện của một số trình duyệt gửi âm thanh tới nhà cung cấp của trình duyệt và cần Internet. Server Helen Dictionary không nhận/tích trữ bản ghi âm. Các kiểm thử nhận diện dùng sự kiện mô phỏng; kiểm tra âm thanh thật trên thiết bị có micro. Tham khảo MDN: https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition.
+
+## Minh họa ngữ cảnh bằng Gemini
+
+Phần **Minh họa ngữ cảnh** trong **Khám phá thêm** cho phép chọn một nghĩa rồi tạo hội thoại song ngữ, tình huống thực tế, ghi chú sử dụng và prompt tiếng Anh cho video hoạt hình. Hội thoại/tình huống có loa dùng giọng đang chọn; prompt có nút sao chép để dùng ở công cụ tạo video. Bản dịch theo ngôn ngữ **Meanings in**. Nội dung có nhãn AI tạo, không được dùng thay cho dữ liệu định nghĩa của nguồn từ điển.
+
+Ứng dụng dùng SDK Google Gen AI chính thức (`@google/genai`), yêu cầu Node.js 20 trở lên; Render tiếp tục dùng Node.js 24. Không cần thêm Python. Server tự lấy định nghĩa tương ứng từ nguồn từ điển và truyền cho Gemini; client chỉ gửi từ, chỉ số nghĩa và ngôn ngữ. API key chỉ nằm ở server.
+
+Bật trên Render:
+
+1. Tạo API key ở https://aistudio.google.com/app/api-keys.
+2. Render → Web Service → **Environment** → thêm **GEMINI_API_KEY** và dán key vào ô Value bảo mật; Save/Deploy. Không commit hoặc gửi key trong chat.
+3. Mặc định dùng `gemini-2.5-flash-lite` để ưu tiên tốc độ/chi phí; có thể đặt **GEMINI_MODEL** thành model được tài khoản hỗ trợ. Local dùng các biến tương tự trong `.env`.
+4. `/healthz` có `aiConfigured`, `/api/context/status` có `configured`; chúng xác nhận đã cấu hình key, không kiểm tra key/quota. Mở trang, tra loan, mở Khám phá thêm, chọn nghĩa và bấm Tạo ngữ cảnh để kiểm tra thực tế.
+
+Gemini chỉ được gọi khi bấm tạo. Các yêu cầu trùng được dùng chung; kết quả cache theo từ, nghĩa, ngôn ngữ trong 24 giờ, tối đa 200 mục trên mỗi tiến trình. Restart Render sẽ mất cache. Giới hạn production: 6 yêu cầu tạo mỗi phút/IP, tối đa 2200 token đầu ra/yêu cầu, không tự retry khi quota báo lỗi. Free tier/hạn mức phụ thuộc tài khoản, model và chính sách Google; kiểm tra trong AI Studio. Chưa có key thì giao diện ghi rõ AI chưa bật; key/quota không hợp lệ thì báo lỗi và không hiển thị bài học giả.
+
+Cloud có allowlist cần thêm `generativelanguage.googleapis.com` khi kiểm tra Gemini thật. Tham khảo SDK: https://github.com/googleapis/js-genai.

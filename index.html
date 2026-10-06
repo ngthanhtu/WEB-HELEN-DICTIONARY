@@ -87,6 +87,18 @@ main{max-width:900px;margin:0 auto;padding:0 var(--space-6) var(--space-7)}
 .word-link,.favorite{border:1px solid var(--action);background:var(--surface-base);color:var(--action);border-radius:12px;padding:10px 14px;cursor:pointer;min-height:44px;overflow-wrap:anywhere;max-width:100%;box-shadow:0 4px 12px var(--soft-glow);transition:background .2s,color .2s,box-shadow .2s,transform .2s}
 .word-link:hover,.favorite:hover{background:var(--action);color:#fff;box-shadow:0 0 0 4px var(--soft-glow);transform:translateY(-2px)}
 .suggestions-list{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.mic{display:grid;place-items:center;flex:none;width:44px;height:44px;border:0;border-radius:50%;background:var(--action);color:#fff;cursor:pointer;box-shadow:0 4px 12px var(--soft-glow)}
+.mic svg{width:22px;height:22px}.mic:hover{background:var(--action-hover)}.mic:disabled{opacity:.45;cursor:not-allowed}
+.mic[aria-pressed=true]{background:#c4334f;box-shadow:0 0 0 5px rgba(196,51,79,.2)}
+.speech-status{font-size:13px!important;margin:10px 0 0!important;min-height:20px}
+.ai-study{margin-top:24px;padding:16px;border:1px solid var(--border);border-radius:14px;background:var(--surface-base)}
+.ai-study h3{margin-top:0}.ai-study>p,.ai-status{font-size:14px}.ai-badge{display:inline-block;font-size:12px;background:var(--action);color:#fff;padding:3px 8px;border-radius:8px;vertical-align:middle}
+.ai-controls{display:flex;align-items:end;gap:12px;flex-wrap:wrap}.ai-controls label{flex:1 1 250px;min-width:0;font-size:14px}
+.ai-sense{display:block;width:100%;min-width:0;max-width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--surface-base);color:var(--text-primary);margin-top:6px}
+.ai-detail{margin:14px 0;border:1px solid var(--border);border-radius:12px;padding:12px}.ai-detail summary{font-weight:700;cursor:pointer}
+.dialogue-line{padding:12px;margin:12px 24px 12px 0;background:var(--translation-bg);border-radius:12px}.dialogue-alt{margin:12px 0 12px 24px;border-left:3px solid var(--action)}
+.dialogue-line p{margin:6px 0}.ai-translation{color:var(--text-tertiary);font-size:14px}.ai-note{padding:12px;border-left:3px solid var(--accent);background:var(--translation-bg);font-size:14px}
+.video-prompt{width:100%;display:block;resize:vertical;background:var(--surface-base);color:var(--text-primary);border:1px solid var(--border);border-radius:10px;padding:12px;font:inherit;font-size:14px;margin:12px 0}
 .favorite[aria-pressed=true]{background:var(--accent);color:#1d2a57}
 .collocations{background:var(--translation-bg);border-left:3px solid var(--accent);border-radius:0 12px 12px 0;padding:16px;margin-top:24px}
 .collocations h3{margin-top:0}.collocations h4{margin:16px 0 8px}.collocations ul{padding-left:24px}.collocations li{margin:12px 0}.collocations p{font-size:14px}.collocations .ex{display:block}
@@ -132,8 +144,10 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
     <form class="search" id="form" role="search">
       <select id="from" aria-label="Search language"></select>
       <input id="q" type="search" placeholder="Search a word" autocomplete="off" aria-label="Word to search" required>
+      <button class="mic" id="mic" type="button" aria-label="Tìm bằng giọng nói" aria-pressed="false" title="Tìm bằng giọng nói"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/></svg></button>
       <button class="btn" type="submit">Search</button>
     </form>
+    <p class="speech-status" id="speech-status" role="status"></p>
   </div>
   <!-- Paste your image link in IMAGES.hero below. Empty = blank box. -->
   <div class="img-slot" id="slot-hero"></div>
@@ -241,8 +255,8 @@ async function speak(text, btn) {
     $('#voice-status').textContent = `${e.message || 'Selected voice is unavailable.'} Your selection has been kept.`;
   } finally { btn.removeAttribute('aria-busy'); }
 }
-async function tr(texts, from, to) {
-  const r = await fetch(`${API}/api/translate`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({texts, from, to})});
+async function tr(texts, from, to, context = {}) {
+  const r = await fetch(`${API}/api/translate`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({texts, from, to, ...context})});
   if (!r.ok) throw 0; return (await r.json()).translations;
 }
 function msg(t, err, variant = '') { $('#out').innerHTML = `<div class="status ${err?'error':variant}" role="${err?'alert':'status'}">${esc(t)}</div>`; }
@@ -310,14 +324,132 @@ async function searchWord({ scroll = true, recordHistory = true } = {}) {
   } catch { if (request === searchRequest) msg('Cannot reach the server. Check that it is running.', true); }
   finally { resolved=true; clearTimeout(spellingTimer); }
 }
-$('#form').addEventListener('submit', e => { e.preventDefault(); searchWord(); });
+$('#form').addEventListener('submit', e => { e.preventDefault(); cancelSpeech(); searchWord(); });
+
+const SPEECH_LANGS={en:'en-US',vi:'vi-VN',es:'es-ES',fr:'fr-FR',de:'de-DE',it:'it-IT',pt:'pt-PT',ru:'ru-RU',ja:'ja-JP',ko:'ko-KR','zh-CN':'zh-CN','zh-TW':'zh-TW',ar:'ar-SA',hi:'hi-IN',th:'th-TH',id:'id-ID',ms:'ms-MY',tr:'tr-TR',nl:'nl-NL',pl:'pl-PL',sv:'sv-SE',el:'el-GR',he:'he-IL',uk:'uk-UA'};
+let speech=null, speechActive=false, speechCanceled=false;
+function resetMic() {
+  speechActive=false; $('#mic').setAttribute('aria-pressed','false');
+  $('#mic').setAttribute('aria-label','Tìm bằng giọng nói'); $('#mic').title='Tìm bằng giọng nói';
+}
+function cancelSpeech() {
+  if(!speechActive) return;
+  speechCanceled=true; speech?.abort(); resetMic();
+  $('#speech-status').textContent='Đã dừng micro.';
+}
+function setupSpeechSearch() {
+  const Recognition=globalThis.SpeechRecognition || globalThis.webkitSpeechRecognition;
+  const button=$('#mic'), status=$('#speech-status');
+  if(!Recognition || globalThis.isSecureContext===false) {
+    button.disabled=true;
+    status.textContent=!Recognition?'Trình duyệt này chưa hỗ trợ tìm bằng giọng nói. Bạn có thể thử Chrome.':'Micro cần HTTPS hoặc localhost.';
+    return;
+  }
+  status.textContent='Bấm micro và đọc từ bằng ngôn ngữ đang chọn trong ô tìm kiếm.';
+  button.addEventListener('click',()=>{
+    if(speechActive) { try {speech.stop();} catch {resetMic();} return; }
+    speech=new Recognition(); speech.lang=SPEECH_LANGS[$('#from').value] || 'en-US';
+    speech.continuous=false; speech.interimResults=true; speech.maxAlternatives=1;
+    speechCanceled=false; speechActive=true; let received=false, failed=false;
+    const current=speech;
+    button.setAttribute('aria-pressed','true'); button.setAttribute('aria-label','Dừng micro'); button.title='Dừng micro';
+    audio?.pause(); status.textContent='Đang mở micro…';
+    current.onstart=()=>{if(!speechCanceled && current===speech) status.textContent='Đang nghe… Bấm micro lần nữa để dừng.';};
+    current.onresult=event=>{
+      if(speechCanceled || current!==speech) return;
+      const result=event.results[event.resultIndex ?? 0];
+      const transcript=String(result?.[0]?.transcript || '').trim().replace(/[.!?。！？]+$/,'').trim().slice(0,100);
+      if(!transcript) return;
+      status.textContent=`Nghe thấy: “${transcript}”${result.isFinal?'':'…'}`;
+      if(result.isFinal && !received) { received=true; $('#q').value=transcript; remember('helen-query',transcript); searchWord(); }
+    };
+    current.onerror=event=>{
+      if(current!==speech || speechCanceled) return;
+      failed=true;
+      const messages={'not-allowed':'Bạn chưa cho phép micro. Hãy cấp quyền micro cho trang rồi thử lại.','service-not-allowed':'Trình duyệt không cho phép dịch vụ nhận diện giọng nói.','audio-capture':'Không tìm thấy micro đang hoạt động.','no-speech':'Chưa nghe được từ nào. Bấm micro và thử lại.','network':'Dịch vụ nhận diện chưa kết nối được. Kiểm tra Internet rồi thử lại.','language-not-supported':'Dịch vụ nhận diện chưa hỗ trợ ngôn ngữ đang chọn.','aborted':'Đã dừng micro.'};
+      status.textContent=messages[event.error] || 'Chưa nhận diện được giọng nói. Hãy thử lại.'; resetMic();
+    };
+    current.onend=()=>{if(current!==speech) return; resetMic(); if(!received && !failed && !speechCanceled) status.textContent='Chưa nhận được từ nào. Bấm micro và thử lại.';};
+    try { current.start(); } catch { resetMic(); status.textContent='Không mở được micro. Hãy thử lại.'; }
+  });
+  $('#q').addEventListener('input',cancelSpeech); $('#from').addEventListener('change',cancelSpeech);
+}
+setupSpeechSearch();
+
+let aiConfigured=null;
+const aiChoices=new Map(), aiLessons=new Map(), aiPanels=new Map();
+async function loadAIStatus() {
+  try {const response=await fetch(`${API}/api/context/status`);const status=await response.json();aiConfigured=response.ok && status.configured===true;} catch {aiConfigured=false;}
+  aiPanels.forEach(panel=>panel.draw());
+}
+function createAISection(entry) {
+  const senses=entry.meanings.flatMap((meaning,meaningIndex)=>meaning.senses.map((sense,senseIndex)=>({meaningIndex,senseIndex,pos:meaning.pos,definition:sense.definition,value:`${meaningIndex}:${senseIndex}`})));
+  if(!senses.length) return null;
+  const root=document.createElement('section');root.className='ai-study';
+  root.innerHTML='<h3>Minh họa ngữ cảnh <span class="ai-badge">AI</span></h3><p>Chọn nghĩa để luyện qua hội thoại, tình huống và prompt video hoạt hình.</p><div class="ai-controls"><label>Nghĩa cần học<select class="ai-sense" aria-label="Nghĩa dùng để tạo ngữ cảnh AI"></select></label><button class="btn ai-generate" type="button">Tạo ngữ cảnh</button></div><p class="ai-status" role="status"></p><div class="ai-result"></div>';
+  const select=root.querySelector('.ai-sense'), button=root.querySelector('.ai-generate'), status=root.querySelector('.ai-status'), output=root.querySelector('.ai-result');
+  senses.forEach(sense=>select.add(new Option(`${sense.pos} — ${sense.definition}`,sense.value)));
+  const chosen=aiChoices.get(entry.word);select.value=senses.some(sense=>sense.value===chosen)?chosen:senses[0].value;
+  function key() {return JSON.stringify([entry.word,select.value,$('#target').value]);}
+  function renderLesson(lesson) {
+    output.replaceChildren();
+    const heading=document.createElement('h4');heading.textContent=lesson.title;output.append(heading);
+    const attribution=document.createElement('p');attribution.className='src';attribution.textContent=`Ngữ cảnh do Gemini tạo • bản dịch: ${LANGS[lesson.language] || lesson.language}.`;output.append(attribution);
+    const lessonKey=key();
+    function keepOpen(section,name,initial=false) {
+      section.open=aiLessons.get(lessonKey)?.open?.[name] ?? initial;
+      section.addEventListener('toggle',()=>{const state=aiLessons.get(lessonKey);if(state) {state.open ||= {};state.open[name]=section.open;}});
+    }
+    const dialogue=document.createElement('details');dialogue.className='ai-detail';keepOpen(dialogue,'dialogue',true);dialogue.innerHTML='<summary>Hội thoại ngắn</summary>';
+    lesson.dialogue.forEach((turn,index)=>{
+      const line=document.createElement('div');line.className=`dialogue-line ${index%2?'dialogue-alt':''}`;
+      line.innerHTML=`<strong>${esc(turn.speaker)}</strong><p>${esc(turn.text)} <button class="say example-say" type="button" aria-label="Hear dialogue line">🔊</button></p><p class="ai-translation">${esc(turn.translation)}</p>`;
+      line.querySelector('button').onclick=event=>speak(turn.text,event.currentTarget);dialogue.append(line);
+    });output.append(dialogue);
+    const scenario=document.createElement('details');scenario.className='ai-detail';keepOpen(scenario,'scenario');
+    scenario.innerHTML=`<summary>Tình huống thực tế</summary><p>${esc(lesson.scenario.text)} <button class="say example-say" type="button" aria-label="Hear AI scenario">🔊</button></p><p class="ai-translation">${esc(lesson.scenario.translation)}</p>`;
+    scenario.querySelector('button').onclick=event=>speak(lesson.scenario.text,event.currentTarget);output.append(scenario);
+    const note=document.createElement('p');note.className='ai-note';note.textContent=lesson.usageNote;output.append(note);
+    const video=document.createElement('details');video.className='ai-detail';keepOpen(video,'video');
+    video.innerHTML='<summary>Prompt video hoạt hình</summary><p>Prompt tiếng Anh để bạn dùng với công cụ tạo video.</p><textarea class="video-prompt" rows="6" readonly aria-label="Prompt video hoạt hình"></textarea><button class="word-link copy-prompt" type="button">Sao chép prompt</button><span class="copy-status" role="status"></span>';
+    video.querySelector('textarea').value=lesson.videoPrompt;
+    video.querySelector('button').onclick=async()=>{
+      try {await navigator.clipboard.writeText(lesson.videoPrompt);video.querySelector('.copy-status').textContent=' Đã sao chép.';}
+      catch {video.querySelector('textarea').focus();video.querySelector('textarea').select();video.querySelector('.copy-status').textContent=' Chọn sao chép văn bản hoặc nhấn Ctrl/Cmd + C.';}
+    };output.append(video);
+  }
+  function draw() {
+    const lesson=aiLessons.get(key());
+    button.disabled=aiConfigured!==true || Boolean(lesson?.busy);
+    button.setAttribute('aria-busy',String(Boolean(lesson?.busy)));
+    button.textContent=lesson?.busy?'Đang tạo…':lesson?.data?'Xem ngữ cảnh đã tạo':'Tạo ngữ cảnh';
+    status.textContent=aiConfigured===null?'Đang kiểm tra dịch vụ AI…':aiConfigured===false?'Minh họa AI chưa được bật cho website này.':lesson?.busy?'Đang tạo ngữ cảnh theo nghĩa đã chọn…':lesson?.error || `Bản dịch theo ngôn ngữ Meanings in: ${LANGS[$('#target').value]}.`;
+    if(lesson?.data) renderLesson(lesson.data); else output.replaceChildren();
+  }
+  select.addEventListener('change',()=>{aiChoices.set(entry.word,select.value);draw();});
+  button.onclick=async()=>{
+    const selected=senses.find(sense=>sense.value===select.value), language=$('#target').value, requestKey=key();
+    if(!selected || aiConfigured!==true || aiLessons.get(requestKey)?.busy) return;
+    if(aiLessons.get(requestKey)?.data) {draw();return;}
+    aiLessons.set(requestKey,{busy:true});draw();
+    try {
+      const response=await fetch(`${API}/api/context`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word:entry.word,meaningIndex:selected.meaningIndex,senseIndex:selected.senseIndex,language})});
+      const data=await response.json();if(!response.ok) throw new Error(data.error || 'Chưa tạo được ngữ cảnh AI.');
+      aiLessons.set(requestKey,{data});
+    } catch(error) {aiLessons.set(requestKey,{error:error.message || 'Chưa kết nối được dịch vụ AI. Hãy thử lại sau.'});}
+    aiPanels.get(entry.word)?.draw();
+  };
+  aiPanels.set(entry.word,{draw});draw();return root;
+}
+loadAIStatus();
 
 async function updateWordTranslation() {
   const request = ++targetRequest, to = $('#target').value, result = lastResult;
   const box = $('#word-translation'); if (!box || !result) return;
   box.textContent = 'Translating word…';
   try {
-    const translated = (await tr([result.word], 'en', to))[0];
+    const definition=result.entries?.[0]?.meanings?.[0]?.senses?.[0]?.definition || '';
+    const translated = (await tr([result.word], 'en', to, {kind:'headword',definition}))[0];
     if (request === targetRequest && result === lastResult) box.textContent = `${LANGS[to]}: ${translated}`;
   } catch { if (request === targetRequest) box.textContent = 'Word translation failed. Try again.'; }
 }
@@ -331,7 +463,7 @@ function render(d, scroll = true) {
     const el = document.createElement('article'); el.className = 'entry';
     el.innerHTML = `<div class="hw"><h2>${esc(en.word)}</h2>${en.ipa ? `<span class="ipa" aria-label="IPA">${esc(en.ipa)}</span>` : ''}<button class="say" type="button" aria-label="Hear pronunciation of ${esc(en.word)}">🔊</button><button class="favorite" type="button"></button></div><div id="library-status" role="status"></div>`;
     const extraCard=document.createElement('details'); extraCard.className='extra-card';
-    extraCard.innerHTML='<summary><span class="extra-title">Khám phá thêm <small>Collocations · từ liên quan · ví dụ</small></span><span class="extra-indicator" aria-hidden="true">+</span></summary>';
+    extraCard.innerHTML='<summary><span class="extra-title">Khám phá thêm <small>Collocations · ngữ cảnh AI · từ liên quan</small></span><span class="extra-indicator" aria-hidden="true">+</span></summary>';
     const extraBody=document.createElement('div'); extraBody.className='extra-body'; extraCard.append(extraBody);
     el.querySelector('.say').onclick = ev => speak(en.word, ev.currentTarget);
     const favorite=el.querySelector('.favorite'); updateFavoriteButton(favorite,en.word);
@@ -411,6 +543,7 @@ function render(d, scroll = true) {
     }
     if(!collocationData.teaching.length && !collocationData.corpus.length) phrases.insertAdjacentHTML('beforeend',`<p class="${collocationData.pending?'pending':''}">${collocationData.pending?'Đang tải cụm từ…':collocationData.unavailable?'Chưa kết nối được nguồn cụm từ. Hãy thử lại sau.':'Nguồn hiện tại chưa có cụm từ phù hợp cho từ này.'}</p>`);
     extraBody.append(phrases);
+    const aiSection=createAISection(en);if(aiSection) extraBody.append(aiSection);
     if (en.relatedSource) extraBody.insertAdjacentHTML('beforeend', `<p class="src">Related words and additional examples: ${esc(en.relatedSource)}. Chọn từ thay thế theo nghĩa và ngữ cảnh; từ đồng nghĩa/trái nghĩa dưới mỗi nghĩa được nguồn xác nhận; gợi ý theo từ loại nằm trong mục Từ liên quan.</p>`);
     el.append(extraCard);
     out.append(el);
@@ -424,6 +557,7 @@ $('#target').addEventListener('change', () => {
   document.querySelectorAll('.tr').forEach(box => { box.hidden = true; });
   document.querySelectorAll('.eye').forEach(b => { b.setAttribute('aria-pressed', 'false'); b.setAttribute('aria-label', 'Show translation'); b.textContent = '👁'; });
   updateWordTranslation();
+  aiPanels.forEach(panel=>panel.draw());
 });
 // Re-run the saved lookup so results remain current after a reload.
 if ($('#q').value.trim()) searchWord({ scroll: false, recordHistory: false });

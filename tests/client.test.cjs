@@ -3,21 +3,22 @@ const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const fs = require('node:fs');
 const script = fs.readFileSync(require('node:path').join(__dirname,'../index.html'),'utf8').split('<script>')[1].split('</script>')[0];
-function page(saved = {}, lookupFetch = null) {
+function page(saved = {}, lookupFetch = null, browser = {}) {
   const elements = new Map(), created = [];
   const element = id => {
-    if (!elements.has(id)) elements.set(id,{value:'',textContent:'',events:{},innerHTML:'',append(){},insertAdjacentHTML(){},querySelector(){return null;},add(option){(this.options ||= []).push(option);},replaceChildren(){this.options=[];},setAttribute(){},removeAttribute(){},addEventListener(name,fn){this.events[name]=fn;}});
+    if (!elements.has(id)) elements.set(id,{value:'',textContent:'',events:{},innerHTML:'',append(){},insertAdjacentHTML(){},querySelector(){return null;},add(option){(this.options ||= []).push(option);},replaceChildren(){this.options=[];},setAttribute(name,value){(this.attributes ||= {})[name]=value;},getAttribute(name){return this.attributes?.[name];},removeAttribute(name){if(this.attributes) delete this.attributes[name];},addEventListener(name,fn){const before=this.events[name];this.events[name]=(...args)=>{before?.(...args);return fn(...args);};}});
     return elements.get(id);
   };
   const requests=[];
   const context = vm.createContext({document:{documentElement:{dataset:{}},createElement:()=>{ const node=element(`#created-${created.length}`), children=new Map(); node.querySelectorAll=sel=>[node.querySelector(sel)]; node.querySelector=sel=>{if(!children.has(sel)) children.set(sel,element(`#child-${created.length}-${sel}`)); return children.get(sel);}; created.push(node); return node; },querySelector:element,querySelectorAll:()=>[]}, localStorage:{getItem:k=>saved[k],setItem:(k,v)=>saved[k]=v}, Image:class {}, Option:class {constructor(text,value){this.text=text;this.value=value;}}, URL, Audio:class {}, setTimeout, clearTimeout, fetch:async(url,options)=>{
     requests.push({url,options});
+    if(url.includes('/api/context/status')) return {ok:true,json:async()=>({configured:false})};
     if(url.includes('/api/voices')) return {ok:true,json:async()=>({in_use:'Rachel',voices:[{name:'Rachel',voice_id:'Rachel',category:'premade',dialect:'Ame'},{name:'Sarah',voice_id:'Sarah',category:'premade',dialect:'Eng'}]})};
     if(url.includes('/api/spelling')) return {ok:true,json:async()=>({word:new URL(url,'http://test').searchParams.get('word'),suggestions:['experience','experiment']})};
     if(url.includes('/api/lookup')) { if(lookupFetch) return lookupFetch(url); const query = new URL(url, 'http://test').searchParams; if(query.get('word')==='experimence') return {ok:false,status:404,json:async()=>({word:'experimence',suggestions:['experience','experiment']})}; return {ok:true,json:async()=>({query:query.get('word'),word:'hello',from:query.get('from'),entries:[{word:'hello',meanings:[],source:'test'}]})}; }
     if(url.includes('/api/tts')) return {ok:false};
     const body=JSON.parse(options.body); return {ok:true,json:async()=>({translations:[`${body.to}:hello`]})};
-  }});
+  },...browser});
   vm.runInContext(script,context);
   return {context,element,requests,saved,created};
 }
@@ -157,4 +158,32 @@ test('shows spelling links before the slow lookup ends and ignores its stale res
   await oldLookup;
   assert.equal(vm.runInContext('lastResult.word',p.context),'experience');
   assert.ok(!p.element('#out').innerHTML.includes('Không tìm thấy từ khớp'));
+});
+
+
+test('voice search waits for a final transcript and uses the chosen input language',async()=>{
+  let recognizer;
+  class Recognition {constructor(){recognizer=this;}start(){this.onstart();}stop(){this.onend();}abort(){this.onend();}}
+  const p=page({},null,{SpeechRecognition:Recognition,isSecureContext:true});
+  p.element('#from').value='vi';p.element('#mic').events.click();
+  assert.equal(recognizer.lang,'vi-VN');assert.equal(p.element('#mic').getAttribute('aria-pressed'),'true');
+  recognizer.onresult({resultIndex:0,results:[Object.assign([{transcript:'xin chào'}],{isFinal:false})]});
+  assert.ok(!p.requests.some(request=>request.url.includes('/api/lookup')));
+  recognizer.onresult({resultIndex:0,results:[Object.assign([{transcript:'xin chào.'}],{isFinal:true})]});
+  await new Promise(resolve=>setImmediate(resolve));recognizer.onend();
+  assert.equal(p.element('#q').value,'xin chào');assert.equal(p.saved['helen-query'],'xin chào');
+  const request=p.requests.find(request=>request.url.includes('/api/lookup'));
+  assert.equal(new URL(request.url,'http://test').searchParams.get('from'),'vi');
+  assert.equal(p.element('#mic').getAttribute('aria-pressed'),'false');
+});
+test('voice search handles permission errors and ignores canceled results after typing',()=>{
+  let recognizer;
+  class Recognition {constructor(){recognizer=this;}start(){}abort(){this.onend();}}
+  const p=page({},null,{webkitSpeechRecognition:Recognition,isSecureContext:true});
+  p.element('#mic').events.click();recognizer.onerror({error:'not-allowed'});
+  assert.match(p.element('#speech-status').textContent,/cấp quyền micro/);
+  p.element('#mic').events.click();p.element('#q').value='loan';p.element('#q').events.input();
+  recognizer.onresult({results:[Object.assign([{transcript:'wrong'}],{isFinal:true})]});
+  assert.equal(p.element('#q').value,'loan');assert.equal(p.saved['helen-query'],'loan');
+  assert.ok(!p.requests.some(request=>request.url.includes('/api/lookup')));
 });

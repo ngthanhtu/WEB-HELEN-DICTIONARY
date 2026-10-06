@@ -1,9 +1,11 @@
 // Loaded only by the API test child process; no external requests or paid TTS calls.
-let quotaCalls = 0;
+let quotaCalls = 0, aiCalls=0;
 global.fetch = async (input, opts = {}) => {
   const url = new URL(input);
   if (url.hostname === 'api.mymemory.translated.net') {
     const text = url.searchParams.get('q'), to = url.searchParams.get('langpair').split('|')[1];
+    if(text==='ambiguous-word') return Response.json({responseStatus:200,responseData:{translatedText:text},matches:[{translation:text,match:1},{translation:'từ vay mượn',match:0.99}]});
+    if(text==='identity-only' || text==='internet') return Response.json({responseStatus:200,responseData:{translatedText:text},matches:[]});
     if (text === 'empty-with-match') return Response.json({responseStatus:200,responseData:{translatedText:''},matches:[{translation:'',match:1},{translation:`${to}:valid`,match:1}]});
     if (text === 'empty') return Response.json({responseStatus:200,responseData:{translatedText:''}});
     const failed = text === 'quota' && ++quotaCalls <= 2;
@@ -31,6 +33,29 @@ global.fetch = async (input, opts = {}) => {
     if (url.pathname.endsWith('/malformed')) return new Response('invalid JSON');
     if (url.pathname.includes('/page/definition/')) return Response.json({en:[{partOfSpeech:'adjective',definitions:[{definition:'Feeling pleasure.'}]}]});
     return Response.json({parse:{wikitext:{'*':''}}});
+  }
+  if(url.hostname==='generativelanguage.googleapis.com') {
+    const request=JSON.parse(opts.body), input=JSON.parse(request.contents[0].parts[0].text);
+    if(input.word==='ai-quota') return Response.json({error:{code:429,message:'Test quota',status:'RESOURCE_EXHAUSTED'}},{status:429});
+    const lesson={title:`Lesson ${++aiCalls}`,dialogue:[
+      {speaker:'A',text:`I feel ${input.word} today.`,translation:'Hôm nay tôi thấy vui.'},
+      {speaker:'B',text:'What happened?',translation:'Có chuyện gì thế?'},
+      {speaker:'A',text:'I met an old friend.',translation:'Tôi gặp một người bạn cũ.'},
+      {speaker:'B',text:'That sounds lovely.',translation:'Nghe thật vui.'}],
+      scenario:{text:`She is ${input.word} to see her friend.`,translation:'Cô ấy vui khi gặp bạn.'},
+      usageNote:input.dictionaryDefinition,videoPrompt:'Create a short animation of two friends meeting in a park.'};
+    if(input.word==='loan') {
+      lesson.title='Mượn sách ở thư viện';
+      lesson.dialogue=[
+        {speaker:'Linh',text:'Can I get a loan of this book for a week?',translation:'Tôi có thể mượn cuốn sách này một tuần không?'},
+        {speaker:'Anna',text:'Yes. Please bring it back next Friday.',translation:'Được. Vui lòng trả sách vào thứ Sáu tuần sau.'},
+        {speaker:'Linh',text:'Is there a fee for the loan?',translation:'Có phí mượn sách không?'},
+        {speaker:'Anna',text:'No, the loan is free for members.',translation:'Không, thành viên được mượn miễn phí.'}];
+      lesson.scenario={text:'At a library, Linh asks for a loan of a book and agrees to return it next Friday.',translation:'Tại thư viện, Linh xin mượn sách và đồng ý trả vào thứ Sáu tuần sau.'};
+      lesson.videoPrompt='Create a 20-second animation in a library. Linh borrows a book from Anna. Show a return-date card for next Friday. End with the caption: loan — something borrowed temporarily and then returned.';
+    }
+    if(input.word==='ai-invalid') lesson.dialogue=[];
+    return Response.json({candidates:[{content:{role:'model',parts:[{text:JSON.stringify(lesson)}]},finishReason:'STOP'}]});
   }
   if (url.hostname === 'api.elevenlabs.io') {
     if(url.pathname.endsWith('/voices')) return Response.json({voices:[
