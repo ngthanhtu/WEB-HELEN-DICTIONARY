@@ -13,6 +13,7 @@ const memo = async (k, fn) => { if (cache.has(k)) return cache.get(k); const v =
 
 app.use(express.json());
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.use('/images', express.static(path.join(__dirname, 'public', 'images'), { dotfiles: 'deny', index: false }));
 app.get('/Helen1.jpg', (req, res) => res.sendFile(path.join(__dirname, 'Helen1.jpg')));
 
 // fetch with timeout; returns Response or null on timeout/network error
@@ -86,6 +87,24 @@ async function mwDefs(word) {
   return Object.entries(byPos).map(([pos, senses]) => ({ pos, senses: senses.slice(0, 6), synonyms: [] }));
 }
 
+// Free Dictionary API: optional related words, usage examples, and definition fallback.
+async function relatedDictionary(word) {
+  const r = await get(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`, {}, 3500);
+  if (!r || !r.ok) return null;
+  try {
+    const data = await r.json();
+    if (!Array.isArray(data)) return null;
+    const unique = values => [...new Set(values.filter(v => typeof v === 'string' && v.trim()).map(clean))].slice(0, 12);
+    return data.flatMap(entry => (entry.meanings || []).map(m => ({
+      pos: String(m.partOfSpeech || '').toLowerCase(),
+      senses: (m.definitions || []).filter(d => d.definition).slice(0, 5).map(d => ({definition:clean(d.definition), example:clean(d.example)})),
+      synonyms: unique([...(m.synonyms || []), ...(m.definitions || []).flatMap(d => d.synonyms || [])]),
+      antonyms: unique([...(m.antonyms || []), ...(m.definitions || []).flatMap(d => d.antonyms || [])]),
+      usageExamples: unique((m.definitions || []).map(d => d.example))
+    }))).filter(m => m.senses.length);
+  } catch { return null; }
+}
+
 app.get('/api/lookup', async (req, res) => {
   const t0 = Date.now();
   const raw = String(req.query.word || '').trim();
@@ -95,11 +114,20 @@ app.get('/api/lookup', async (req, res) => {
     const word = (from === 'en' ? raw : await translate(raw, from, 'en')).trim().toLowerCase();
     let entries = cache.get(`d|${word}`);
     if (!entries) {
-      const [wk, ipaText, mw] = await Promise.all([definitions(word), ipa(word), mwDefs(word)]); // all in parallel
-      const meanings = mw || wk; // Merriam-Webster first, Wiktionary as fallback
+      const [wk, ipaText, mw, related] = await Promise.all([definitions(word), ipa(word), mwDefs(word), relatedDictionary(word)]); // all in parallel
+      const meanings = mw || (wk?.length ? wk : related?.length ? related : wk); // Merriam-Webster first, Wiktionary as fallback
       if (meanings === null) return res.status(502).json({ error: 'Cannot reach the dictionary service from this network. Check your connection and try again.' });
       if (!meanings.length) return res.status(404).json({ error: `No entry found for "${word}". Check the spelling.` });
-      entries = [{ word, ipa: ipaText, meanings, source: mw ? "Merriam-Webster's Learner's Dictionary" : 'Wiktionary' }];
+      const enriched = meanings.map(m => {
+        const matches = (related || []).filter(r => r.pos === m.pos);
+        const unique = items => [...new Set(items)].slice(0, 12);
+        return { ...m,
+          synonyms: unique([...(m.synonyms || []), ...matches.flatMap(r => r.synonyms)]),
+          antonyms: unique([...(m.antonyms || []), ...matches.flatMap(r => r.antonyms)]),
+          usageExamples: unique(matches.flatMap(r => r.usageExamples)).filter(e => !m.senses.some(s => s.example === e)).slice(0, 4)
+        };
+      });
+      entries = [{ word, ipa: ipaText, meanings: enriched, source: mw ? "Merriam-Webster's Learner's Dictionary" : wk?.length ? 'Wiktionary' : 'Free Dictionary API', relatedSource: related?.length ? 'Free Dictionary API' : null }];
       cache.set(`d|${word}`, entries);
     }
     console.log(`lookup "${word}" ${Date.now() - t0}ms`);
@@ -125,10 +153,10 @@ app.get('/api/voices', async (req, res) => {
 });
 
 app.get('/api/tts', async (req, res) => {
-  const text = String(req.query.text || '').trim().slice(0, 200);
+  const text = String(req.query.text || '').trim();
   const voice = String(req.query.voice || VOICE);
   if (!/^[A-Za-z0-9_-]{1,100}$/.test(voice)) return res.status(400).json({ error: 'Invalid voice ID.' });
-  if (!text) return res.status(400).end();
+  if (!text || text.length > 2000) return res.status(400).json({ error: 'Use between 1 and 2000 characters for speech.' });
   if (!KEY) return res.status(501).json({ error: 'Set ELEVENLABS_API_KEY to enable pronunciation.' });
   try {
     const buf = await memo(`v|${voice}|${text}`, async () => { // cache key includes the voice

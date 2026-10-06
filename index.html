@@ -13,6 +13,8 @@
   --shadow-1:rgba(0,0,0,.3) 4px 4px 10px 0;--shadow-inset:rgba(0,0,0,.1) 1px 1px 2px 0 inset;
   --font:Arial,Helvetica,sans-serif;
   --page-panel:rgba(255,255,255,.9); --photo-opacity:.16;
+  --page-image:none; /* IMAGE 1: replace none with url("/images/background.jpg") */
+  --lookup-image:none; /* IMAGE 2: replace none with url("/images/lookup.jpg") */
 }
 /* Toggle adapted from Uiverse.io by Javierrocadev. */
 :root{color-scheme:light;--bar-bg:#1d2a57;--translation-bg:#f4f2fb;--border:#d9dce6;--error-bg:#fff1f1;--error-text:#8a1f1f}
@@ -27,7 +29,7 @@
 #voice-status{flex-basis:100%;font-size:14px}
 *{box-sizing:border-box}
 body{margin:0;font:400 16px/1.5 var(--font);color:var(--text-primary);background:var(--surface-base);position:relative;isolation:isolate;min-height:100vh}
-body::before{content:"";position:fixed;inset:-12px;z-index:-1;background:url("Helen1.jpg") center/cover no-repeat;filter:blur(7px);opacity:var(--photo-opacity);pointer-events:none}
+body::before{content:"";position:fixed;inset:-12px;z-index:-1;background-image:var(--page-image);background-position:center;background-size:cover;background-repeat:no-repeat;filter:blur(7px);opacity:var(--photo-opacity);pointer-events:none}
 .hero,main{background:var(--page-panel);border-radius:var(--radius-md)}
 a,button,select,input{font:inherit}
 :focus-visible{outline:3px solid var(--link);outline-offset:2px}
@@ -37,6 +39,8 @@ a,button,select,input{font:inherit}
 .bar label{min-width:0;max-width:100%;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .bar select{max-width:100%;background:var(--surface-base);color:var(--text-primary);border:0;border-radius:var(--radius-pill);padding:var(--space-3) var(--space-5);min-height:40px}
 .hero{display:grid;grid-template-columns:1.3fr 1fr;gap:var(--space-7);align-items:center;padding:var(--space-7) var(--space-6);max-width:1200px;margin:auto}
+.lookup-panel{position:relative;isolation:isolate;overflow:hidden;border-radius:var(--radius-md);padding:var(--space-5)}
+.lookup-panel::before{content:"";position:absolute;inset:0;z-index:-1;background-image:var(--lookup-image);background-position:center;background-size:cover;opacity:.3;pointer-events:none}
 .hero h1{font-size:44px;line-height:52.8px;font-weight:400;margin:0 0 var(--space-5);max-width:16ch}
 .hero p{margin:0 0 var(--space-6);max-width:52ch;color:var(--text-tertiary)}
 .search{display:flex;gap:var(--space-3);background:var(--surface-base);border:2px solid var(--text-primary);border-radius:var(--radius-pill);padding:var(--space-2);box-shadow:var(--shadow-inset)}
@@ -65,6 +69,9 @@ main{max-width:900px;margin:0 auto;padding:0 var(--space-6) var(--space-7)}
 .eye[aria-pressed=true]{background:var(--surface-muted)}
 .tr{grid-column:1/3;background:var(--translation-bg);border-radius:var(--radius-sm);padding:var(--space-3) var(--space-4);color:var(--link);overflow-wrap:anywhere}
 .tr[hidden]{display:none}
+.example-say{width:32px;height:32px;font-size:14px;vertical-align:middle;margin-left:8px}
+.usage{padding:var(--space-4);background:var(--translation-bg);border-radius:var(--radius-sm)}
+.usage p{margin:8px 0}
 .syn{margin-top:var(--space-3);font-size:14px}
 .src{font-size:13px;color:var(--text-tertiary);margin-top:var(--space-5)}
 footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--space-6);text-align:center;font-size:14px}
@@ -89,7 +96,7 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
 </header>
 
 <section class="hero">
-  <div>
+  <div class="lookup-panel">
     <h1>Look up a word. Hear it. Read it in your language.</h1>
     <p>English definitions, IPA and your selected voice. Tap the eye to reveal the translation in any language you choose.</p>
     <form class="search" id="form" role="search">
@@ -211,8 +218,9 @@ function render(d, scroll = true) {
       el.insertAdjacentHTML('beforeend', `<span class="pos">${esc(m.pos)}</span>`);
       m.senses.forEach(s => {
         const row = document.createElement('div'); row.className = 'sense';
-        row.innerHTML = `<div class="def">${esc(s.definition)}</div>${s.example ? `<div class="ex">“${esc(s.example)}”</div>` : ''}
+        row.innerHTML = `<div class="def">${esc(s.definition)}</div>${s.example ? `<div class="ex">“${esc(s.example)}” <button class="say example-say" type="button" aria-label="Hear example sentence">🔊</button></div>` : ''}
           <button class="eye" type="button" aria-pressed="false" aria-label="Show translation">👁</button><div class="tr" hidden></div>`;
+        if (s.example) row.querySelector('.example-say').onclick = ev => speak(s.example, ev.currentTarget);
         const eye = row.querySelector('.eye'), box = row.querySelector('.tr');
         let lang = null;
         eye.onclick = async () => {
@@ -225,8 +233,21 @@ function render(d, scroll = true) {
         };
         el.append(row);
       });
-      if (m.synonyms.length) el.insertAdjacentHTML('beforeend', `<div class="syn"><strong>Synonyms:</strong> ${m.synonyms.map(esc).join(', ')}</div>`);
+      if (m.synonyms?.length) el.insertAdjacentHTML('beforeend', `<div class="syn"><strong>Synonyms:</strong> ${m.synonyms.map(esc).join(', ')}</div>`);
+      if (m.antonyms?.length) el.insertAdjacentHTML('beforeend', `<div class="syn"><strong>Antonyms:</strong> ${m.antonyms.map(esc).join(', ')}</div>`);
+      if (m.usageExamples?.length) {
+        const usage = document.createElement('section'); usage.className = 'usage';
+        usage.innerHTML = '<strong>Usage examples</strong><p>Choose synonyms and antonyms to fit this meaning and context.</p>';
+        m.usageExamples.forEach(example => {
+          const line = document.createElement('p');
+          line.innerHTML = `“${esc(example)}” <button class="say example-say" type="button" aria-label="Hear usage example">🔊</button>`;
+          line.querySelector('button').onclick = ev => speak(example, ev.currentTarget);
+          usage.append(line);
+        });
+        el.append(usage);
+      }
     });
+    if (en.relatedSource) el.insertAdjacentHTML('beforeend', `<p class="src">Related words and additional examples: ${esc(en.relatedSource)}. Alternatives depend on the sense and context.</p>`);
     out.append(el);
   });
   if (d.entries[0].source) out.insertAdjacentHTML('beforeend', `<p class="src">Source: ${esc(d.entries[0].source)}</p>`);

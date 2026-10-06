@@ -38,3 +38,24 @@ test('uses a valid exact match for empty translations and rejects empty-only res
   assert.deepEqual((await (await translate('empty-with-match', 'ja')).json()).translations, ['ja:valid']);
   assert.equal((await translate('empty', 'ja')).status, 502);
 });
+
+test('lookup adds related words and examples while retaining the main definition', async () => {
+  await ready;
+  const response = await fetch(`${base}/api/lookup?word=happy&from=en`);
+  assert.equal(response.status, 200);
+  const data = await response.json();
+  const meaning = data.entries[0].meanings[0];
+  assert.deepEqual(meaning.synonyms, ['joyful', 'glad']);
+  assert.deepEqual(meaning.antonyms, ['sad']);
+  assert.deepEqual(meaning.usageExamples, ['She was happy to see her friend.']);
+  assert.equal(data.entries[0].source, 'Wiktionary');
+  const offline = await fetch(`${base}/api/lookup?word=offline&from=en`);
+  assert.equal(offline.status, 200);
+  assert.deepEqual((await offline.json()).entries[0].meanings[0].antonyms, []);
+});
+test('speaks full example sentences beyond the old 200-character truncation', async () => {
+  await ready;
+  const text = 'This is a complete example sentence. '.repeat(10).trim();
+  const response = await fetch(`${base}/api/tts?voice=Sarah&text=${encodeURIComponent(text)}`);
+  assert.equal(response.status, 200); assert.equal(await response.text(), text);
+});
