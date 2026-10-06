@@ -42,6 +42,18 @@ test('changing target requests and displays the selected language immediately',a
   assert.equal(p.saved['helen-target'],'ja');
   assert.equal(JSON.parse(p.requests.find(r=>r.url.includes('/api/translate')).options.body).to,'ja');
 });
+test('saved translations survive reload, separate languages and stay usable offline',async()=>{
+  const p=page();assert.deepEqual(Array.from(await vm.runInContext("tr(['hello'],'en','vi')",p.context)),['vi:hello']);
+  const reloaded=page(p.saved,null,{},url=>url.includes('/api/translate')?Promise.reject(new Error('offline')):undefined);
+  assert.deepEqual(Array.from(await vm.runInContext("tr(['hello'],'en','vi')",reloaded.context)),['vi:hello']);
+  assert.equal(reloaded.requests.filter(request=>request.url.includes('/api/translate')).length,0);
+  await assert.rejects(vm.runInContext("tr(['hello'],'en','ja')",reloaded.context),/offline/);
+});
+test('slow mobile requests cancel, retain POST data and report a retryable deadline',async()=>{
+  const p=page({},null,{AbortController,setTimeout:(fn,ms)=>setTimeout(fn,ms===7500?20:ms)},(url,options)=>url==='/slow'?new Promise((resolve,reject)=>options.signal.addEventListener('abort',()=>reject(new Error('aborted')))):undefined);
+  await assert.rejects(vm.runInContext("apiFetch('/slow',{method:'POST',body:'kept'})",p.context),/7,5 giây/);
+  const request=p.requests.find(request=>request.url==='/slow');assert.equal(request.options.method,'POST');assert.equal(request.options.body,'kept');assert.equal(request.options.signal.aborted,true);
+});
 
 test('theme switch applies both themes and keeps the selection after reload',()=>{
   const p=page();

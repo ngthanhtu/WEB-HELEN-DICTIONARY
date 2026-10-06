@@ -22,6 +22,14 @@ test('serves the supplied loading animation stylesheet',async()=>{
   assert.equal(response.status,200);assert.match(response.headers.get('content-type'),/text\/css/);
   const css=await response.text();assert.match(css,/@keyframes hamster/);assert.match(css,/prefers-reduced-motion/);
 });
+test('serves an installable manifest, icons and a service worker with root scope and safe cache headers',async()=>{
+  await ready;
+  const response=await fetch(`${base}/manifest.webmanifest`);assert.match(response.headers.get('content-type'),/application\/manifest\+json/);
+  const manifest=await response.json();assert.equal(manifest.display,'standalone');assert.equal(manifest.scope,'/');assert.equal(manifest.start_url,'/');
+  for(const icon of manifest.icons){const r=await fetch(`${base}${icon.src}`);assert.equal(r.status,200);assert.match(r.headers.get('content-type'),/image\/png/);assert.ok((await r.arrayBuffer()).byteLength>500);}
+  const worker=await fetch(`${base}/sw.js`);assert.equal(worker.status,200);assert.match(worker.headers.get('cache-control'),/no-cache/);assert.doesNotMatch(await worker.text(),/__BUILD_VERSION__/);
+  const html=await fetch(base,{headers:{'Accept-Encoding':'gzip'}});assert.equal(html.headers.get('content-encoding'),'gzip');assert.match(await html.text(),/rel="manifest"/);
+});
 test('uses each requested language and isolates cached translations', async () => {
   for (const to of ['fr', 'ja', 'es', 'zh-CN']) assert.deepEqual((await (await translate('hello', to)).json()).translations, [`${to}:hello`]);
 });

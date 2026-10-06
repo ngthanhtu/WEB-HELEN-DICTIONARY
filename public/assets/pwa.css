@@ -1,0 +1,39 @@
+.app-tools{max-width:1200px;margin:auto;padding:12px 24px 0;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:13px}
+.app-tools [hidden]{display:none}
+#connection-status{padding:8px 12px;background:var(--translation-bg);border-radius:12px;color:var(--text-primary);overflow-wrap:anywhere}
+#install-help{max-width:min(480px,calc(100% - 32px));border:1px solid var(--border);border-radius:20px;padding:24px;background:var(--surface-base);color:var(--text-primary);box-shadow:var(--shadow-1)}
+#install-help::backdrop{background:rgba(15,24,43,.65)}
+.saved-result{display:block;margin:8px 0;font-size:13px;color:var(--text-tertiary)}
+@media(max-width:760px){
+  body{background-attachment:scroll}
+  .bar{padding:12px 16px;gap:10px;justify-content:flex-start}
+  .brand{flex:1 1 100%;font-size:20px}
+  .bar>label{width:100%;font-size:13px;display:grid;grid-template-columns:78px minmax(0,1fr);gap:8px}
+  .bar select{width:100%;min-width:0;padding:8px 10px;font-size:14px}
+  .appearance-controls{gap:10px;width:100%;justify-content:space-between}
+  .bar .theme-control{gap:8px;flex-wrap:nowrap;font-size:13px;min-height:44px}
+  .theme-track{width:72px;height:36px}
+  .theme-track::after{width:28px;height:28px}
+  .theme-control input:checked + .theme-track::after{transform:translateX(36px) rotate(180deg)}
+  .bar .pet-control{flex-wrap:nowrap;font-size:13px;padding:4px 8px}
+  #voice-status{font-size:12px}
+  .app-tools{padding:10px 16px 0}
+  .hero{padding:20px 16px;gap:20px}
+  .lookup-panel{padding:18px}
+  .hero h1{font-size:30px;line-height:1.2;max-width:none}
+  .hero p{font-size:14px;margin-bottom:16px}
+  .search{display:grid;grid-template-columns:minmax(0,1fr) 44px auto;gap:4px}
+  .search select{grid-column:1/-1;text-overflow:ellipsis}
+  .search input{width:100%;padding:0 6px;font-size:16px}
+  .search .btn{padding:8px 12px;font-size:14px}
+  .img-slot{max-height:300px;aspect-ratio:4/3}
+  .learning-tools,main{padding-left:16px;padding-right:16px}
+  .learning-tools{gap:12px}
+  .hw h2{font-size:30px;overflow-wrap:anywhere;max-width:100%}
+  .extra-body{padding:4px 12px 12px}
+  .extra-card>summary{padding:14px}
+  .ai-study{padding:12px}
+  .example-say{min-width:44px;min-height:44px}
+  .ai-controls .btn{width:100%}
+  .dialogue-line,.dialogue-alt{margin-left:0;margin-right:0}
+}

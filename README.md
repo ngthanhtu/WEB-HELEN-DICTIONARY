@@ -31,7 +31,7 @@ Các kiểm thử API và trình duyệt giả lập dịch vụ ngoài, không 
 
 ## Giao diện và lưu lựa chọn
 
-Ảnh Pexels được dùng làm nền mờ dưới lớp phủ trắng bán trong suốt. Công tắc Light/Dark ở thanh đầu trang lấy cảm hứng từ Uiverse.io (Javierrocadev) và được chuyển sang CSS thuần. Chế độ hiển thị, từ đang nhập, ngôn ngữ nhập, ngôn ngữ đích và giọng đều được lưu trong localStorage của trình duyệt. Khi tải lại trang, ứng dụng điền lại từ và gọi tra cứu để khôi phục kết quả mới nhất; bước này cần server và dịch vụ từ điển hoạt động. Xóa ô tìm kiếm sẽ xóa từ đã lưu.
+Ảnh Pexels được dùng làm nền mờ dưới lớp phủ trắng bán trong suốt. Công tắc Light/Dark ở thanh đầu trang lấy cảm hứng từ Uiverse.io (Javierrocadev) và được chuyển sang CSS thuần. Chế độ hiển thị, từ đang nhập, ngôn ngữ nhập, ngôn ngữ đích và giọng đều được lưu trong localStorage của trình duyệt. Khi tải lại trang, ứng dụng điền lại từ và khôi phục kết quả; sau khi cache PWA đã kích hoạt, dữ liệu đã tra trong 24 giờ mở ngay từ thiết bị, các từ mới cần server và dịch vụ từ điển hoạt động. Xóa ô tìm kiếm sẽ xóa từ đã lưu.
 
 ## Tự chèn ảnh và nghe câu ví dụ
 
@@ -120,15 +120,31 @@ Trong **Explore more**, các mục Related words, More examples, Collocations, C
 
 ## Chú chó ở con trỏ hoặc cạnh tên website
 
-Hai ảnh chó người dùng cung cấp được tách phần đầu và tai, nền trong suốt, lưu ở `public/assets/pet/dog-idle.png` và `dog-pressed.png`. Cấu hình nằm riêng trong **`public/assets/appearance.json`**; ảnh không nhúng vào HTML/JavaScript. Chỉ cần sửa file này rồi commit để Render tự deploy:
+Hai ảnh chó người dùng cung cấp được tách phần đầu và tai, nền trong suốt; bản gốc lưu ở `public/assets/pet/dog-idle.png` và `dog-pressed.png`. Cấu hình nằm riêng trong **`public/assets/appearance.json`**; ảnh không nhúng vào HTML/JavaScript. Chỉ cần sửa file này rồi commit để Render tự deploy:
 
 - `enabled` (dòng 2): đặt `false` để bỏ hoàn toàn tính năng; khi đó không tải ảnh chó.
 - `mode` (dòng 3): `cursor` để dùng ở con trỏ desktop; `mascot` để đặt cạnh tên Helen Dictionary trên cả desktop/mobile.
 - `touchMode` (dòng 4): `mascot` để hiện chó cạnh tên trên thiết bị cảm ứng; `off` để bỏ trên thiết bị này.
 - `size` (dòng 5): mặc định 32 px, cho phép 24–48 px.
-- `idleImage` / `pressedImage` (dòng 6–7): thay đường dẫn ảnh riêng, hoặc URL HTTPS của ảnh PNG/WebP nền trong suốt. Có thể thay hai file ảnh trong thư mục pet bằng ảnh mới cùng tên.
-- `pressedHoldMs` (dòng 8): giữ ảnh bấm ít nhất 180 ms để dễ nhìn; cho phép 0–400 ms.
+- `idleImage` / `pressedImage` (dòng 6–7): mặc định dùng bản WebP nhỏ trong `public/assets/mobile`; thay đường dẫn ảnh riêng, hoặc URL HTTPS của ảnh PNG/WebP nền trong suốt. Có thể thay hai file ảnh trong thư mục pet bằng ảnh mới cùng tên.
+- `pressedHoldMs` (dòng 8): thời gian giữ ảnh tối thiểu trong chế độ `press`, mặc định 300 ms; cho phép 0–1000 ms.
+- `clickBehavior` (dòng 9): `toggle` (mặc định) để mỗi lần bấm đổi ảnh và giữ nguyên; `press` để đổi ảnh khi giữ chuột rồi trở về khi thả.
 
-Desktop: đầu chó theo chuột, có chấm nhỏ xác định đúng vị trí bấm; bấm trái dùng ảnh thứ hai, thả chuột trở về ảnh đầu. Ảnh được đảo phía khi gần mép màn hình để không tràn. Mobile/mascot: chạm nút chó để đổi qua lại hai ảnh. Công tắc **Dog cursor / Dog mascot** ở cuối trang bật/tắt theo sở thích và lưu trong trình duyệt; không ghi đè cấu hình chung.
+Desktop: đầu chó theo chuột, có chấm nhỏ xác định đúng vị trí bấm; bấm trái đổi sang ảnh thứ hai và giữ sau khi thả chuột; bấm lần nữa đổi về ảnh đầu. Ảnh được đảo phía khi gần mép màn hình để không tràn. Mobile/mascot: chạm nút chó để đổi qua lại hai ảnh. Công tắc **Dog cursor / Dog mascot** cạnh công tắc Light/Dark bật/tắt theo sở thích và lưu trong trình duyệt; không ghi đè cấu hình chung.
 
 Ảnh tải ở nền; con trỏ hệ thống vẫn được giữ tới khi cả hai ảnh tải thành công. Không có cấu hình, `enabled:false`, hoặc ảnh lỗi đều dùng con trỏ hệ thống. Lớp chó không nhận sự kiện chuột nên nút, nhập liệu và chọn văn bản vẫn hoạt động. Tab, rời trang hoặc mất focus trả về con trỏ thường. Đã kiểm tra trong Chromium: ảnh normal/pressed, bật/tắt qua reload, bấm tra từ, ảnh thiếu, thay cấu hình, góc màn hình và mobile không tràn ngang.
+
+
+## Cài lên điện thoại và kết nối
+
+Website có manifest, biểu tượng và service worker để cài dạng PWA; dùng HTTPS của Render. Không cần chạy terminal trên điện thoại.
+
+- Android: mở https://helen-dictionary.onrender.com/ bằng Chrome → **Install app**, hoặc menu ⋮ → **Cài đặt ứng dụng / Thêm vào màn hình chính**.
+- iPhone/iPad: mở link trong Safari → **Chia sẻ → Thêm vào Màn hình chính → Thêm**. Bật Open as Web App nếu có. Nút Install app trên trang cũng hiện hướng dẫn này.
+- Sau mỗi bản deploy, ứng dụng đã cài hiện **Update app** khi bản mới tải xong. Bấm để tải lại; từ yêu thích, lịch sử và tùy chọn vẫn giữ. Có thể mất một lần mở lại để trình duyệt phát hiện bản cập nhật.
+
+Giao diện nhỏ có ô chọn ngôn ngữ/voice vừa màn hình, thanh tìm kiếm giữ đủ chỗ gõ, vùng chạm tối thiểu 44 px và không tràn ngang ở 320–430 px. Ảnh hiển thị dùng WebP đã xuất nhỏ trong **public/assets/mobile** (tổng khoảng 330 KB thay vì hơn 7 MB), giữ ảnh gốc trong repository. Đổi ảnh hiển thị: IMAGE 1/2 trong CSS index.html; ảnh chính trong IMAGES.hero; ảnh chó trong public/assets/appearance.json. Có thể trỏ về ảnh gốc hoặc ảnh mới tùy ý. Server nén HTML/JSON bằng compression.
+
+Sau khi service worker đã kích hoạt, tối đa 100 phản hồi tra cứu thành công (bao gồm dữ liệu mở rộng) lưu trên thiết bị trong 24 giờ. Tra lại dùng cache ngay và có chú thích dữ liệu đã lưu; khi ngoại tuyến có thể xem cả bản cũ hơn. Không lưu lỗi hoặc tự tạo định nghĩa cho từ chưa tra. 100 bản dịch thành công lưu 24 giờ theo văn bản/ngôn ngữ/ngữ cảnh; 20 bài AI giữ cơ chế cache riêng. Dữ liệu chỉ thuộc trình duyệt/ứng dụng này, không đồng bộ giữa các máy; hệ điều hành có thể xóa cache khi thiếu dung lượng. Vào trang và tra một từ sau khi cài để lưu dữ liệu ngoại tuyến. Giọng đọc, giọng mới và tạo AI mới cần Internet.
+
+Mục tiêu phản hồi dưới 5 giây trên kết nối tốt. Bản dịch dùng tổng thời gian tối đa 6 giây cho các lần thử và giải nghĩa dự phòng. Các nguồn từ điển ngoài có giới hạn 5 giây và không còn lượt chờ lại 15 giây khi tất cả nguồn lỗi. Frontend dừng lượt chờ API sau 7,5 giây (cả tải nội dung/audio), dọn loading và cho thử lại; đây là giới hạn chờ, không phải bảo đảm thành công dưới 8 giây. Gemini có thể hoàn tất trên server sau khi client dừng; thử lại cùng nghĩa có thể nhận cache mà không tạo thêm. Render free có thể ngủ và khởi động lại lâu hơn 8 giây: app shell và dữ liệu đã lưu vẫn mở nhanh, nhưng từ/voice/AI mới cần server thức. Muốn bảo đảm server luôn sẵn sàng cần hosting không ngủ; cấu hình hiện tại tiếp tục dùng free, không đổi sang gói trả phí.

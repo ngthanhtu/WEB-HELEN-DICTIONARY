@@ -30,8 +30,14 @@ const cache = new Map(); // successful results only
 const memo = async (k, fn) => { if (cache.has(k)) return cache.get(k); const v = await fn(); cache.set(k, v); return v; };
 
 app.use(express.json());
+app.use(require('compression')());
 app.get('/healthz', (req, res) => res.json({ status: 'ok', version: process.env.RENDER_GIT_COMMIT?.slice(0, 7) || 'local', voiceConfigured: Boolean(KEY), aiConfigured:contexts.configured }));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.get('/manifest.webmanifest',(req,res)=>res.type('application/manifest+json').sendFile(path.join(__dirname,'public','manifest.webmanifest')));
+app.get('/sw.js',(req,res)=>{
+  const version=process.env.RENDER_GIT_COMMIT?.replace(/[^a-zA-Z0-9]/g,'').slice(0,12) || 'mobile-v1';
+  res.set('Cache-Control','no-cache').type('text/javascript').send(require('fs').readFileSync(path.join(__dirname,'public','sw.js'),'utf8').replace('__BUILD_VERSION__',version));
+});
 app.use('/images', express.static(path.join(__dirname, 'public', 'images'), { dotfiles: 'deny', index: false }));
 app.use('/assets', express.static(path.join(__dirname, 'public', 'assets'), { dotfiles: 'deny', index: false }));
 for (const image of ['Helennn.jpg', 'pexels-mart-production-7550534.jpg']) {
@@ -55,12 +61,13 @@ async function get(url, opts = {}, ms = 3000) {
   catch (error) { console.warn(`Upstream ${new URL(url).hostname}: ${error.name}`); return null; } finally { clearTimeout(t); }
 }
 
-async function translate(text, from, to) {
+async function translate(text, from, to, deadline=Date.now()+6000) {
   if (from === to) return text;
   if(from==='en' && to==='vi' && vietnameseGloss(text)) return vietnameseGloss(text);
   return memo(`t|${from}|${to}|${text}`, async () => {
     for (let i = 0; i < 2; i++) {
-      const r = await get(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`, {}, 5000);
+      const remaining=deadline-Date.now();if(remaining<=0)break;
+      const r = await get(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`, {}, Math.min(3000,remaining));
       if (r && r.ok) {
         const data = await r.json();
         if (Number(data.responseStatus) === 200 && !data.responseData?.quotaFinished) {
@@ -79,7 +86,7 @@ const clean = s => String(s || '').replace(/<[^>]+>/g, '').replace(/&quot;/g, '"
 
 // Definitions: Wiktionary REST (fast). Returns array, [] if not found, null if network error.
 async function definitions(word) {
-  const r = await get(`https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word)}`, {}, 10000);
+  const r = await get(`https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word)}`, {}, 5000);
   if (!r) return null;
   if (r.status === 404) return [];
   if (!r.ok) return null;
@@ -123,7 +130,7 @@ async function mwDefs(word) {
 }
 
 // Free Dictionary API: optional related words, usage examples, and definition fallback.
-async function relatedDictionary(word, timeout = 10000) {
+async function relatedDictionary(word, timeout = 5000) {
   const r = await get(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`, {}, timeout);
   if (r?.status === 404) return [];
   if (!r || !r.ok) return null;
@@ -143,7 +150,7 @@ async function relatedDictionary(word, timeout = 10000) {
 
 // Exact-word Datamuse definitions provide another independent dictionary fallback.
 async function datamuseDefinitions(word) {
-  const r = await get(`https://api.datamuse.com/words?sp=${encodeURIComponent(word)}&md=d&max=10`, {}, 10000);
+  const r = await get(`https://api.datamuse.com/words?sp=${encodeURIComponent(word)}&md=d&max=10`, {}, 5000);
   if (!r || !r.ok) return null;
   try {
     const data = await r.json();
@@ -214,8 +221,6 @@ function beginLookup(word) {
     if (results.some(r => Array.isArray(r))) {
       const error = new Error('No exact match found.'); error.status=404; throw error;
     }
-    const meanings = await relatedDictionary(word, 15000);
-    if (meanings?.length) return {word,ipa:'',source:'Free Dictionary API',meanings};
     const error = new Error('Cannot reach dictionary services. Please try again.');
     error.status = results.some(r => Array.isArray(r)) ? 404 : 502;
     throw error;
@@ -296,12 +301,13 @@ app.post('/api/context',async(req,res)=>{
 app.post('/api/translate', async (req, res) => {
   try {
     const { texts = [], from = 'en', to = 'vi', kind, definition } = req.body;
+    const deadline=Date.now()+6000;
     if (!Array.isArray(texts) || texts.length > 40) return res.status(400).json({ error: 'Invalid texts.' });
     res.json({ translations: await Promise.all(texts.map(async t => {
-      try { return await translate(String(t).slice(0,450),from,to); }
+      try { return await translate(String(t).slice(0,450),from,to,deadline); }
       catch(error) {
         // A dictionary definition supplies context when the isolated headword is ambiguous.
-        if(kind==='headword' && from==='en' && to==='vi' && typeof definition==='string' && definition.trim()) return `Giải nghĩa: ${await translate(definition.slice(0,450),from,to)}`;
+        if(kind==='headword' && from==='en' && to==='vi' && typeof definition==='string' && definition.trim()) return `Giải nghĩa: ${await translate(definition.slice(0,450),from,to,deadline)}`;
         throw error;
       }
     })) });
@@ -311,7 +317,7 @@ app.post('/api/translate', async (req, res) => {
 // List voices your ElevenLabs key can actually use (open http://localhost:3000/api/voices to copy an ID).
 app.get('/api/voices', async (req, res) => {
   if (!KEY) return res.status(501).json({ error: 'Voice chưa được cấu hình. Quản trị viên cần thêm ELEVENLABS_API_KEY trong Environment của dịch vụ Render rồi deploy lại.' });
-  const r = await get('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': KEY } }, 8000);
+  const r = await get('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': KEY } }, 6500);
   if (!r || !r.ok) return res.status(502).json({ error: 'Could not load voices.', status: r && r.status, detail: r ? (await r.text()).slice(0, 300) : 'no response' });
   const j = await r.json();
   res.json({ in_use: VOICE, voices: j.voices.map(voiceMetadata) });

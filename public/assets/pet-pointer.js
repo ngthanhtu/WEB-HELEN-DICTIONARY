@@ -7,7 +7,13 @@
   const control=document.querySelector('#pet-control'), toggle=document.querySelector('#pet-toggle');
   if(!overlay || !pointer || !cursorImage || !mascot || !mascotImage || !control || !toggle) return;
   let config;
-  try {const response=await fetch('/assets/appearance.json',{cache:'no-cache'});if(!response.ok) return;config=await response.json();} catch {return;}
+  try {
+    const response=await fetch('/assets/appearance.json',{cache:'no-cache'});if(!response.ok)return;config=await response.json();
+    try {localStorage.setItem('helen-pet-config',JSON.stringify(config));} catch {}
+  } catch {
+    // Keep the editable configuration available when the installed app opens offline.
+    try {config=JSON.parse(localStorage.getItem('helen-pet-config'));} catch {return;}
+  }
   if(config?.enabled!==true || !['cursor','mascot'].includes(config.mode)) return;
   function imageURL(value) {
     if(typeof value!=='string' || !value.trim()) throw Error('Missing pet image');
@@ -17,13 +23,14 @@
   }
   try {config.idleImage=imageURL(config.idleImage);config.pressedImage=imageURL(config.pressedImage || config.idleImage);} catch {return;}
   const size=Math.min(48,Math.max(24,Number(config.size) || 32));
-  const delay=Number(config.pressedHoldMs), hold=Number.isFinite(delay)?Math.min(400,Math.max(0,delay)):180;
+  const clickBehavior=config.clickBehavior==='press'?'press':'toggle';
+  const delay=Number(config.pressedHoldMs), hold=Number.isFinite(delay)?Math.min(1000,Math.max(0,delay)):300;
   root.style.setProperty('--pet-size',`${size}px`);
   const fine=matchMedia('(hover: hover) and (pointer: fine)');
-  let enabled=true, ready=false, mode='off', frame=0, lastPosition, pressed=false, pressedUntil=0, timer;
+  let enabled=true, ready=false, mode='off', frame=0, lastPosition, pressed=false, alternate=false, pressedUntil=0, timer;
   try {enabled=localStorage.getItem('helen-pet-enabled')!=='false';} catch {}
   const hideCursor=()=>{overlay.hidden=true;root.removeAttribute('data-pet-cursor-active');};
-  const resetPicture=()=>{clearTimeout(timer);pressed=false;cursorImage.src=config.idleImage;mascotImage.src=config.idleImage;};
+  const resetPicture=()=>{clearTimeout(timer);pressed=false;alternate=false;cursorImage.src=config.idleImage;mascotImage.src=config.idleImage;};
   function showPosition() {
     if(!ready || !enabled || mode!=='cursor' || !lastPosition) return;
     const {x,y}=lastPosition;
@@ -53,14 +60,15 @@
   },{passive:true});
   document.addEventListener('pointerdown',event=>{
     if(mode!=='cursor' || event.pointerType!=='mouse' || event.button!==0) return;
-    clearTimeout(timer);pressed=true;pressedUntil=performance.now()+hold;
-    lastPosition={x:event.clientX,y:event.clientY};showPosition();cursorImage.src=config.pressedImage;
+    clearTimeout(timer);lastPosition={x:event.clientX,y:event.clientY};showPosition();
+    if(clickBehavior==='toggle') {alternate=!alternate;cursorImage.src=alternate?config.pressedImage:config.idleImage;}
+    else {pressed=true;pressedUntil=performance.now()+hold;cursorImage.src=config.pressedImage;}
   },{passive:true});
   const release=()=>{if(!pressed)return;pressed=false;timer=setTimeout(()=>{if(!pressed)cursorImage.src=config.idleImage;},Math.max(0,pressedUntil-performance.now()));};
   document.addEventListener('pointerup',release,{passive:true});
   document.addEventListener('pointercancel',()=>{resetPicture();hideCursor();},{passive:true});
-  document.documentElement.addEventListener('mouseleave',()=>{hideCursor();resetPicture();});
-  window.addEventListener('blur',()=>{hideCursor();resetPicture();});
+  document.documentElement.addEventListener('mouseleave',()=>{hideCursor();if(clickBehavior==='press')resetPicture();});
+  window.addEventListener('blur',()=>{hideCursor();if(clickBehavior==='press')resetPicture();});
   document.addEventListener('keydown',event=>{if(event.key==='Tab')hideCursor();});
   mascot.addEventListener('click',()=>{mascotImage.src=mascotImage.src===config.pressedImage?config.idleImage:config.pressedImage;});
 })();

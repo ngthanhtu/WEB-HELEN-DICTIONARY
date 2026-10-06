@@ -3,7 +3,8 @@
   "mode": "cursor",
   "touchMode": "mascot",
   "size": 32,
-  "idleImage": "/assets/pet/dog-idle.png",
-  "pressedImage": "/assets/pet/dog-pressed.png",
-  "pressedHoldMs": 180
+  "idleImage": "/assets/mobile/dog-idle.webp",
+  "pressedImage": "/assets/mobile/dog-pressed.webp",
+  "pressedHoldMs": 300,
+  "clickBehavior": "toggle"
 }

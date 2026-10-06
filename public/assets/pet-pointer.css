@@ -10,6 +10,7 @@ html[data-pet-cursor-active=true],html[data-pet-cursor-active=true] *{cursor:non
 .pet-mascot{display:inline-grid;place-items:center;min-width:44px;min-height:44px;padding:6px;border:0;border-radius:50%;background:rgba(255,255,255,.12);cursor:pointer;flex:none}
 .pet-mascot:hover{background:rgba(255,255,255,.24)}
 .pet-mascot img{display:block;object-fit:contain;width:var(--pet-size);height:var(--pet-size)}
-.pet-control{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin-left:20px;cursor:pointer}
+.appearance-controls{display:flex;align-items:center;flex-wrap:wrap;gap:12px}
+.pet-control{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:4px 10px;border:1px solid rgba(255,255,255,.3);border-radius:999px;font-size:14px;cursor:pointer}
+.pet-control:hover{background:rgba(255,255,255,.12)}
 .pet-control input{width:18px;height:18px;accent-color:var(--accent)}
-@media(max-width:480px){.pet-control{display:flex;width:max-content;margin:8px auto 0}}
