@@ -9,6 +9,11 @@ global.fetch = async (input, opts = {}) => {
     const failed = text === 'quota' && ++quotaCalls <= 2;
     return Response.json({responseStatus:failed ? 429 : 200, responseData:{translatedText:failed ? 'QUOTA ERROR' : `${to}:${text}`}});
   }
+  if (url.hostname === 'api.datamuse.com') {
+    const word=url.searchParams.get('rel_syn') || url.searchParams.get('rel_ant');
+    if(word === 'offline') return new Response('',{status:503});
+    return Response.json([{word:url.searchParams.has('rel_syn') ? 'cheerful' : 'unhappy',tags:['adj']},{word:'unrelated-noun',tags:['n']}]);
+  }
   if (url.hostname === 'api.dictionaryapi.dev') {
     const word = url.pathname.split('/').pop();
     if (word === 'offline') return new Response('', {status:503});

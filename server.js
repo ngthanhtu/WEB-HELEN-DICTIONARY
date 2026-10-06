@@ -5,6 +5,15 @@ const path = require('path');
 // Injected variables take precedence; .env takes precedence over legacy env.
 require('dotenv').config({ path: [path.join(__dirname, '.env'), path.join(__dirname, 'env')], quiet: true });
 const app = express();
+if (process.env.TRUST_PROXY === '1') app.set('trust proxy', 1);
+if (process.env.NODE_ENV === 'production') {
+  const { rateLimit } = require('express-rate-limit');
+  const limit = count => rateLimit({windowMs:60_000, limit:count, standardHeaders:'draft-8', legacyHeaders:false,
+    message:{error:'Bạn thao tác quá nhanh. Hãy đợi một phút rồi thử lại.'}});
+  app.use('/api/tts', limit(12));
+  app.use('/api/lookup', limit(30));
+  app.use('/api/translate', limit(60));
+}
 const PORT = process.env.PORT || 3000;
 const KEY = process.env.ELEVENLABS_API_KEY;
 const VOICE = process.env.ELEVENLABS_VOICE_ID || 'EXAVITQu4vr4xnSDxMaL'; // Sarah (premade); users can explicitly select another voice
@@ -12,6 +21,7 @@ const cache = new Map(); // successful results only
 const memo = async (k, fn) => { if (cache.has(k)) return cache.get(k); const v = await fn(); cache.set(k, v); return v; };
 
 app.use(express.json());
+app.get('/healthz', (req, res) => res.json({ status: 'ok' }));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.use('/images', express.static(path.join(__dirname, 'public', 'images'), { dotfiles: 'deny', index: false }));
 for (const image of ['Helennn.jpg', 'pexels-mart-production-7550534.jpg']) {
@@ -117,6 +127,20 @@ async function relatedDictionary(word) {
   } catch { return null; }
 }
 
+// Datamuse complements dictionary entries with explicit synonym/antonym relations.
+async function wordRelations(word) {
+  const load = async relation => {
+    const r = await get(`https://api.datamuse.com/words?${relation}=${encodeURIComponent(word)}&md=p&max=12`, {}, 3500);
+    if (!r || !r.ok) return null;
+    try {
+      const data = await r.json();
+      return Array.isArray(data) ? data.filter(x => typeof x.word === 'string' && x.word.toLowerCase() !== word).map(x => ({word:clean(x.word), tags:Array.isArray(x.tags) ? x.tags : []})) : null;
+    } catch { return null; }
+  };
+  const [synonyms, antonyms] = await Promise.all([load('rel_syn'), load('rel_ant')]);
+  return {synonyms, antonyms};
+}
+
 app.get('/api/lookup', async (req, res) => {
   const t0 = Date.now();
   const raw = String(req.query.word || '').trim();
@@ -126,20 +150,23 @@ app.get('/api/lookup', async (req, res) => {
     const word = (from === 'en' ? raw : await translate(raw, from, 'en')).trim().toLowerCase();
     let entries = cache.get(`d|${word}`);
     if (!entries) {
-      const [wk, ipaText, mw, related] = await Promise.all([definitions(word), ipa(word), mwDefs(word), relatedDictionary(word)]); // all in parallel
+      const [wk, ipaText, mw, related, relations] = await Promise.all([definitions(word), ipa(word), mwDefs(word), relatedDictionary(word), wordRelations(word)]); // all in parallel
       const meanings = mw || (wk?.length ? wk : related?.length ? related : wk); // Merriam-Webster first, Wiktionary as fallback
       if (meanings === null) return res.status(502).json({ error: 'Cannot reach the dictionary service from this network. Check your connection and try again.' });
       if (!meanings.length) return res.status(404).json({ error: `No entry found for "${word}". Check the spelling.` });
       const enriched = meanings.map(m => {
         const matches = (related || []).filter(r => r.pos === m.pos);
+        const tag = {noun:'n', verb:'v', adjective:'adj', adverb:'adv'}[m.pos];
+        const forPos = list => (list || []).filter(x => tag && x.tags.includes(tag)).map(x => x.word);
         const unique = items => [...new Set(items)].slice(0, 12);
         return { ...m,
-          synonyms: unique([...(m.synonyms || []), ...matches.flatMap(r => r.synonyms)]),
-          antonyms: unique([...(m.antonyms || []), ...matches.flatMap(r => r.antonyms)]),
+          synonyms: unique([...(m.synonyms || []), ...matches.flatMap(r => r.synonyms), ...forPos(relations.synonyms)]),
+          antonyms: unique([...(m.antonyms || []), ...matches.flatMap(r => r.antonyms), ...forPos(relations.antonyms)]),
+          relationsUnavailable: !related && (relations.synonyms === null || relations.antonyms === null),
           usageExamples: unique(matches.flatMap(r => r.usageExamples)).filter(e => !m.senses.some(s => s.example === e)).slice(0, 4)
         };
       });
-      entries = [{ word, ipa: ipaText, meanings: enriched, source: mw ? "Merriam-Webster's Learner's Dictionary" : wk?.length ? 'Wiktionary' : 'Free Dictionary API', relatedSource: related?.length ? 'Free Dictionary API' : null }];
+      entries = [{ word, ipa: ipaText, meanings: enriched, source: mw ? "Merriam-Webster's Learner's Dictionary" : wk?.length ? 'Wiktionary' : 'Free Dictionary API', relatedSource: [related?.length ? 'Free Dictionary API' : null, relations.synonyms !== null || relations.antonyms !== null ? 'Datamuse' : null].filter(Boolean).join(', ') || null }];
       cache.set(`d|${word}`, entries);
     }
     console.log(`lookup "${word}" ${Date.now() - t0}ms`);

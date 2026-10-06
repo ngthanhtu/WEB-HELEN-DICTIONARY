@@ -45,8 +45,8 @@ test('lookup adds related words and examples while retaining the main definition
   assert.equal(response.status, 200);
   const data = await response.json();
   const meaning = data.entries[0].meanings[0];
-  assert.deepEqual(meaning.synonyms, ['joyful', 'glad']);
-  assert.deepEqual(meaning.antonyms, ['sad']);
+  assert.deepEqual(meaning.synonyms, ['joyful', 'glad', 'cheerful']);
+  assert.deepEqual(meaning.antonyms, ['sad', 'unhappy']);
   assert.deepEqual(meaning.usageExamples, ['She was happy to see her friend.']);
   assert.equal(data.entries[0].source, 'Wiktionary');
   const offline = await fetch(`${base}/api/lookup?word=offline&from=en`);
@@ -84,4 +84,13 @@ test('redirects missing local backgrounds to pinned GitHub images', async () => 
       assert.equal(r.headers.get('location'),`https://raw.githubusercontent.com/ngthanhtu/WEB-HELEN-DICTIONARY/bb47b87/${name}`);
     }
   } finally { child.kill(); fs.rmSync(tmp,{recursive:true,force:true}); }
+});
+
+test('relations respect parts of speech and unavailable providers are reported', async () => {
+  await ready;
+  const happy=await (await fetch(`${base}/api/lookup?word=happy&from=en`)).json();
+  assert.ok(!happy.entries[0].meanings[0].synonyms.includes('unrelated-noun'));
+  const offline=await (await fetch(`${base}/api/lookup?word=offline&from=en`)).json();
+  assert.equal(offline.entries[0].meanings[0].relationsUnavailable,true);
+  assert.equal((await fetch(`${base}/healthz`)).status,200);
 });

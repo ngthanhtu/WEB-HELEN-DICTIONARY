@@ -42,3 +42,19 @@ Nút loa bên cạnh từng câu ví dụ dùng giọng ElevenLabs đã chọn. 
 Ảnh nền đã được cấu hình trực tiếp từ hai file mới trong repository: `pexels-mart-production-7550534.jpg` cho toàn trang và `Helennn.jpg` cho khối tiêu đề đến thanh tìm kiếm. Server phục vụ riêng các ảnh này. Biến `--page-wash` và `--lookup-wash` điều chỉnh lớp phủ sáng/tối (alpha cao hơn làm ảnh mờ hơn). Mỗi câu định nghĩa cũng có nút loa riêng, ngoài các câu ví dụ.
 
 Nếu hai ảnh mới không có cùng thư mục server.js, server tự chuyển yêu cầu ảnh sang link raw GitHub đã ghim phiên bản. Khi đó trình duyệt cần Internet để tải ảnh. Chép hai ảnh cùng thư mục vẫn là cách chạy offline. Có thể kiểm tra trực tiếp `/Helennn.jpg` và `/pexels-mart-production-7550534.jpg` trên server local.
+
+## Triển khai để dùng qua đường link (Render)
+
+Repository có `render.yaml` để tạo một Web Service Node.js. Không dùng GitHub Pages vì dịch vụ cần backend cho API và để giữ API key ở server.
+
+1. Đăng nhập Render tại https://dashboard.render.com, chọn **New → Blueprint** và kết nối repository `ngthanhtu/WEB-HELEN-DICTIONARY`, nhánh `main`.
+2. Blueprint đọc render.yaml: build `npm ci`, start `npm start`, health `/healthz`, Node.js 24.
+3. Điền `ELEVENLABS_API_KEY` trong bảng cấu hình bảo mật của Render bằng key hợp lệ của bạn. Không gửi key vào chat hoặc commit key. `MW_LEARNERS_KEY` chỉ cần nếu muốn bật Merriam-Webster.
+4. Tạo/triển khai dịch vụ. Khi trạng thái Live, mở URL HTTPS do Render hiển thị (tên cụ thể do Render cấp). Người dùng truy cập URL đó và không cần chạy terminal.
+5. Kiểm tra `/healthz`, `/api/voices`; tìm từ `happy`, kiểm tra hai nhãn “Từ đồng nghĩa:”/“Từ trái nghĩa:”, và thử loa. Tự triển khai lại khi có commit mới lên main.
+
+Gói miễn phí có thể ngủ khi ít hoạt động và mất thời gian khởi động lại; quota giọng ElevenLabs vẫn tính trên tài khoản của bạn. Server giới hạn yêu cầu mỗi IP trong production: 12 lượt loa, 30 lượt tìm kiếm, 60 lượt dịch mỗi phút. Chọn gói chạy liên tục nếu cần truy cập ngay mọi lúc.
+
+Tệp `env` đã bỏ khỏi danh sách theo dõi Git nhưng giữ trên máy hiện tại để chạy local. Việc bỏ theo dõi không xóa key trong lịch sử Git; thay key đã lộ trước khi triển khai công khai. Dùng `.env.example` làm mẫu trên máy mới.
+
+Datamuse (`api.datamuse.com`, không cần key) bổ sung quan hệ đồng nghĩa/trái nghĩa, lọc theo từ loại. Hai nhãn luôn hiển thị; nếu nguồn không có dữ liệu phù hợp hoặc không truy cập được thì báo rõ thay vì tạo từ không có cơ sở.

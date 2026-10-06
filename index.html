@@ -232,8 +232,8 @@ function render(d, scroll = true) {
         };
         el.append(row);
       });
-      if (m.synonyms?.length) el.insertAdjacentHTML('beforeend', `<div class="syn"><strong>Synonyms:</strong> ${m.synonyms.map(esc).join(', ')}</div>`);
-      if (m.antonyms?.length) el.insertAdjacentHTML('beforeend', `<div class="syn"><strong>Antonyms:</strong> ${m.antonyms.map(esc).join(', ')}</div>`);
+      el.insertAdjacentHTML('beforeend', `<div class="syn"><strong>Từ đồng nghĩa:</strong> ${m.synonyms?.length ? m.synonyms.map(esc).join(', ') : m.relationsUnavailable ? 'Chưa tải được dữ liệu. Hãy thử lại sau.' : 'Nguồn hiện tại chưa có từ phù hợp cho từ loại này.'}</div>`);
+      el.insertAdjacentHTML('beforeend', `<div class="syn"><strong>Từ trái nghĩa:</strong> ${m.antonyms?.length ? m.antonyms.map(esc).join(', ') : m.relationsUnavailable ? 'Chưa tải được dữ liệu. Hãy thử lại sau.' : 'Nguồn hiện tại chưa có từ phù hợp cho từ loại này.'}</div>`);
       if (m.usageExamples?.length) {
         const usage = document.createElement('section'); usage.className = 'usage';
         usage.innerHTML = '<strong>Usage examples</strong><p>Choose synonyms and antonyms to fit this meaning and context.</p>';
@@ -246,7 +246,7 @@ function render(d, scroll = true) {
         el.append(usage);
       }
     });
-    if (en.relatedSource) el.insertAdjacentHTML('beforeend', `<p class="src">Related words and additional examples: ${esc(en.relatedSource)}. Alternatives depend on the sense and context.</p>`);
+    if (en.relatedSource) el.insertAdjacentHTML('beforeend', `<p class="src">Related words and additional examples: ${esc(en.relatedSource)}. Chọn từ thay thế theo nghĩa và ngữ cảnh; danh sách được nhóm theo từ loại.</p>`);
     out.append(el);
   });
   if (d.entries[0].source) out.insertAdjacentHTML('beforeend', `<p class="src">Source: ${esc(d.entries[0].source)}</p>`);
