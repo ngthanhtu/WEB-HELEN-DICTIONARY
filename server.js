@@ -11,6 +11,8 @@ const { createSpeechService } = require('./lib/speech-ai');
 const { createContextService, languages: contextLanguages } = require('./lib/context-ai');
 // Injected variables take precedence; .env takes precedence over legacy env.
 require('dotenv').config({ path: [path.join(__dirname, '.env'), path.join(__dirname, 'env')], quiet: true });
+// Avoid loading the large SDK during the first mobile translation or recording request.
+if(process.env.GEMINI_API_KEY)require('@google/genai');
 const app = express();
 if (process.env.TRUST_PROXY === '1') app.set('trust proxy', 1);
 if (process.env.NODE_ENV === 'production') {
