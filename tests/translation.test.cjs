@@ -31,6 +31,16 @@ test('parallel translation retries share one request; target languages and dicti
   await service.translate('ambiguous', 'en', 'vi', { kind: 'headword', definition: 'a distinct sense' });
   assert.equal(aiCalls, 3);
 });
+
+test('translation keeps its local deadline separate from the Google server deadline',async()=>{
+  const service=createTranslationService({apiKey:'test-only',timeoutMs:150,fetchImpl:async(url,request)=>{
+    if(String(url).includes('mymemory'))return quota();
+    const deadline=Number(new Headers(request.headers).get('X-Server-Timeout'));
+    if(deadline<10)return Response.json({error:{code:400,status:'INVALID_ARGUMENT',message:'Server deadline too short'}},{status:400});
+    assert.ok(request.signal);return gemini(request);
+  }});
+  assert.equal(await service.translate('around the middle','en','vi'),'vi:around the middle');
+});
 test('Gemini quota, malformed or unchanged output are not stored as successful translations', async () => {
   let calls = 0;
   const service = createTranslationService({ apiKey: 'test-only', fetchImpl: async (url, request) => {

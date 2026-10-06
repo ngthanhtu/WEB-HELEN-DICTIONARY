@@ -59,3 +59,13 @@ test('speech caps total provider wait and aborts the request',async t=>{
   await assert.rejects(createSpeechService({apiKey:'test-only',timeoutMs:40}).transcribe(clip),error=>error.code==='SPEECH_TIMEOUT' && error.status===504);
   assert.equal(signal.aborted,true);
 });
+
+test('the speech watchdog does not send its short deadline as the Google server timeout',async t=>{
+  const original=global.fetch;t.after(()=>{global.fetch=original;});
+  global.fetch=async(input,options)=>{
+    const deadline=Number(new Headers(options.headers).get('X-Server-Timeout'));
+    if(deadline<10)return Response.json({error:{code:400,status:'INVALID_ARGUMENT',message:'Server deadline too short'}},{status:400});
+    assert.ok(options.signal);return answer('loan');
+  };
+  assert.equal((await createSpeechService({apiKey:'test-only',timeoutMs:100}).transcribe(clip)).text,'loan');
+});
