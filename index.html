@@ -17,8 +17,8 @@
   --lookup-image:url("/Helennn.jpg"); /* IMAGE 2: heading-through-search background */
 }
 /* Toggle adapted from Uiverse.io by Javierrocadev. */
-:root{color-scheme:light;--bar-bg:#1d2a57;--translation-bg:#f4f2fb;--border:#d9dce6;--error-bg:#fff1f1;--error-text:#8a1f1f}
-:root[data-theme="dark"]{color-scheme:dark;--surface-base:#121827;--page-panel:rgba(18,24,39,.92);--text-primary:#e7edff;--text-tertiary:#b9c5da;--link:#c1a8ff;--surface-muted:#244b3b;--text-green:#c5f6d6;--surface-strong:#222e44;--bar-bg:#101a30;--translation-bg:#29243e;--border:#35415a;--error-bg:#40242c;--error-text:#ffc5cd;--page-wash:rgba(18,24,39,.82);--lookup-wash:rgba(18,24,39,.75)}
+:root{color-scheme:light;--bar-bg:#1d2a57;--translation-bg:#f4f2fb;--border:#d9dce6;--error-bg:#fff1f1;--error-text:#8a1f1f;--action:#2859b8;--action-hover:#193f91;--card-glass:rgba(248,250,255,.84);--soft-glow:rgba(73,112,215,.22)}
+:root[data-theme="dark"]{color-scheme:dark;--surface-base:#121827;--page-panel:rgba(18,24,39,.92);--text-primary:#e7edff;--text-tertiary:#b9c5da;--link:#c1a8ff;--surface-muted:#244b3b;--text-green:#c5f6d6;--surface-strong:#222e44;--bar-bg:#101a30;--translation-bg:#29243e;--border:#35415a;--error-bg:#40242c;--error-text:#ffc5cd;--page-wash:rgba(18,24,39,.82);--lookup-wash:rgba(18,24,39,.75);--action:#4877dc;--action-hover:#638bef;--card-glass:rgba(31,40,63,.87);--soft-glow:rgba(108,138,245,.24)}
 .theme-control{display:inline-flex;align-items:center;gap:10px;cursor:pointer;position:relative}
 .theme-control input{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
 .theme-track{position:relative;display:inline-block;width:96px;height:48px;flex:none;border-radius:999px;background:linear-gradient(90deg,#fb7185,#7f1d1d);box-shadow:1px 3px 0 #000;transition:background .3s}
@@ -36,16 +36,17 @@ a,button,select,input{font:inherit}
 .brand{font-weight:700;font-size:20px;display:flex;align-items:center;gap:var(--space-3)}
 .brand i{width:14px;height:14px;border-radius:50%;background:var(--accent);display:inline-block}
 .bar label{min-width:0;max-width:100%;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.bar select{max-width:100%;background:var(--surface-base);color:var(--text-primary);border:0;border-radius:var(--radius-pill);padding:var(--space-3) var(--space-5);min-height:40px}
+.bar select{max-width:100%;background:linear-gradient(var(--surface-base),var(--surface-base)) padding-box,linear-gradient(125deg,var(--accent),#9caaf8) border-box;color:var(--text-primary);border:2px solid transparent;border-radius:var(--radius-pill);padding:var(--space-3) var(--space-5);min-height:46px;box-shadow:0 5px 16px rgba(0,0,0,.14);cursor:pointer;transition:box-shadow .2s,transform .2s}
+.bar select:hover,.bar select:focus-visible{box-shadow:0 0 0 4px var(--soft-glow),0 8px 22px rgba(0,0,0,.16);transform:translateY(-1px)}
 .hero{display:grid;grid-template-columns:1.3fr 1fr;gap:var(--space-7);align-items:center;padding:var(--space-7) var(--space-6);max-width:1200px;margin:auto}
 .lookup-panel{overflow:hidden;border-radius:var(--radius-md);padding:var(--space-6);background-color:var(--surface-base);background-image:linear-gradient(var(--lookup-wash),var(--lookup-wash)),var(--lookup-image);background-size:cover;background-position:35% center;box-shadow:var(--shadow-1)}
 .hero h1{font-size:44px;line-height:52.8px;font-weight:400;margin:0 0 var(--space-5);max-width:16ch}
 .hero p{margin:0 0 var(--space-6);max-width:52ch;color:var(--text-tertiary)}
-.search{display:flex;gap:var(--space-3);background:var(--surface-base);border:2px solid var(--text-primary);border-radius:var(--radius-pill);padding:var(--space-2);box-shadow:var(--shadow-inset)}
+.search{display:flex;gap:var(--space-3);background:linear-gradient(var(--surface-base),var(--surface-base)) padding-box,linear-gradient(120deg,var(--action),#a37bde,var(--accent)) border-box;border:2px solid transparent;border-radius:var(--radius-pill);padding:var(--space-2);box-shadow:0 8px 22px rgba(24,41,98,.2),0 0 0 3px var(--soft-glow);transition:box-shadow .2s,transform .2s}
 .search select{border:0;background:transparent;color:var(--text-primary);padding:0 var(--space-3);max-width:130px;min-height:44px}
 .search input{flex:1;min-width:0;border:0;background:transparent;padding:0 var(--space-3);color:var(--text-primary);min-height:44px}
 .search input:focus-visible{outline:0}
-.search:focus-within{outline:3px solid var(--link);outline-offset:2px}
+.search:focus-within{outline:3px solid var(--link);outline-offset:2px;box-shadow:0 10px 26px rgba(24,41,98,.25),0 0 0 6px var(--soft-glow)}
 .btn{border:0;border-radius:var(--radius-pill);padding:var(--space-3) var(--space-6);min-height:44px;min-width:44px;font-weight:700;cursor:pointer;background:var(--accent);color:#1d2a57;transition:transform .15s}
 .btn:hover{background:var(--surface-muted)}.btn:active{transform:scale(.97)}.btn:disabled{opacity:.5;cursor:not-allowed}
 .img-slot{aspect-ratio:4/3;border-radius:var(--radius-md);background:var(--surface-base);border:2px dashed var(--text-primary);overflow:hidden}
@@ -53,38 +54,55 @@ a,button,select,input{font:inherit}
 main{max-width:900px;margin:0 auto;padding:0 var(--space-6) var(--space-7)}
 .status{padding:var(--space-5);border-radius:var(--radius-sm);background:var(--surface-muted);color:var(--text-green);margin:var(--space-5) 0}
 .status.error{background:var(--error-bg);color:var(--error-text);border:2px solid var(--error-text)}
+.status.provisional{background:var(--translation-bg);color:var(--text-primary);border-left:4px solid var(--action)}
 .entry{border-top:4px solid var(--accent);padding-top:var(--space-5);margin-top:var(--space-6)}
 .hw{display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-4)}
 .hw h2{font-size:36px;margin:0;font-weight:700}
 .ipa{font-size:18px;color:var(--link)}
-.say{width:44px;height:44px;border-radius:50%;border:0;background:var(--bar-bg);color:var(--text-inverse);cursor:pointer;font-size:18px}
+.say{width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.4);background:var(--action);color:#fff;cursor:pointer;font-size:18px;box-shadow:0 4px 12px var(--soft-glow);transition:background .2s,box-shadow .2s,transform .2s}
+.say:hover{background:var(--action-hover);box-shadow:0 0 0 5px var(--soft-glow),0 6px 16px rgba(17,39,93,.28);transform:translateY(-2px) scale(1.06)}
+.say:active{transform:scale(.95)}
 .say[aria-busy=true]{opacity:.6}
 .pos{display:inline-block;background:var(--surface-strong);color:var(--text-inverse);border-radius:var(--radius-pill);padding:var(--space-2) var(--space-4);font-size:14px;margin:var(--space-5) 0 var(--space-3)}
 .sense{display:grid;grid-template-columns:1fr auto;gap:var(--space-3) var(--space-4);padding:var(--space-4) 0;border-bottom:1px solid var(--border)}
 .def{font-weight:700;overflow-wrap:anywhere}
 .ex{color:var(--text-tertiary);font-style:italic;margin-top:var(--space-2);grid-column:1}
-.eye{width:44px;height:44px;border-radius:50%;border:2px solid var(--text-primary);background:var(--surface-base);cursor:pointer;color:var(--text-primary);grid-row:1/3;grid-column:2}
-.eye[aria-pressed=true]{background:var(--surface-muted)}
+.eye{width:48px;height:48px;border-radius:50%;border:2px solid var(--action);background:var(--surface-base);cursor:pointer;color:var(--action);grid-row:1/3;grid-column:2;box-shadow:0 4px 12px var(--soft-glow);transition:background .2s,box-shadow .2s,transform .2s}
+.eye:hover{background:var(--action);color:#fff;box-shadow:0 0 0 5px var(--soft-glow),0 6px 16px rgba(17,39,93,.2);transform:translateY(-2px) scale(1.06)}
+.eye:active{transform:scale(.95)}
+.eye[aria-pressed=true]{background:var(--surface-muted);color:var(--text-primary);border-color:var(--text-primary)}
 .tr{grid-column:1/3;background:var(--translation-bg);border-radius:var(--radius-sm);padding:var(--space-3) var(--space-4);color:var(--link);overflow-wrap:anywhere}
 .tr[hidden]{display:none}
-.example-say{width:32px;height:32px;font-size:14px;vertical-align:middle;margin-left:8px}
+.example-say{width:40px;height:40px;font-size:15px;vertical-align:middle;margin-left:8px}
 .meaning-heading{font-size:24px;margin:24px 0 8px}.meaning-heading em{font-size:17px;font-weight:400;margin-left:8px}
 .sense-number{font-size:14px;display:inline-block;min-width:22px;color:var(--link)}
 .examples{padding-left:30px;margin-bottom:0;font-weight:400}.examples li{margin:8px 0}
-.sense-relations{grid-column:1/3;font-size:14px;padding:12px 16px;border-left:3px solid var(--accent);background:var(--translation-bg);border-radius:0 12px 12px 0}
+.sense-relations{grid-column:1/3;display:flex;flex-wrap:wrap;gap:4px 20px;font-size:14px;padding:10px 14px;border-left:3px solid var(--accent);background:var(--translation-bg);border-radius:0 12px 12px 0}
 .word-notes{margin:16px 0;background:var(--translation-bg);padding:14px 18px;border-radius:12px;font-size:14px}.word-notes summary{cursor:pointer;font-weight:700}.word-notes p{margin:8px 0}
 .learning-tools{max-width:900px;margin:0 auto;padding:0 var(--space-6);display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.learning-tools details{background:var(--page-panel);border:1px solid var(--border);border-radius:16px;padding:16px;min-width:0}
-.learning-tools summary{cursor:pointer;font-weight:700}.learning-tools p{font-size:14px;color:var(--text-tertiary)}
+.learning-tools details{background:var(--card-glass);border:1px solid rgba(142,162,229,.5);border-radius:18px;padding:16px;min-width:0;backdrop-filter:blur(9px);box-shadow:0 9px 24px rgba(24,41,98,.16);transition:box-shadow .2s,transform .2s,border-color .2s}
+.learning-tools details:hover,.learning-tools details:focus-within{border-color:var(--action);box-shadow:0 14px 30px rgba(24,41,98,.2),0 0 0 3px var(--soft-glow);transform:translateY(-2px)}
+.learning-tools summary{cursor:pointer;font-weight:700;min-height:36px}.learning-tools p{font-size:14px;color:var(--text-tertiary)}
 .word-list{display:flex;gap:8px;flex-wrap:wrap;padding-top:12px}
-.word-link,.favorite{border:1px solid var(--border);background:var(--surface-base);color:var(--link);border-radius:12px;padding:10px 14px;cursor:pointer;min-height:44px;overflow-wrap:anywhere;max-width:100%}
+.word-link,.favorite{border:1px solid var(--action);background:var(--surface-base);color:var(--action);border-radius:12px;padding:10px 14px;cursor:pointer;min-height:44px;overflow-wrap:anywhere;max-width:100%;box-shadow:0 4px 12px var(--soft-glow);transition:background .2s,color .2s,box-shadow .2s,transform .2s}
+.word-link:hover,.favorite:hover{background:var(--action);color:#fff;box-shadow:0 0 0 4px var(--soft-glow);transform:translateY(-2px)}
+.suggestions-list{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
 .favorite[aria-pressed=true]{background:var(--accent);color:#1d2a57}
 .collocations{background:var(--translation-bg);border-left:3px solid var(--accent);border-radius:0 12px 12px 0;padding:16px;margin-top:24px}
 .collocations h3{margin-top:0}.collocations h4{margin:16px 0 8px}.collocations ul{padding-left:24px}.collocations li{margin:12px 0}.collocations p{font-size:14px}.collocations .ex{display:block}
+.extra-card{margin:28px 0 12px;background:var(--card-glass);border:1px solid rgba(142,162,229,.55);border-radius:18px;box-shadow:0 10px 28px rgba(24,41,98,.18);backdrop-filter:blur(8px);overflow:hidden;transition:border-color .2s,box-shadow .2s,transform .2s}
+.extra-card:hover,.extra-card:focus-within{border-color:var(--action);box-shadow:0 15px 32px rgba(24,41,98,.2),0 0 0 3px var(--soft-glow);transform:translateY(-2px)}
+.extra-card>summary{display:flex;align-items:center;justify-content:space-between;gap:16px;cursor:pointer;padding:18px 20px;list-style:none;min-height:82px}
+.extra-card>summary::-webkit-details-marker{display:none}
+.extra-title{font-size:18px;font-weight:700}.extra-title small{display:block;font-size:13px;font-weight:400;color:var(--text-tertiary);margin-top:3px}
+.extra-indicator{display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:50%;background:var(--action);color:#fff;font-size:24px;line-height:1;transition:transform .2s}
+.extra-card[open] .extra-indicator{transform:rotate(45deg)}
+.extra-body{border-top:1px solid var(--border);padding:4px 20px 20px}
+.extra-body>.collocations,.extra-body>.usage,.extra-body>.word-notes{margin-top:16px}
 @media(max-width:600px){.learning-tools{grid-template-columns:1fr}}
 .usage{padding:var(--space-4);background:var(--translation-bg);border-radius:var(--radius-sm)}
 .usage p{margin:8px 0}
-.syn{margin-top:var(--space-3);font-size:14px}
+.syn{flex:1 1 245px;min-width:0;font-size:14px}
 .src{font-size:13px;color:var(--text-tertiary);margin-top:var(--space-5)}
 footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--space-6);text-align:center;font-size:14px}
 @media (max-width:760px){.hero{grid-template-columns:1fr}.hero h1{font-size:32px;line-height:40px}.search{flex-wrap:wrap;border-radius:var(--radius-md)}.search select{max-width:none;width:100%}}
@@ -227,15 +245,16 @@ async function tr(texts, from, to) {
   const r = await fetch(`${API}/api/translate`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({texts, from, to})});
   if (!r.ok) throw 0; return (await r.json()).translations;
 }
-function msg(t, err) { $('#out').innerHTML = `<div class="status ${err?'error':''}" role="${err?'alert':'status'}">${esc(t)}</div>`; }
+function msg(t, err, variant = '') { $('#out').innerHTML = `<div class="status ${err?'error':variant}" role="${err?'alert':'status'}">${esc(t)}</div>`; }
 
-function showSuggestions(data) {
-  msg(`Không tìm thấy từ khớp chính xác với “${data.word || data.query}” trong từ điển tiếng Anh.`,true);
+function showSuggestions(data, provisional = false) {
+  if(provisional && !data.suggestions?.length) return;
+  msg(provisional ? `Đang kiểm tra “${data.word}”. Bạn có thể chọn một từ gần cách viết:` : `Không tìm thấy từ khớp chính xác với “${data.word || data.query}” trong từ điển tiếng Anh.`,!provisional,provisional?'provisional':'');
   const section=document.createElement('section'); section.className='word-notes';
-  section.innerHTML='<h3>Có phải bạn muốn tìm?</h3>';
+  section.innerHTML=`<h3>${provisional?'Gợi ý nhanh':'Có phải bạn muốn tìm?'}</h3>`;
   if(data.suggestions?.length) {
-    const list=document.createElement('ul');
-    data.suggestions.forEach(word=>{const item=document.createElement('li');item.append(wordButton(word));list.append(item);});
+    const list=document.createElement('div'); list.className='suggestions-list';
+    data.suggestions.forEach(word=>list.append(wordButton(word)));
     section.append(list);
   } else section.insertAdjacentHTML('beforeend','<p>Chưa có gợi ý phù hợp. Hãy kiểm tra chính tả hoặc ngôn ngữ nhập.</p>');
   $('#out').append(section);
@@ -247,9 +266,21 @@ async function searchWord({ scroll = true, recordHistory = true } = {}) {
   remember('helen-query', $('#q').value); remember('helen-from', from);
   lastResult = null; ++targetRequest;
   msg('Searching…');
+  let resolved=false;
+  // Spell checking uses local WordNet data; remote dictionary timeouts never delay these links.
+  const spellingTimer=from==='en' ? setTimeout(async()=>{
+    if(resolved || request!==searchRequest) return;
+    try {
+      const response=await fetch(`${API}/api/spelling?word=${encodeURIComponent(word)}`);
+      if(!response.ok) return;
+      const data=await response.json();
+      if(!resolved && request===searchRequest) showSuggestions(data,true);
+    } catch {}
+  },350) : null;
   try {
     const r = await fetch(`${API}/api/lookup?word=${encodeURIComponent(word)}&from=${encodeURIComponent(from)}`);
     const d = await r.json();
+    resolved=true; clearTimeout(spellingTimer);
     if (request !== searchRequest) return;
     if (!r.ok) return r.status===404 ? showSuggestions(d) : msg(d.error, true);
     if (recordHistory) addHistory(d.word);
@@ -260,7 +291,9 @@ async function searchWord({ scroll = true, recordHistory = true } = {}) {
         .then(details => {
           if (request !== searchRequest) return;
           const open = [...document.querySelectorAll('.eye')].flatMap((button, index) => button.getAttribute('aria-pressed') === 'true' ? [{index,text:button.parentElement.querySelector('.tr').textContent}] : []);
+          const expanded = [...document.querySelectorAll('.extra-card')].map(card => card.open);
           render({...details, query:d.query, from:d.from}, false);
+          document.querySelectorAll('.extra-card').forEach((card,index) => { card.open=Boolean(expanded[index]); });
           const buttons = document.querySelectorAll('.eye');
           open.forEach(({index,text}) => {
             const button = buttons[index]; if (!button) return;
@@ -275,6 +308,7 @@ async function searchWord({ scroll = true, recordHistory = true } = {}) {
         });
     }
   } catch { if (request === searchRequest) msg('Cannot reach the server. Check that it is running.', true); }
+  finally { resolved=true; clearTimeout(spellingTimer); }
 }
 $('#form').addEventListener('submit', e => { e.preventDefault(); searchWord(); });
 
@@ -296,6 +330,9 @@ function render(d, scroll = true) {
   d.entries.forEach(en => {
     const el = document.createElement('article'); el.className = 'entry';
     el.innerHTML = `<div class="hw"><h2>${esc(en.word)}</h2>${en.ipa ? `<span class="ipa" aria-label="IPA">${esc(en.ipa)}</span>` : ''}<button class="say" type="button" aria-label="Hear pronunciation of ${esc(en.word)}">🔊</button><button class="favorite" type="button"></button></div><div id="library-status" role="status"></div>`;
+    const extraCard=document.createElement('details'); extraCard.className='extra-card';
+    extraCard.innerHTML='<summary><span class="extra-title">Khám phá thêm <small>Collocations · từ liên quan · ví dụ</small></span><span class="extra-indicator" aria-hidden="true">+</span></summary>';
+    const extraBody=document.createElement('div'); extraBody.className='extra-body'; extraCard.append(extraBody);
     el.querySelector('.say').onclick = ev => speak(en.word, ev.currentTarget);
     const favorite=el.querySelector('.favorite'); updateFavoriteButton(favorite,en.word);
     favorite.onclick=()=>toggleFavorite(en.word,favorite);
@@ -319,8 +356,8 @@ function render(d, scroll = true) {
           box.hidden = false; eye.setAttribute('aria-pressed','true'); eye.setAttribute('aria-label','Hide translation'); eye.textContent='🙈';
         };
         row.insertAdjacentHTML('beforeend', `<div class="sense-relations">
-          <div class="syn"><strong>Từ đồng nghĩa:</strong> ${s.synonyms?.length ? s.synonyms.map(esc).join(', ') : m.relationsPending && !s.relationSource ? 'Đang tải…' : 'Chưa có từ đồng nghĩa được nguồn xác nhận cho nghĩa này.'}</div>
-          <div class="syn"><strong>Từ trái nghĩa:</strong> ${s.antonyms?.length ? s.antonyms.map(esc).join(', ') : m.relationsPending && !s.relationSource ? 'Đang tải…' : 'Nguồn hiện tại không ghi nhận từ trái nghĩa trực tiếp cho nghĩa này.'}</div>
+          <div class="syn"><strong>Từ đồng nghĩa:</strong> ${s.synonyms?.length ? s.synonyms.map(esc).join(', ') : m.relationsPending && !s.relationSource ? 'Đang tải…' : 'Chưa ghi nhận cho nghĩa này.'}</div>
+          <div class="syn"><strong>Từ trái nghĩa:</strong> ${s.antonyms?.length ? s.antonyms.map(esc).join(', ') : m.relationsPending && !s.relationSource ? 'Đang tải…' : 'Chưa ghi nhận cho nghĩa này.'}</div>
         </div>`);
         el.append(row);
       });
@@ -328,7 +365,7 @@ function render(d, scroll = true) {
       const confirmedAntonyms = new Set(m.senses.flatMap(s => s.antonyms || []));
       const nearSynonyms = [...new Set([...(m.synonyms || []), ...(m.relatedSynonyms || [])])].filter(word => !confirmedSynonyms.has(word));
       const nearAntonyms = [...new Set([...(m.antonyms || []), ...(m.relatedAntonyms || [])])].filter(word => !confirmedAntonyms.has(word));
-      if (nearSynonyms.length || nearAntonyms.length) el.insertAdjacentHTML('beforeend', `<details class="word-notes"><summary>Từ liên quan — ${esc(m.pos)}</summary>
+      if (nearSynonyms.length || nearAntonyms.length) extraBody.insertAdjacentHTML('beforeend', `<details class="word-notes"><summary>Từ liên quan — ${esc(m.pos)}</summary>
         <p>Danh sách theo từ loại, chưa được gắn với từng nghĩa. Hãy đối chiếu ngữ cảnh trước khi thay thế.</p>
         ${nearSynonyms.length ? `<p><strong>Gợi ý gần nghĩa:</strong> ${nearSynonyms.map(esc).join(', ')}</p>` : ''}
         ${nearAntonyms.length ? `<p><strong>Gợi ý đối nghĩa:</strong> ${nearAntonyms.map(esc).join(', ')}</p>` : ''}
@@ -342,7 +379,7 @@ function render(d, scroll = true) {
           line.querySelector('button').onclick = ev => speak(example, ev.currentTarget);
           usage.append(line);
         });
-        el.append(usage);
+        extraBody.append(usage);
       }
     });
     const collocationData=en.collocations || {teaching:[],corpus:[],pending:true};
@@ -373,8 +410,9 @@ function render(d, scroll = true) {
       addPhrases(collocationData.corpus,corpus); phrases.append(corpus);
     }
     if(!collocationData.teaching.length && !collocationData.corpus.length) phrases.insertAdjacentHTML('beforeend',`<p class="${collocationData.pending?'pending':''}">${collocationData.pending?'Đang tải cụm từ…':collocationData.unavailable?'Chưa kết nối được nguồn cụm từ. Hãy thử lại sau.':'Nguồn hiện tại chưa có cụm từ phù hợp cho từ này.'}</p>`);
-    el.append(phrases);
-    if (en.relatedSource) el.insertAdjacentHTML('beforeend', `<p class="src">Related words and additional examples: ${esc(en.relatedSource)}. Chọn từ thay thế theo nghĩa và ngữ cảnh; từ đồng nghĩa/trái nghĩa dưới mỗi nghĩa được nguồn xác nhận; gợi ý theo từ loại nằm trong mục Từ liên quan.</p>`);
+    extraBody.append(phrases);
+    if (en.relatedSource) extraBody.insertAdjacentHTML('beforeend', `<p class="src">Related words and additional examples: ${esc(en.relatedSource)}. Chọn từ thay thế theo nghĩa và ngữ cảnh; từ đồng nghĩa/trái nghĩa dưới mỗi nghĩa được nguồn xác nhận; gợi ý theo từ loại nằm trong mục Từ liên quan.</p>`);
+    el.append(extraCard);
     out.append(el);
   });
   if (d.entries[0].source) out.insertAdjacentHTML('beforeend', `<p class="src">Source: ${esc(d.entries[0].source)}</p>`);

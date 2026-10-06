@@ -3,17 +3,18 @@ const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const fs = require('node:fs');
 const script = fs.readFileSync(require('node:path').join(__dirname,'../index.html'),'utf8').split('<script>')[1].split('</script>')[0];
-function page(saved = {}) {
+function page(saved = {}, lookupFetch = null) {
   const elements = new Map(), created = [];
   const element = id => {
     if (!elements.has(id)) elements.set(id,{value:'',textContent:'',events:{},innerHTML:'',append(){},insertAdjacentHTML(){},querySelector(){return null;},add(option){(this.options ||= []).push(option);},replaceChildren(){this.options=[];},setAttribute(){},removeAttribute(){},addEventListener(name,fn){this.events[name]=fn;}});
     return elements.get(id);
   };
   const requests=[];
-  const context = vm.createContext({document:{documentElement:{dataset:{}},createElement:()=>{ const node=element(`#created-${created.length}`), children=new Map(); node.querySelectorAll=sel=>[node.querySelector(sel)]; node.querySelector=sel=>{if(!children.has(sel)) children.set(sel,element(`#child-${created.length}-${sel}`)); return children.get(sel);}; created.push(node); return node; },querySelector:element,querySelectorAll:()=>[]}, localStorage:{getItem:k=>saved[k],setItem:(k,v)=>saved[k]=v}, Image:class {}, Option:class {constructor(text,value){this.text=text;this.value=value;}}, URL, Audio:class {}, fetch:async(url,options)=>{
+  const context = vm.createContext({document:{documentElement:{dataset:{}},createElement:()=>{ const node=element(`#created-${created.length}`), children=new Map(); node.querySelectorAll=sel=>[node.querySelector(sel)]; node.querySelector=sel=>{if(!children.has(sel)) children.set(sel,element(`#child-${created.length}-${sel}`)); return children.get(sel);}; created.push(node); return node; },querySelector:element,querySelectorAll:()=>[]}, localStorage:{getItem:k=>saved[k],setItem:(k,v)=>saved[k]=v}, Image:class {}, Option:class {constructor(text,value){this.text=text;this.value=value;}}, URL, Audio:class {}, setTimeout, clearTimeout, fetch:async(url,options)=>{
     requests.push({url,options});
     if(url.includes('/api/voices')) return {ok:true,json:async()=>({in_use:'Rachel',voices:[{name:'Rachel',voice_id:'Rachel',category:'premade',dialect:'Ame'},{name:'Sarah',voice_id:'Sarah',category:'premade',dialect:'Eng'}]})};
-    if(url.includes('/api/lookup')) { const query = new URL(url, 'http://test').searchParams; if(query.get('word')==='experimence') return {ok:false,status:404,json:async()=>({word:'experimence',suggestions:['experience','experiment']})}; return {ok:true,json:async()=>({query:query.get('word'),word:'hello',from:query.get('from'),entries:[{word:'hello',meanings:[],source:'test'}]})}; }
+    if(url.includes('/api/spelling')) return {ok:true,json:async()=>({word:new URL(url,'http://test').searchParams.get('word'),suggestions:['experience','experiment']})};
+    if(url.includes('/api/lookup')) { if(lookupFetch) return lookupFetch(url); const query = new URL(url, 'http://test').searchParams; if(query.get('word')==='experimence') return {ok:false,status:404,json:async()=>({word:'experimence',suggestions:['experience','experiment']})}; return {ok:true,json:async()=>({query:query.get('word'),word:'hello',from:query.get('from'),entries:[{word:'hello',meanings:[],source:'test'}]})}; }
     if(url.includes('/api/tts')) return {ok:false};
     const body=JSON.parse(options.body); return {ok:true,json:async()=>({translations:[`${body.to}:hello`]})};
   }});
@@ -138,4 +139,22 @@ test('collocation and teaching example speakers use the selected voice and full 
     const params=new URL(p.requests.filter(r=>r.url.includes('/api/tts')).at(-1).url,'http://test').searchParams;
     assert.equal(params.get('text'),text); assert.equal(params.get('voice'),'Sarah');
   }
+});
+
+
+test('shows spelling links before the slow lookup ends and ignores its stale response after a click',async()=>{
+  let finishSlow;
+  const slow=new Promise(resolve=>finishSlow=resolve);
+  const p=page({},url=>url.includes('word=experimence')?slow:{ok:true,json:async()=>({query:'experience',word:'experience',from:'en',entries:[{word:'experience',meanings:[],source:'test'}]})});
+  p.element('#q').value='experimence';
+  const oldLookup=vm.runInContext('searchWord()',p.context);
+  await new Promise(resolve=>setTimeout(resolve,550));
+  assert.match(p.element('#out').innerHTML,/Đang kiểm tra/);
+  const suggestion=p.created.find(node=>node.className==='word-link' && node.textContent==='experience');
+  assert.ok(suggestion);
+  suggestion.onclick(); await new Promise(resolve=>setImmediate(resolve));
+  finishSlow({ok:false,status:404,json:async()=>({word:'experimence',suggestions:['experiment']})});
+  await oldLookup;
+  assert.equal(vm.runInContext('lastResult.word',p.context),'experience');
+  assert.ok(!p.element('#out').innerHTML.includes('Không tìm thấy từ khớp'));
 });

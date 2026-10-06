@@ -156,3 +156,16 @@ test('voices include accents from metadata and keep the configured selection ID'
   assert.deepEqual(data.voices.map(voice=>voice.dialect),['Ame','Eng',null,null]);
   assert.equal(data.voices[3].accent,'Australian English');
 });
+
+test('local spelling suggestions answer while a remote lookup is still pending',async()=>{
+  await ready;
+  const pending=fetch(`${base}/api/lookup?word=slow&from=en`);
+  const start=Date.now();
+  const response=await fetch(`${base}/api/spelling?word=experimence`);
+  const data=await response.json();
+  assert.equal(response.status,200);
+  assert.ok(Date.now()-start<2000,'spelling must not wait for the 3.8-second dictionary request');
+  assert.deepEqual(data.suggestions.slice(0,2),['experience','experiment']);
+  assert.equal((await fetch(`${base}/api/spelling?word=experiment`).then(r=>r.json())).suggestions.length,0);
+  assert.equal((await pending).status,200);
+});

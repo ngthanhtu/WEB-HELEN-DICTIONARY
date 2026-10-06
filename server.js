@@ -3,7 +3,7 @@ require('dns').setDefaultResultOrder('ipv4first');
 const express = require('express');
 const path = require('path');
 const { wordnetMeanings } = require('./lib/lexicon');
-const { spellingSuggestions } = require('./lib/spelling');
+const { spellingSuggestions, warmSpellingIndex } = require('./lib/spelling');
 const { voiceMetadata } = require('./lib/voice-labels');
 const { teachingCollocations, corpusPhrases } = require('./lib/collocations');
 // Injected variables take precedence; .env takes precedence over legacy env.
@@ -16,6 +16,7 @@ if (process.env.NODE_ENV === 'production') {
     message:{error:'Bạn thao tác quá nhanh. Hãy đợi một phút rồi thử lại.'}});
   app.use('/api/tts', limit(12));
   app.use('/api/lookup', limit(30));
+  app.use('/api/spelling', limit(30));
   app.use('/api/translate', limit(60));
 }
 const PORT = process.env.PORT || 3000;
@@ -168,6 +169,12 @@ async function wordRelations(word) {
 }
 
 const lookups = new Map();
+// Local suggestions stay responsive while remote dictionaries verify exact matches.
+app.get('/api/spelling', async (req,res) => {
+  const word=String(req.query.word||'').trim().toLowerCase();
+  if(word.length>100) return res.status(400).json({error:'Use at most 100 characters.'});
+  res.json({word,suggestions:await spellingSuggestions(word).catch(()=>[])});
+});
 async function collocations(word) {
   const teaching = teachingCollocations(word);
   if (!/^[a-z]{2,48}$/.test(word)) return {teaching,corpus:[],unavailable:false};
@@ -302,4 +309,8 @@ app.get('/api/tts', async (req, res) => {
   } catch (e) { res.status(502).json({ error: e.message || 'Voice service is unavailable.', upstream_status: e.upstreamStatus }); }
 });
 
-app.listen(PORT, () => console.log(`Helen Dictionary v4 on http://localhost:${PORT}\nElevenLabs key: ${KEY ? 'set' : 'MISSING'} | Voice ID in use: ${VOICE}`));
+app.listen(PORT, () => {
+  console.log(`Helen Dictionary v4 on http://localhost:${PORT}\nElevenLabs key: ${KEY ? 'set' : 'MISSING'} | Voice ID in use: ${VOICE}`);
+  // Read the spelling index during startup so the first typo does not pay its loading cost.
+  warmSpellingIndex().catch(error=>console.warn(`Spelling index unavailable: ${error.code || error.name}`));
+});
