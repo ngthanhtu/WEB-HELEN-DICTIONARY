@@ -117,3 +117,18 @@ Trình duyệt lưu tối đa 20 bài AI thành công trong 24 giờ dưới `he
 Hoạt ảnh hamster do người dùng cung cấp (Uiverse.io by Nawsome) nằm trong `public/assets/hamster.css`, phục vụ tại `/assets/hamster.css`. Các trạng thái chờ tra cứu, kiểm tra chính tả, tải giọng, dịch từ/định nghĩa, chuẩn bị âm thanh, tạo AI, tải dữ liệu bổ sung và ảnh đều có loading phù hợp kích thước. Khi hoàn tất hoặc lỗi, loading dừng; nút trở lại hoạt động. `prefers-reduced-motion` tắt chuyển động và giữ thông báo trạng thái.
 
 Trong **Explore more**, các mục Related words, More examples, Collocations, Common word combinations (Datamuse), Short dialogue, Real-life scenario và Animated video prompt có tiêu đề tiếng Anh. Chú thích và bản dịch vẫn theo ngôn ngữ đang dùng. Hover/focus làm nổi màu, viền và bóng; không đổi độ rộng. Bấm tiêu đề hoặc Enter/Space để mở, dấu + chuyển thành dấu đóng. Trạng thái mở của các mục được giữ khi dữ liệu bổ sung tải xong. Giao diện được kiểm tra cả desktop, mobile và dark mode.
+
+## Chú chó ở con trỏ hoặc cạnh tên website
+
+Hai ảnh chó người dùng cung cấp được tách phần đầu và tai, nền trong suốt, lưu ở `public/assets/pet/dog-idle.png` và `dog-pressed.png`. Cấu hình nằm riêng trong **`public/assets/appearance.json`**; ảnh không nhúng vào HTML/JavaScript. Chỉ cần sửa file này rồi commit để Render tự deploy:
+
+- `enabled` (dòng 2): đặt `false` để bỏ hoàn toàn tính năng; khi đó không tải ảnh chó.
+- `mode` (dòng 3): `cursor` để dùng ở con trỏ desktop; `mascot` để đặt cạnh tên Helen Dictionary trên cả desktop/mobile.
+- `touchMode` (dòng 4): `mascot` để hiện chó cạnh tên trên thiết bị cảm ứng; `off` để bỏ trên thiết bị này.
+- `size` (dòng 5): mặc định 32 px, cho phép 24–48 px.
+- `idleImage` / `pressedImage` (dòng 6–7): thay đường dẫn ảnh riêng, hoặc URL HTTPS của ảnh PNG/WebP nền trong suốt. Có thể thay hai file ảnh trong thư mục pet bằng ảnh mới cùng tên.
+- `pressedHoldMs` (dòng 8): giữ ảnh bấm ít nhất 180 ms để dễ nhìn; cho phép 0–400 ms.
+
+Desktop: đầu chó theo chuột, có chấm nhỏ xác định đúng vị trí bấm; bấm trái dùng ảnh thứ hai, thả chuột trở về ảnh đầu. Ảnh được đảo phía khi gần mép màn hình để không tràn. Mobile/mascot: chạm nút chó để đổi qua lại hai ảnh. Công tắc **Dog cursor / Dog mascot** ở cuối trang bật/tắt theo sở thích và lưu trong trình duyệt; không ghi đè cấu hình chung.
+
+Ảnh tải ở nền; con trỏ hệ thống vẫn được giữ tới khi cả hai ảnh tải thành công. Không có cấu hình, `enabled:false`, hoặc ảnh lỗi đều dùng con trỏ hệ thống. Lớp chó không nhận sự kiện chuột nên nút, nhập liệu và chọn văn bản vẫn hoạt động. Tab, rời trang hoặc mất focus trả về con trỏ thường. Đã kiểm tra trong Chromium: ảnh normal/pressed, bật/tắt qua reload, bấm tra từ, ảnh thiếu, thay cấu hình, góc màn hình và mobile không tràn ngang.

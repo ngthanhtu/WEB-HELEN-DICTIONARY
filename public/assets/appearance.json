@@ -1,0 +1,9 @@
+{
+  "enabled": true,
+  "mode": "cursor",
+  "touchMode": "mascot",
+  "size": 32,
+  "idleImage": "/assets/pet/dog-idle.png",
+  "pressedImage": "/assets/pet/dog-pressed.png",
+  "pressedHoldMs": 180
+}

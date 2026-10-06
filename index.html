@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Helen Dictionary</title>
 <link rel="stylesheet" href="/assets/hamster.css">
+<link rel="stylesheet" href="/assets/pet-pointer.css">
 <style>
 :root{
   --text-primary:#1d2a57; --text-inverse:#fff; --link:#5d2fc1; --accent:#fec400;
@@ -135,7 +136,7 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
 </head>
 <body>
 <header class="bar">
-  <div class="brand"><i aria-hidden="true"></i>Helen Dictionary</div>
+  <div class="brand"><i aria-hidden="true"></i>Helen Dictionary<button id="pet-mascot" class="pet-mascot" type="button" aria-label="Change dog picture" hidden><img alt="" draggable="false"></button></div>
   <label>Meanings in
     <select id="target" aria-label="Translate meanings into"></select>
   </label>
@@ -171,7 +172,8 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
   <details><summary>Lịch sử tra cứu <span id="history-count">0</span></summary><p>40 từ tra thành công gần nhất, lưu trong trình duyệt này.</p><button class="word-link" id="clear-history" type="button">Xóa lịch sử</button><div class="word-list" id="history-list"></div></details>
 </section>
 <main id="out" aria-live="polite"></main>
-<footer>Helen Dictionary</footer>
+<footer>Helen Dictionary<label class="pet-control" id="pet-control" hidden><input id="pet-toggle" type="checkbox"><span id="pet-label">Dog cursor</span></label></footer>
+<div class="pet-cursor" id="pet-cursor" aria-hidden="true" hidden><span class="pet-pointer"><span class="pet-hotspot"></span><img alt="" draggable="false"></span></div>
 
 <script>
 // ===== CONFIG =====
@@ -626,5 +628,6 @@ $('#target').addEventListener('change', () => {
 // Re-run the saved lookup so results remain current after a reload.
 if ($('#q').value.trim()) searchWord({ scroll: false, recordHistory: false });
 </script>
+<script src="/assets/pet-pointer.js" defer></script>
 </body>
 </html>
