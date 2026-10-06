@@ -16,10 +16,13 @@ global.fetch = async (input, opts = {}) => {
   }
   if (url.hostname === 'api.dictionaryapi.dev') {
     const word = url.pathname.split('/').pop();
+    if (word === 'slow') await new Promise((resolve,reject)=>{const timer=setTimeout(resolve,3800);opts.signal?.addEventListener('abort',()=>{clearTimeout(timer);reject(new DOMException('Aborted','AbortError'));},{once:true});});
     if (word === 'offline') return new Response('', {status:503});
     return Response.json([{meanings:[{partOfSpeech:'adjective',synonyms:['joyful'],antonyms:['sad'],definitions:[{definition:'Feeling pleasure.',example:'She was happy to see her friend.',synonyms:['glad'],antonyms:[]}]}]}]);
   }
   if (url.hostname === 'en.wiktionary.org') {
+    if (url.pathname.endsWith('/slow')) return new Response('',{status:503});
+    if (url.pathname.endsWith('/malformed')) return new Response('invalid JSON');
     if (url.pathname.includes('/page/definition/')) return Response.json({en:[{partOfSpeech:'adjective',definitions:[{definition:'Feeling pleasure.'}]}]});
     return Response.json({parse:{wikitext:{'*':''}}});
   }

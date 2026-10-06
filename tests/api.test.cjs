@@ -94,3 +94,12 @@ test('relations respect parts of speech and unavailable providers are reported',
   assert.equal(offline.entries[0].meanings[0].relationsUnavailable,true);
   assert.equal((await fetch(`${base}/healthz`)).status,200);
 });
+
+test('slow cloud dictionaries and malformed primary responses use the fallback', async () => {
+  await ready;
+  for (const word of ['slow','malformed']) {
+    const response=await fetch(`${base}/api/lookup?word=${word}&from=en`);
+    assert.equal(response.status,200);
+    assert.equal((await response.json()).entries[0].source,'Free Dictionary API');
+  }
+});

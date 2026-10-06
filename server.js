@@ -21,7 +21,7 @@ const cache = new Map(); // successful results only
 const memo = async (k, fn) => { if (cache.has(k)) return cache.get(k); const v = await fn(); cache.set(k, v); return v; };
 
 app.use(express.json());
-app.get('/healthz', (req, res) => res.json({ status: 'ok' }));
+app.get('/healthz', (req, res) => res.json({ status: 'ok', version: process.env.RENDER_GIT_COMMIT?.slice(0, 7) || 'local', voiceConfigured: Boolean(KEY) }));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.use('/images', express.static(path.join(__dirname, 'public', 'images'), { dotfiles: 'deny', index: false }));
 for (const image of ['Helennn.jpg', 'pexels-mart-production-7550534.jpg']) {
@@ -42,7 +42,7 @@ app.get('/Helen1.jpg', (req, res) => res.sendFile(path.join(__dirname, 'Helen1.j
 async function get(url, opts = {}, ms = 3000) {
   const c = new AbortController(), t = setTimeout(() => c.abort(), ms);
   try { return await fetch(url, { ...opts, signal: c.signal, headers: { 'User-Agent': 'HelenDictionary/1.0 (learning project)', ...(opts.headers || {}) } }); }
-  catch { return null; } finally { clearTimeout(t); }
+  catch (error) { console.warn(`Upstream ${new URL(url).hostname}: ${error.name}`); return null; } finally { clearTimeout(t); }
 }
 
 async function translate(text, from, to) {
@@ -68,11 +68,13 @@ const clean = s => String(s || '').replace(/<[^>]+>/g, '').replace(/&quot;/g, '"
 
 // Definitions: Wiktionary REST (fast). Returns array, [] if not found, null if network error.
 async function definitions(word) {
-  const r = await get(`https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word)}`, {}, 3500);
+  const r = await get(`https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word)}`, {}, 10000);
   if (!r) return null;
   if (r.status === 404) return [];
   if (!r.ok) return null;
-  const en = (await r.json()).en || [];
+  let data;
+  try { data = await r.json(); } catch { return null; }
+  const en = Array.isArray(data.en) ? data.en : [];
   return en.map(m => ({
     pos: (m.partOfSpeech || '').toLowerCase(),
     senses: m.definitions.map(d => ({ definition: clean(d.definition), example: clean(((d.parsedExamples || [])[0] || {}).example || (d.examples || [])[0]) })).filter(s => s.definition).slice(0, 5),
@@ -110,8 +112,8 @@ async function mwDefs(word) {
 }
 
 // Free Dictionary API: optional related words, usage examples, and definition fallback.
-async function relatedDictionary(word) {
-  const r = await get(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`, {}, 3500);
+async function relatedDictionary(word, timeout = 10000) {
+  const r = await get(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`, {}, timeout);
   if (!r || !r.ok) return null;
   try {
     const data = await r.json();
@@ -150,7 +152,9 @@ app.get('/api/lookup', async (req, res) => {
     const word = (from === 'en' ? raw : await translate(raw, from, 'en')).trim().toLowerCase();
     let entries = cache.get(`d|${word}`);
     if (!entries) {
-      const [wk, ipaText, mw, related, relations] = await Promise.all([definitions(word), ipa(word), mwDefs(word), relatedDictionary(word), wordRelations(word)]); // all in parallel
+      let [wk, ipaText, mw, related, relations] = await Promise.all([definitions(word), ipa(word), mwDefs(word), relatedDictionary(word), wordRelations(word)]); // all in parallel
+      // Retry only when both primary sources failed, allowing slow cloud connections.
+      if (!mw && !wk?.length && related === null) related = await relatedDictionary(word, 15000);
       const meanings = mw || (wk?.length ? wk : related?.length ? related : wk); // Merriam-Webster first, Wiktionary as fallback
       if (meanings === null) return res.status(502).json({ error: 'Cannot reach the dictionary service from this network. Check your connection and try again.' });
       if (!meanings.length) return res.status(404).json({ error: `No entry found for "${word}". Check the spelling.` });
@@ -184,7 +188,7 @@ app.post('/api/translate', async (req, res) => {
 
 // List voices your ElevenLabs key can actually use (open http://localhost:3000/api/voices to copy an ID).
 app.get('/api/voices', async (req, res) => {
-  if (!KEY) return res.status(501).json({ error: 'Set ELEVENLABS_API_KEY first.' });
+  if (!KEY) return res.status(501).json({ error: 'Voice chưa được cấu hình. Quản trị viên cần thêm ELEVENLABS_API_KEY trong Environment của dịch vụ Render rồi deploy lại.' });
   const r = await get('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': KEY } }, 8000);
   if (!r || !r.ok) return res.status(502).json({ error: 'Could not load voices.', status: r && r.status, detail: r ? (await r.text()).slice(0, 300) : 'no response' });
   const j = await r.json();
