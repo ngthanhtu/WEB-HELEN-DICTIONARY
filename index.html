@@ -194,10 +194,14 @@ async function searchWord({ scroll = true } = {}) {
         .then(async response => { if (!response.ok) throw new Error('Details unavailable'); return response.json(); })
         .then(details => {
           if (request !== searchRequest) return;
-          const open = [...document.querySelectorAll('.eye')].map((button, index) => button.getAttribute('aria-pressed') === 'true' ? index : -1).filter(index => index >= 0);
+          const open = [...document.querySelectorAll('.eye')].flatMap((button, index) => button.getAttribute('aria-pressed') === 'true' ? [{index,text:button.parentElement.querySelector('.tr').textContent}] : []);
           render({...details, query:d.query, from:d.from}, false);
           const buttons = document.querySelectorAll('.eye');
-          open.forEach(index => buttons[index]?.click());
+          open.forEach(({index,text}) => {
+            const button = buttons[index]; if (!button) return;
+            button.setAttribute('aria-pressed', 'true'); button.setAttribute('aria-label', 'Hide translation'); button.textContent = '🙈';
+            const box = button.parentElement.querySelector('.tr'); box.textContent = text; box.hidden = false;
+          });
         })
         .catch(() => { if (request === searchRequest) document.querySelectorAll('.syn').forEach(el => { if (el.textContent.includes('Đang tải')) el.textContent = el.textContent.replace('Đang tải…', 'Chưa tải được dữ liệu bổ sung.'); }); });
     }
