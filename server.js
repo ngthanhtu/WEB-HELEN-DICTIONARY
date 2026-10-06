@@ -162,39 +162,65 @@ async function wordRelations(word) {
   return {synonyms, antonyms};
 }
 
+const lookups = new Map();
+function beginLookup(word) {
+  if (lookups.has(word)) return lookups.get(word);
+  const related = relatedDictionary(word), relations = wordRelations(word), pronunciation = ipa(word);
+  const candidates = [
+    [definitions(word), 'Wiktionary'], [related, 'Free Dictionary API'],
+    [mwDefs(word), "Merriam-Webster's Learner's Dictionary"], [datamuseDefinitions(word), 'Datamuse']
+  ];
+  const first = Promise.any(candidates.map(async ([result, source]) => {
+    const meanings = await result;
+    if (!meanings?.length) throw new Error('No usable definitions');
+    return {word, ipa:'', source, meanings:meanings.map(m => ({...m, relationsPending:true}))};
+  })).catch(async () => {
+    const meanings = await relatedDictionary(word, 15000);
+    if (meanings?.length) return {word,ipa:'',source:'Free Dictionary API',meanings};
+    const results = await Promise.all(candidates.map(([p]) => p));
+    const error = new Error('Cannot reach dictionary services. Please try again.');
+    error.status = results.some(r => Array.isArray(r)) ? 404 : 502;
+    throw error;
+  });
+  const complete = first.then(async entry => {
+    const [extra, links, ipaText] = await Promise.all([related, relations, pronunciation]);
+    const unique = items => [...new Set(items)].slice(0,12);
+    const meanings = entry.meanings.map(m => {
+      const matches=(extra || []).filter(r=>r.pos===m.pos);
+      const tag={noun:'n',verb:'v',adjective:'adj',adverb:'adv'}[m.pos];
+      const forPos=list=>(list||[]).filter(x=>tag && x.tags.includes(tag)).map(x=>x.word);
+      return {...m,relationsPending:false,
+        synonyms:unique([...(m.synonyms||[]),...matches.flatMap(r=>r.synonyms),...forPos(links.synonyms)]),
+        antonyms:unique([...(m.antonyms||[]),...matches.flatMap(r=>r.antonyms),...forPos(links.antonyms)]),
+        relationsUnavailable:!extra && (links.synonyms===null || links.antonyms===null),
+        usageExamples:unique(matches.flatMap(r=>r.usageExamples)).filter(e=>!m.senses.some(s=>s.example===e)).slice(0,4)};
+    });
+    const entries=[{...entry,ipa:ipaText,meanings,relatedSource:[extra?.length?'Free Dictionary API':null,links.synonyms!==null||links.antonyms!==null?'Datamuse':null].filter(Boolean).join(', ')||null}];
+    cache.set(`d|${word}`,entries);
+    return entries;
+  });
+  // Observe background failures even if the caller only requests the early result.
+  complete.catch(()=>{}).finally(()=>lookups.delete(word));
+  const task={first,complete}; lookups.set(word,task); return task;
+}
 app.get('/api/lookup', async (req, res) => {
-  const t0 = Date.now();
-  const raw = String(req.query.word || '').trim();
-  const from = String(req.query.from || 'en');
-  if (!raw) return res.status(400).json({ error: 'Type a word to search.' });
+  const raw=String(req.query.word||'').trim(), from=String(req.query.from||'en');
+  if (!raw) return res.status(400).json({error:'Type a word to search.'});
   try {
-    const word = (from === 'en' ? raw : await translate(raw, from, 'en')).trim().toLowerCase();
-    let entries = cache.get(`d|${word}`);
+    const word=(from==='en'?raw:await translate(raw,from,'en')).trim().toLowerCase();
+    let entries=cache.get(`d|${word}`), enriching=false;
     if (!entries) {
-      let [wk, ipaText, mw, related, relations, backup] = await Promise.all([definitions(word), ipa(word), mwDefs(word), relatedDictionary(word), wordRelations(word), datamuseDefinitions(word)]); // all in parallel
-      // Retry only when both primary sources failed, allowing slow cloud connections.
-      if (!mw && !wk?.length && !backup?.length && related === null) related = await relatedDictionary(word, 15000);
-      const meanings = mw || (wk?.length ? wk : related?.length ? related : backup?.length ? backup : wk); // Merriam-Webster first, Wiktionary as fallback
-      if (meanings === null) return res.status(502).json({ error: 'Cannot reach the dictionary service from this network. Check your connection and try again.' });
-      if (!meanings.length) return res.status(404).json({ error: `No entry found for "${word}". Check the spelling.` });
-      const enriched = meanings.map(m => {
-        const matches = (related || []).filter(r => r.pos === m.pos);
-        const tag = {noun:'n', verb:'v', adjective:'adj', adverb:'adv'}[m.pos];
-        const forPos = list => (list || []).filter(x => tag && x.tags.includes(tag)).map(x => x.word);
-        const unique = items => [...new Set(items)].slice(0, 12);
-        return { ...m,
-          synonyms: unique([...(m.synonyms || []), ...matches.flatMap(r => r.synonyms), ...forPos(relations.synonyms)]),
-          antonyms: unique([...(m.antonyms || []), ...matches.flatMap(r => r.antonyms), ...forPos(relations.antonyms)]),
-          relationsUnavailable: !related && (relations.synonyms === null || relations.antonyms === null),
-          usageExamples: unique(matches.flatMap(r => r.usageExamples)).filter(e => !m.senses.some(s => s.example === e)).slice(0, 4)
-        };
-      });
-      entries = [{ word, ipa: ipaText, meanings: enriched, source: mw ? "Merriam-Webster's Learner's Dictionary" : wk?.length ? 'Wiktionary' : related?.length ? 'Free Dictionary API' : 'Datamuse', relatedSource: [related?.length ? 'Free Dictionary API' : null, relations.synonyms !== null || relations.antonyms !== null ? 'Datamuse' : null].filter(Boolean).join(', ') || null }];
-      cache.set(`d|${word}`, entries);
+      const task=beginLookup(word);
+      if (req.query.details==='1') entries=await task.complete;
+      else {
+        const entry=await task.first;
+        // Give already-fast supplementary sources one event-loop turn to finish.
+        entries=await Promise.race([task.complete,new Promise(resolve=>setTimeout(()=>resolve(null),100))]);
+        if (!entries) { entries=[entry]; enriching=true; }
+      }
     }
-    console.log(`lookup "${word}" ${Date.now() - t0}ms`);
-    res.json({ query: raw, from, word, entries });
-  } catch (e) { res.status(502).json({ error: 'Translation of your search word failed. Try again.' }); }
+    res.json({query:raw,from,word,entries,enriching});
+  } catch(e) { res.status(e.status||502).json({error:e.message || 'Lookup failed. Try again.'}); }
 });
 
 app.post('/api/translate', async (req, res) => {

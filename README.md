@@ -58,3 +58,5 @@ Gói miễn phí có thể ngủ khi ít hoạt động và mất thời gian kh
 Tệp `env` đã bỏ khỏi danh sách theo dõi Git nhưng giữ trên máy hiện tại để chạy local. Việc bỏ theo dõi không xóa key trong lịch sử Git; thay key đã lộ trước khi triển khai công khai. Dùng `.env.example` làm mẫu trên máy mới.
 
 Datamuse (`api.datamuse.com`, không cần key) bổ sung quan hệ đồng nghĩa/trái nghĩa, lọc theo từ loại. Hai nhãn luôn hiển thị; nếu nguồn không có dữ liệu phù hợp hoặc không truy cập được thì báo rõ thay vì tạo từ không có cơ sở.
+
+Tra cứu trả định nghĩa từ nguồn hợp lệ đầu tiên thay vì đợi mọi nguồn. IPA và từ liên quan bổ sung bằng yêu cầu `details=1` chạy nền; kết quả đầy đủ được cache và các yêu cầu trùng dùng chung tác vụ. Điều này giảm thời gian chờ nguồn phụ, nhưng không loại bỏ thời gian khởi động khi Render Free ngủ.

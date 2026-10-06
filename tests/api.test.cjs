@@ -41,15 +41,15 @@ test('uses a valid exact match for empty translations and rejects empty-only res
 
 test('lookup adds related words and examples while retaining the main definition', async () => {
   await ready;
-  const response = await fetch(`${base}/api/lookup?word=happy&from=en`);
+  const response = await fetch(`${base}/api/lookup?word=happy&from=en&details=1`);
   assert.equal(response.status, 200);
   const data = await response.json();
   const meaning = data.entries[0].meanings[0];
   assert.deepEqual(meaning.synonyms, ['joyful', 'glad', 'cheerful']);
   assert.deepEqual(meaning.antonyms, ['sad', 'unhappy']);
-  assert.deepEqual(meaning.usageExamples, ['She was happy to see her friend.']);
-  assert.equal(data.entries[0].source, 'Wiktionary');
-  const offline = await fetch(`${base}/api/lookup?word=offline&from=en`);
+  assert.ok([...meaning.usageExamples,...meaning.senses.map(s=>s.example)].includes('She was happy to see her friend.'));
+  assert.ok(['Wiktionary','Free Dictionary API'].includes(data.entries[0].source));
+  const offline = await fetch(`${base}/api/lookup?word=offline&from=en&details=1`);
   assert.equal(offline.status, 200);
   assert.deepEqual((await offline.json()).entries[0].meanings[0].antonyms, []);
 });
@@ -88,9 +88,9 @@ test('redirects missing local backgrounds to pinned GitHub images', async () => 
 
 test('relations respect parts of speech and unavailable providers are reported', async () => {
   await ready;
-  const happy=await (await fetch(`${base}/api/lookup?word=happy&from=en`)).json();
+  const happy=await (await fetch(`${base}/api/lookup?word=happy&from=en&details=1`)).json();
   assert.ok(!happy.entries[0].meanings[0].synonyms.includes('unrelated-noun'));
-  const offline=await (await fetch(`${base}/api/lookup?word=offline&from=en`)).json();
+  const offline=await (await fetch(`${base}/api/lookup?word=offline&from=en&details=1`)).json();
   assert.equal(offline.entries[0].meanings[0].relationsUnavailable,true);
   assert.equal((await fetch(`${base}/healthz`)).status,200);
 });
@@ -111,4 +111,18 @@ test('uses exact-word Datamuse definitions when other dictionaries are unavailab
   const d=await r.json();
   assert.equal(d.entries[0].source,'Datamuse');
   assert.equal(d.entries[0].meanings[0].senses[0].definition,'An independent definition.');
+});
+
+test('returns definitions before slow metadata and later returns complete details', async () => {
+  await ready;
+  const start=Date.now();
+  const early=await (await fetch(`${base}/api/lookup?word=fast-result&from=en`)).json();
+  assert.ok(Date.now()-start<1000, 'initial definitions must not wait for 1.5-second metadata');
+  assert.equal(early.enriching,true);
+  assert.ok(early.entries[0].meanings.length);
+  const full=await (await fetch(`${base}/api/lookup?word=fast-result&from=en&details=1`)).json();
+  assert.equal(full.enriching,false);
+  assert.ok(full.entries[0].meanings[0].synonyms.includes('cheerful'));
+  const cached=await (await fetch(`${base}/api/lookup?word=fast-result&from=en`)).json();
+  assert.equal(cached.enriching,false);
 });

@@ -12,6 +12,7 @@ global.fetch = async (input, opts = {}) => {
   if (url.hostname === 'api.datamuse.com') {
     if (url.searchParams.has('sp')) return Response.json(url.searchParams.get('sp') === 'backup' ? [{word:'backup',defs:['n\tAn independent definition.']}] : []);
     const word=url.searchParams.get('rel_syn') || url.searchParams.get('rel_ant');
+    if(word === 'fast-result') await new Promise(resolve=>setTimeout(resolve,1500));
     if(word === 'offline') return new Response('',{status:503});
     return Response.json([{word:url.searchParams.has('rel_syn') ? 'cheerful' : 'unhappy',tags:['adj']},{word:'unrelated-noun',tags:['n']}]);
   }
