@@ -3,6 +3,9 @@ require('dns').setDefaultResultOrder('ipv4first');
 const express = require('express');
 const path = require('path');
 const { wordnetMeanings } = require('./lib/lexicon');
+const { spellingSuggestions } = require('./lib/spelling');
+const { voiceMetadata } = require('./lib/voice-labels');
+const { teachingCollocations, corpusPhrases } = require('./lib/collocations');
 // Injected variables take precedence; .env takes precedence over legacy env.
 require('dotenv').config({ path: [path.join(__dirname, '.env'), path.join(__dirname, 'env')], quiet: true });
 const app = express();
@@ -115,6 +118,7 @@ async function mwDefs(word) {
 // Free Dictionary API: optional related words, usage examples, and definition fallback.
 async function relatedDictionary(word, timeout = 10000) {
   const r = await get(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`, {}, timeout);
+  if (r?.status === 404) return [];
   if (!r || !r.ok) return null;
   try {
     const data = await r.json();
@@ -164,9 +168,21 @@ async function wordRelations(word) {
 }
 
 const lookups = new Map();
+async function collocations(word) {
+  const teaching = teachingCollocations(word);
+  if (!/^[a-z]{2,48}$/.test(word)) return {teaching,corpus:[],unavailable:false};
+  const results = await Promise.all(['rel_bgb','rel_bga'].map(async relation => {
+    const response = await get(`https://api.datamuse.com/words?${relation}=${encodeURIComponent(word)}&max=40`, {}, 2500);
+    if (!response?.ok) return null;
+    try { return await response.json(); } catch { return null; }
+  }));
+  const known = new Set(teaching.map(item=>item.phrase));
+  return {teaching,corpus:[...corpusPhrases(word,results[0],true),...corpusPhrases(word,results[1],false)].filter(item=>!known.has(item.phrase)),unavailable:results.some(data=>!Array.isArray(data))};
+}
 function beginLookup(word) {
   if (lookups.has(word)) return lookups.get(word);
   const related = relatedDictionary(word), relations = wordRelations(word), pronunciation = ipa(word);
+  const phrases = collocations(word);
   const lexical = process.env.HELEN_DISABLE_WORDNET === '1' ? Promise.resolve([]) : wordnetMeanings(word).catch(() => null);
   const candidates = [
     [definitions(word), 'Wiktionary'], [related, 'Free Dictionary API'],
@@ -180,15 +196,19 @@ function beginLookup(word) {
     return {word, ipa:'', source, meanings:meanings.map(m => ({...m, relationsPending:true}))};
     }));
   }).catch(async () => {
+    const results = await Promise.all(candidates.map(([p]) => p));
+    // Do not retry a confirmed missing word for another 15 seconds.
+    if (results.some(r => Array.isArray(r))) {
+      const error = new Error('No exact match found.'); error.status=404; throw error;
+    }
     const meanings = await relatedDictionary(word, 15000);
     if (meanings?.length) return {word,ipa:'',source:'Free Dictionary API',meanings};
-    const results = await Promise.all(candidates.map(([p]) => p));
     const error = new Error('Cannot reach dictionary services. Please try again.');
     error.status = results.some(r => Array.isArray(r)) ? 404 : 502;
     throw error;
-  });
+  }).then(entry=>({...entry,collocations:{teaching:teachingCollocations(word),corpus:[],pending:true}}));
   const complete = first.then(async entry => {
-    const [extra, links, ipaText] = await Promise.all([related, relations, pronunciation]);
+    const [extra, links, ipaText, combinations] = await Promise.all([related, relations, pronunciation, phrases]);
     const unique = items => [...new Set(items)].slice(0,12);
     const meanings = entry.meanings.map(m => {
       const matches=(extra || []).filter(r=>r.pos===m.pos);
@@ -207,6 +227,7 @@ function beginLookup(word) {
         usageExamples:unique(matches.flatMap(r=>r.usageExamples)).filter(e=>!m.senses.some(s=>s.example===e)).slice(0,4)};
     });
     const entries=[{...entry,ipa:ipaText,meanings,relatedSource:[extra?.length?'Free Dictionary API':null,links.synonyms!==null||links.antonyms!==null?'Datamuse':null].filter(Boolean).join(', ')||null}];
+    entries[0].collocations=combinations;
     cache.set(`d|${word}`,entries);
     return entries;
   });
@@ -217,8 +238,10 @@ function beginLookup(word) {
 app.get('/api/lookup', async (req, res) => {
   const raw=String(req.query.word||'').trim(), from=String(req.query.from||'en');
   if (!raw) return res.status(400).json({error:'Type a word to search.'});
+  if (raw.length>100) return res.status(400).json({error:'Use at most 100 characters for a lookup.'});
+  let word;
   try {
-    const word=(from==='en'?raw:await translate(raw,from,'en')).trim().toLowerCase();
+    word=(from==='en'?raw:await translate(raw,from,'en')).trim().toLowerCase();
     let entries=cache.get(`d|${word}`), enriching=false;
     if (!entries) {
       const task=beginLookup(word);
@@ -231,7 +254,10 @@ app.get('/api/lookup', async (req, res) => {
       }
     }
     res.json({query:raw,from,word,entries,enriching});
-  } catch(e) { res.status(e.status||502).json({error:e.message || 'Lookup failed. Try again.'}); }
+  } catch(e) {
+    const suggestions=e.status===404 ? await spellingSuggestions(word).catch(()=>[]) : [];
+    res.status(e.status||502).json({error:e.message || 'Lookup failed. Try again.',query:raw,word,suggestions,suggestionLanguage:'en'});
+  }
 });
 
 app.post('/api/translate', async (req, res) => {
@@ -248,7 +274,7 @@ app.get('/api/voices', async (req, res) => {
   const r = await get('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': KEY } }, 8000);
   if (!r || !r.ok) return res.status(502).json({ error: 'Could not load voices.', status: r && r.status, detail: r ? (await r.text()).slice(0, 300) : 'no response' });
   const j = await r.json();
-  res.json({ in_use: VOICE, voices: j.voices.map(v => ({ name: v.name, voice_id: v.voice_id, category: v.category })) });
+  res.json({ in_use: VOICE, voices: j.voices.map(voiceMetadata) });
 });
 
 app.get('/api/tts', async (req, res) => {

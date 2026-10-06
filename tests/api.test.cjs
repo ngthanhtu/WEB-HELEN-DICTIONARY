@@ -74,7 +74,7 @@ test('redirects missing local backgrounds to pinned GitHub images', async () => 
   const fs = require('node:fs');
   const tmp = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'helen-no-images-'));
   fs.copyFileSync(path.join(__dirname, '..', 'server.js'), path.join(tmp, 'server.js'));
-  fs.mkdirSync(path.join(tmp,'lib')); fs.copyFileSync(path.join(__dirname,'..','lib','lexicon.js'),path.join(tmp,'lib','lexicon.js'));
+  fs.cpSync(path.join(__dirname,'..','lib'),path.join(tmp,'lib'),{recursive:true});
   const child = spawn(process.execPath, [path.join(tmp, 'server.js')], {
     env: {...process.env, PORT:'3201', NODE_PATH:path.join(__dirname,'..','node_modules')}, stdio:['ignore','pipe','pipe']
   });
@@ -127,4 +127,32 @@ test('returns definitions before slow metadata and later returns complete detail
   assert.ok(full.entries[0].meanings[0].relatedSynonyms.includes('cheerful'));
   const cached=await (await fetch(`${base}/api/lookup?word=fast-result&from=en`)).json();
   assert.equal(cached.enriching,false);
+});
+
+
+test('no exact match returns ranked clickable-word data, not a silent correction',async()=>{
+  await ready;
+  const response=await fetch(`${base}/api/lookup?word=experimence&from=en`);
+  assert.equal(response.status,404);
+  const data=await response.json();
+  assert.equal(data.word,'experimence'); assert.equal(data.suggestionLanguage,'en');
+  assert.equal(data.suggestions[0],'experience'); assert.ok(data.suggestions.includes('experiment'));
+  assert.equal(data.entries,undefined);
+  const corrected=await fetch(`${base}/api/lookup?word=${data.suggestions[0]}&from=en`);
+  assert.equal(corrected.status,200); assert.equal((await corrected.json()).word,'experience');
+});
+test('collocations retain teaching examples and separate corpus suggestions',async()=>{
+  await ready;
+  const data=await (await fetch(`${base}/api/lookup?word=experiment&from=en&details=1`)).json();
+  const phrases=data.entries[0].collocations;
+  assert.ok(phrases.teaching.some(item=>item.phrase==='conduct an experiment' && item.example));
+  assert.ok(phrases.corpus.some(item=>item.phrase==='laboratory experiment'));
+  assert.ok(!phrases.corpus.some(item=>item.phrase.includes('the ') || item.phrase.includes('.')));
+});
+test('voices include accents from metadata and keep the configured selection ID',async()=>{
+  await ready;
+  const data=await (await fetch(`${base}/api/voices`)).json();
+  assert.equal(data.in_use,'testDefault');
+  assert.deepEqual(data.voices.map(voice=>voice.dialect),['Ame','Eng',null,null]);
+  assert.equal(data.voices[3].accent,'Australian English');
 });
