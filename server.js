@@ -5,12 +5,13 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const KEY = process.env.ELEVENLABS_API_KEY;
-const VOICE = process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFmaJgB'; // Adam
+const VOICE = process.env.ELEVENLABS_VOICE_ID || 'EXAVITQu4vr4xnSDxMaL'; // Sarah (premade); users can explicitly select another voice
 const cache = new Map(); // successful results only
 const memo = async (k, fn) => { if (cache.has(k)) return cache.get(k); const v = await fn(); cache.set(k, v); return v; };
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.get('/Helen1.jpg', (req, res) => res.sendFile(path.join(__dirname, 'Helen1.jpg')));
 
 // fetch with timeout; returns Response or null on timeout/network error
 async function get(url, opts = {}, ms = 3000) {
@@ -24,7 +25,15 @@ async function translate(text, from, to) {
   return memo(`t|${from}|${to}|${text}`, async () => {
     for (let i = 0; i < 2; i++) {
       const r = await get(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`, {}, 5000);
-      if (r && r.ok) return (await r.json()).responseData.translatedText;
+      if (r && r.ok) {
+        const data = await r.json();
+        if (Number(data.responseStatus) === 200 && !data.responseData?.quotaFinished) {
+          const primary = data.responseData?.translatedText;
+          if (typeof primary === 'string' && primary.trim()) return primary;
+          const alternative = Array.isArray(data.matches) && data.matches.find(m => Number(m.match) >= 0.99 && typeof m.translation === 'string' && m.translation.trim());
+          if (alternative) return alternative.translation;
+        }
+      }
     }
     throw new Error('translate failed');
   });
@@ -108,24 +117,26 @@ app.post('/api/translate', async (req, res) => {
 app.get('/api/voices', async (req, res) => {
   if (!KEY) return res.status(501).json({ error: 'Set ELEVENLABS_API_KEY first.' });
   const r = await get('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': KEY } }, 8000);
-  if (!r || !r.ok) return res.status(502).json({ error: 'Could not load voices.', status: r && r.status, detail: r ? (await r.text()).slice(0, 300) : 'no response', key_length: KEY.length, key_starts_with: KEY.slice(0, 3) });
+  if (!r || !r.ok) return res.status(502).json({ error: 'Could not load voices.', status: r && r.status, detail: r ? (await r.text()).slice(0, 300) : 'no response' });
   const j = await r.json();
   res.json({ in_use: VOICE, voices: j.voices.map(v => ({ name: v.name, voice_id: v.voice_id, category: v.category })) });
 });
 
 app.get('/api/tts', async (req, res) => {
   const text = String(req.query.text || '').trim().slice(0, 200);
+  const voice = String(req.query.voice || VOICE);
+  if (!/^[A-Za-z0-9_-]{1,100}$/.test(voice)) return res.status(400).json({ error: 'Invalid voice ID.' });
   if (!text) return res.status(400).end();
-  if (!KEY) return res.status(501).json({ error: 'Set ELEVENLABS_API_KEY to enable Adam voice.' });
+  if (!KEY) return res.status(501).json({ error: 'Set ELEVENLABS_API_KEY to enable pronunciation.' });
   try {
-    const buf = await memo(`v|${VOICE}|${text}`, async () => { // cache key includes the voice
-      const r = await get(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE}`, {
+    const buf = await memo(`v|${voice}|${text}`, async () => { // cache key includes the voice
+      const r = await get(`https://api.elevenlabs.io/v1/text-to-speech/${voice}`, {
         method: 'POST',
         headers: { 'xi-api-key': KEY, 'Content-Type': 'application/json', Accept: 'audio/mpeg' },
         body: JSON.stringify({ text, model_id: 'eleven_multilingual_v2' })
       }, 15000);
       if (!r || !r.ok) {
-        console.error(`TTS failed: voice=${VOICE} status=${r ? r.status : 'no response'} ${r ? (await r.text()).slice(0, 300) : ''}`);
+        console.error(`TTS failed: voice=${voice} status=${r ? r.status : 'no response'} ${r ? (await r.text()).slice(0, 300) : ''}`);
         throw new Error('tts failed');
       }
       return Buffer.from(await r.arrayBuffer());

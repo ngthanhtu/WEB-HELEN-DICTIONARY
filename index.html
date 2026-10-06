@@ -63,12 +63,14 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
   <label>Meanings in
     <select id="target" aria-label="Translate meanings into"></select>
   </label>
+  <label>Voice <select id="voice" aria-label="Pronunciation voice"><option value="">Loading voices…</option></select></label>
+  <span id="voice-status" role="status"></span>
 </header>
 
 <section class="hero">
   <div>
     <h1>Look up a word. Hear it. Read it in your language.</h1>
-    <p>English definitions, IPA and Adam's pronunciation. Tap the eye to reveal the translation in any language you choose.</p>
+    <p>English definitions, IPA and your selected voice. Tap the eye to reveal the translation in any language you choose.</p>
     <form class="search" id="form" role="search">
       <select id="from" aria-label="Search language"></select>
       <input id="q" type="search" placeholder="Search a word" autocomplete="off" aria-label="Word to search" required>
@@ -90,19 +92,43 @@ const LANGS = {en:'English',vi:'Tiếng Việt',es:'Español',fr:'Français',de:
 
 const $ = s => document.querySelector(s);
 const opt = (sel, def) => { sel.innerHTML = Object.entries(LANGS).map(([k,v]) => `<option value="${k}">${v}</option>`).join(''); sel.value = def; };
-opt($('#target'), 'vi'); opt($('#from'), 'en');
+const stored = key => { try { return localStorage.getItem(key); } catch { return null; } };
+const remember = (key, value) => { try { localStorage.setItem(key, value); } catch {} };
+opt($('#target'), LANGS[stored('helen-target')] ? stored('helen-target') : 'vi'); opt($('#from'), 'en');
+let selectedVoice = stored('helen-voice');
+async function loadVoices() {
+  const sel = $('#voice');
+  try {
+    const r = await fetch(`${API}/api/voices`);
+    const data = await r.json(); if (!r.ok) throw new Error(data.error);
+    selectedVoice ||= data.in_use;
+    sel.replaceChildren();
+    const voices = [...data.voices];
+    if (!voices.some(v => v.voice_id === selectedVoice)) voices.unshift({voice_id:selectedVoice, name:'Saved voice (check account access)'});
+    for (const v of voices) sel.add(new Option(`${v.name}${v.category === 'premade' ? ' (premade)' : ''}`, v.voice_id));
+    sel.value = selectedVoice; remember('helen-voice', selectedVoice);
+    $('#voice-status').textContent = 'Choose a voice available on your ElevenLabs plan.';
+  } catch (e) {
+    sel.replaceChildren(new Option(selectedVoice || 'Voice service unavailable', selectedVoice || ''));
+    $('#voice-status').textContent = e.message;
+  }
+}
+$('#voice').addEventListener('change', () => { selectedVoice = $('#voice').value; remember('helen-voice', selectedVoice); audio?.pause(); });
+loadVoices();
 if (IMAGES.hero) { const i = new Image(); i.src = IMAGES.hero; i.alt = ''; $('#slot-hero').append(i); }
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let audio;
+let audio, audioURL, lastResult;
+let targetRequest = 0;
 async function speak(text, btn) {
   btn.setAttribute('aria-busy', 'true');
   try {
-    const r = await fetch(`${API}/api/tts?text=${encodeURIComponent(text)}`);
+    const r = await fetch(`${API}/api/tts?text=${encodeURIComponent(text)}${selectedVoice ? `&voice=${encodeURIComponent(selectedVoice)}` : ''}`);
     if (!r.ok) throw 0;
-    audio?.pause(); audio = new Audio(URL.createObjectURL(await r.blob())); await audio.play();
-  } catch { // fallback: browser voice when Adam is unavailable
-    const u = new SpeechSynthesisUtterance(text); u.lang = 'en-US'; speechSynthesis.speak(u);
+    audio?.pause(); if (audioURL) URL.revokeObjectURL(audioURL);
+    audioURL = URL.createObjectURL(await r.blob()); audio = new Audio(audioURL); await audio.play();
+  } catch {
+    $('#voice-status').textContent = 'Selected voice is unavailable. Check your ElevenLabs plan or choose another voice. Your selection has been kept.';
   } finally { btn.removeAttribute('aria-busy'); }
 }
 async function tr(texts, from, to) {
@@ -122,9 +148,21 @@ $('#form').addEventListener('submit', async e => {
   } catch { msg('Cannot reach the server. Check that it is running.', true); }
 });
 
+async function updateWordTranslation() {
+  const request = ++targetRequest, to = $('#target').value, result = lastResult;
+  const box = $('#word-translation'); if (!box || !result) return;
+  box.textContent = 'Translating word…';
+  try {
+    const translated = (await tr([result.word], 'en', to))[0];
+    if (request === targetRequest && result === lastResult) box.textContent = `${LANGS[to]}: ${translated}`;
+  } catch { if (request === targetRequest) box.textContent = 'Word translation failed. Try again.'; }
+}
 function render(d) {
+  lastResult = d;
   const out = $('#out'); out.innerHTML = '';
   if (d.from !== 'en') out.insertAdjacentHTML('beforeend', `<div class="status">“${esc(d.query)}” in English: <strong>${esc(d.word)}</strong></div>`);
+  out.insertAdjacentHTML('beforeend', '<div class="status" id="word-translation" role="status"></div>');
+  updateWordTranslation();
   d.entries.forEach(en => {
     const el = document.createElement('article'); el.className = 'entry';
     el.innerHTML = `<div class="hw"><h2>${esc(en.word)}</h2>${en.ipa ? `<span class="ipa" aria-label="IPA">${esc(en.ipa)}</span>` : ''}<button class="say" type="button" aria-label="Hear pronunciation of ${esc(en.word)}">🔊</button></div>`;
@@ -142,7 +180,7 @@ function render(d) {
           if (open) { box.hidden = true; eye.setAttribute('aria-pressed','false'); eye.setAttribute('aria-label','Show translation'); eye.textContent='👁'; return; }
           const to = $('#target').value;
           if (lang !== to) { box.textContent = 'Translating…'; box.hidden = false;
-            try { box.textContent = (await tr([s.definition], 'en', to))[0]; lang = to; } catch { box.textContent = 'Translation failed. Try again.'; return; } }
+            try { const translated = (await tr([s.definition], 'en', to))[0]; if ($('#target').value !== to) { box.hidden = true; return; } box.textContent = translated; lang = to; } catch { box.textContent = 'Translation failed. Try again.'; return; } }
           box.hidden = false; eye.setAttribute('aria-pressed','true'); eye.setAttribute('aria-label','Hide translation'); eye.textContent='🙈';
         };
         el.append(row);
@@ -155,7 +193,12 @@ function render(d) {
   out.querySelector('h2')?.scrollIntoView({behavior:'smooth', block:'center'});
 }
 // Changing the target language closes open translations so they refresh on next tap.
-$('#target').addEventListener('change', () => document.querySelectorAll('.eye[aria-pressed=true]').forEach(b => b.click()));
+$('#target').addEventListener('change', () => {
+  remember('helen-target', $('#target').value);
+  document.querySelectorAll('.tr').forEach(box => { box.hidden = true; });
+  document.querySelectorAll('.eye').forEach(b => { b.setAttribute('aria-pressed', 'false'); b.setAttribute('aria-label', 'Show translation'); b.textContent = '👁'; });
+  updateWordTranslation();
+});
 </script>
 </body>
 </html>
