@@ -22,6 +22,44 @@ test('serves the supplied loading animation stylesheet',async()=>{
   assert.equal(response.status,200);assert.match(response.headers.get('content-type'),/text\/css/);
   const css=await response.text();assert.match(css,/@keyframes hamster/);assert.match(css,/prefers-reduced-motion/);
 });
+const recordedClip=(marker='SPEECH_INTERMEDIATE',bytes=48)=>({
+  audio:Buffer.concat([Buffer.from([0,0,0,24]),Buffer.from('ftypM4A '),Buffer.alloc(bytes),Buffer.from(marker)]).toString('base64'),
+  mimeType:'audio/mp4;codecs=mp4a.40.2',language:'en-US',durationMs:950
+});
+const speechRequest=async body=>{await ready;return fetch(`${base}/api/speech`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});};
+test('speech exposes only configuration status and transcribes MP4 recordings beyond the default 100KB parser limit',async()=>{
+  await ready;
+  const status=await fetch(`${base}/api/speech/status`);assert.equal(status.status,200);
+  assert.deepEqual(await status.json(),{configured:true,provider:'Gemini'});
+  assert.equal((await fetch(`${base}/healthz`).then(response=>response.json())).speechConfigured,true);
+  for(const clip of [recordedClip(),recordedClip('SPEECH_INTERMEDIATE',110000)]) {
+    const response=await speechRequest(clip);assert.equal(response.status,200);
+    assert.deepEqual(await response.json(),{text:'intermediate',language:'en'});
+  }
+});
+test('speech rejects malformed recordings, mismatched containers and invalid durations before transcription',async()=>{
+  for(const change of [{mimeType:'audio/webm'},{audio:'not-base64'},{durationMs:300},{language:'xx-XX'}]) {
+    const response=await speechRequest({...recordedClip(),...change});assert.equal(response.status,400);
+    const error=await response.json();assert.match(error.code,/^SPEECH_/);assert.ok(error.error.length<180);
+    assert.doesNotMatch(error.error,/PRIVATE_PROVIDER|test-only|stack|at \w+\(/);
+  }
+});
+test('speech distinguishes silence from a busy provider and returns short safe errors',async()=>{
+  for(const [marker,status,code] of [['SPEECH_SILENT',422,'SPEECH_NO_VOICE'],['SPEECH_QUOTA',429,'SPEECH_BUSY']]) {
+    const response=await speechRequest(recordedClip(marker));assert.equal(response.status,status);
+    const error=await response.json();assert.equal(error.code,code);assert.ok(error.error.length<180);
+    assert.equal(error.text,undefined);assert.doesNotMatch(JSON.stringify(error),/PRIVATE_PROVIDER|test-only|RESOURCE_EXHAUSTED/);
+  }
+});
+test('speech JSON parser returns actionable JSON for malformed and oversized recordings',async()=>{
+  await ready;
+  for(const [body,status] of [['{"audio":',400],[JSON.stringify({audio:'A'.repeat(2*1024*1024)}),413]]) {
+    const response=await fetch(`${base}/api/speech`,{method:'POST',headers:{'Content-Type':'application/json'},body});
+    assert.equal(response.status,status);assert.match(response.headers.get('content-type'),/application\/json/);
+    const error=await response.json();assert.equal(error.code,'SPEECH_AUDIO');assert.ok(error.error.length<180);
+    assert.doesNotMatch(error.error,/SyntaxError|PayloadTooLargeError|stack/);
+  }
+});
 test('serves an installable manifest, icons and a service worker with root scope and safe cache headers',async()=>{
   await ready;
   const response=await fetch(`${base}/manifest.webmanifest`);assert.match(response.headers.get('content-type'),/application\/manifest\+json/);
@@ -34,7 +72,7 @@ test('uses each requested language and isolates cached translations', async () =
   for (const to of ['fr', 'ja', 'es', 'zh-CN']) assert.deepEqual((await (await translate('hello', to)).json()).translations, [`${to}:hello`]);
 });
 test('rejects provider errors delivered with HTTP 200 and does not cache them', async () => {
-  assert.equal((await translate('quota', 'fr')).status, 502);
+  assert.equal((await translate('quota', 'fr')).status, 429);
   assert.equal((await translate('quota', 'fr')).status, 200);
 });
 test('uses the explicit voice, separates audio cache and never falls back', async () => {
@@ -49,7 +87,7 @@ test('uses the explicit voice, separates audio cache and never falls back', asyn
 
 test('uses a valid exact match for empty translations and rejects empty-only responses', async () => {
   assert.deepEqual((await (await translate('empty-with-match', 'ja')).json()).translations, ['ja:valid']);
-  assert.equal((await translate('empty', 'ja')).status, 502);
+  assert.equal((await translate('empty', 'ja')).status, 503);
 });
 
 test('lookup adds related words and examples while retaining the main definition', async () => {
@@ -191,7 +229,7 @@ test('English-Vietnamese glosses fix ambiguous words without changing other targ
   }
   assert.deepEqual((await (await translate('loan','fr')).json()).translations,['fr:loan']);
   assert.deepEqual((await (await translate('ambiguous-word','vi')).json()).translations,['từ vay mượn']);
-  assert.equal((await translate('identity-only','vi')).status,502);
+  assert.equal((await translate('identity-only','vi')).status,503);
   assert.deepEqual((await (await translate('internet','vi')).json()).translations,['internet']);
 });
 test('headword translation uses dictionary context when every isolated translation is unchanged',async()=>{
@@ -199,6 +237,25 @@ test('headword translation uses dictionary context when every isolated translati
   const response=await fetch(`${base}/api/translate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({texts:['identity-only'],from:'en',to:'vi',kind:'headword',definition:'Feeling pleasure.'})});
   assert.equal(response.status,200);
   assert.deepEqual((await response.json()).translations,['Giải nghĩa: vi:Feeling pleasure.']);
+});
+test('intermediate has an accurate instant Vietnamese gloss and definition failures use configured Gemini translation',async()=>{
+  const word=await translate('intermediate','vi');assert.equal(word.status,200);
+  assert.match((await word.json()).translations[0],/trung gian; trung cấp/);
+  for(const to of ['vi','fr','ja']) {
+    const response=await translate('fallback-definition chemical process',to);assert.equal(response.status,200);
+    assert.deepEqual((await response.json()).translations,[`${to}:fallback-definition chemical process`]);
+  }
+  const transient=await translate('fallback-definition-transient','vi');assert.equal(transient.status,503);
+  assert.equal((await translate('fallback-definition-transient','vi')).status,200);
+  const quota=await translate('quota-every-provider','vi');assert.equal(quota.status,429);
+  const failure=await quota.json();assert.equal(failure.code,'TRANSLATION_QUOTA');assert.match(failure.error,/hạn mức/);
+});
+test('translation validation rejects malformed texts and unknown languages without provider work',async()=>{
+  await ready;
+  for(const body of [{texts:[{text:'word'}]},{texts:['x'.repeat(451)]},{texts:['word'],to:'unknown'}]) {
+    const response=await fetch(`${base}/api/translate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    assert.equal(response.status,400);assert.equal((await response.json()).code,'TRANSLATION_INVALID');
+  }
 });
 test('AI uses the chosen dictionary sense, caches repeat requests and separates languages',async()=>{
   await ready;

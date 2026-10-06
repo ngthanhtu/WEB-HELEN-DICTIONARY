@@ -186,6 +186,7 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
 <footer>Helen Dictionary</footer>
 <div class="pet-cursor" id="pet-cursor" aria-hidden="true" hidden><span class="pet-pointer"><span class="pet-hotspot"></span><img alt="" draggable="false"></span></div>
 
+<script src="/assets/voice-recorder.js"></script>
 <script>
 // ===== CONFIG =====
 const API = ''; // '' = same server. Set e.g. 'https://yourdomain.com' if hosted separately.
@@ -197,6 +198,12 @@ const opt = (sel, def) => { sel.innerHTML = Object.entries(LANGS).map(([k,v]) =>
 const stored = key => { try { return localStorage.getItem(key); } catch { return null; } };
 const remember = (key, value) => { try { localStorage.setItem(key, value); } catch {} };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const offline=()=>globalThis.navigator?.onLine===false;
+function shortError(error,fallback='Chưa kết nối được. Hãy thử lại.') {
+  if(offline()) return 'Đang ngoại tuyến. Nội dung này chưa được lưu.';
+  const message=error?.message;
+  return typeof message==='string' && message && !/^(?:Failed to fetch|fetch failed|Load failed|NetworkError|Translation service is unavailable)/i.test(message)?message:fallback;
+}
 // Stop indefinite waits on weak mobile connections; successful responses remain cached.
 async function apiFetch(url,options={}) {
   if(typeof AbortController==='undefined') return fetch(url,options);
@@ -209,7 +216,7 @@ async function apiFetch(url,options={}) {
     headers.delete('Content-Encoding');headers.delete('Content-Length');
     return new Response(body,{status:response.status,statusText:response.statusText,headers});
   }
-  catch(error) {if(controller.signal.aborted) throw new Error('Kết nối quá chậm (7,5 giây). Hãy thử lại; kết quả đã lưu vẫn có thể xem.');throw error;}
+  catch(error) {if(controller.signal.aborted) throw new Error('Phản hồi chậm (7,5 giây). Hãy thử lại.');throw error;}
   finally {clearTimeout(timer);}
 }
 // Loading animation adapted from Uiverse.io by Nawsome, supplied by the user.
@@ -234,6 +241,7 @@ $('#from').addEventListener('change', () => remember('helen-from', $('#from').va
 let selectedVoice = stored('helen-voice');
 async function loadVoices() {
   const sel = $('#voice');
+  if(offline()) {sel.replaceChildren(new Option('Giọng đọc cần Internet',selectedVoice || ''));finishLoading($('#voice-status'),'Ngoại tuyến. Lựa chọn giọng đã được giữ.');sel.removeAttribute('aria-busy');return;}
   showLoading($('#voice-status'),'Loading voices…');sel.setAttribute('aria-busy','true');
   try {
     const r = await apiFetch(`${API}/api/voices`);
@@ -314,20 +322,30 @@ async function speak(text, btn) {
     if(request===speakRequest) {$('#audio-status').hidden=true;$('#audio-status').replaceChildren();$('#audio-status').removeAttribute('aria-busy');}
   }
 }
-const translations=new Map();
+const translations=new Map(), translationJobs=new Map();
 try {
   const saved=JSON.parse(stored('helen-translations') || '[]');
-  if(Array.isArray(saved))saved.slice(-100).forEach(item=>{if(typeof item?.key==='string' && Date.now()-item.at<86400000 && Array.isArray(item.values) && item.values.every(value=>typeof value==='string'))translations.set(item.key,item);});
+  if(Array.isArray(saved))saved.slice(-100).forEach(item=>{if(typeof item?.key==='string' && Number.isFinite(item.at) && Date.now()>=item.at && Array.isArray(item.values) && item.values.every(value=>typeof value==='string' && value.trim()))translations.set(item.key,item);});
 } catch {}
 async function tr(texts, from, to, context = {}) {
+  if(context.kind==='headword' && from==='en' && to==='vi' && texts.length===1 && lastResult?.offlineGloss && lastResult.word.toLowerCase()===String(texts[0]).toLowerCase())return [lastResult.offlineGloss];
   const key=JSON.stringify([texts,from,to,context.kind || '',context.definition || '']), saved=translations.get(key);
-  if(saved && Date.now()-saved.at<86400000 && saved.values.length===texts.length)return saved.values.slice();
-  const r = await apiFetch(`${API}/api/translate`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({texts, from, to, ...context})});
-  if (!r.ok) throw 0;
-  const values=(await r.json()).translations;
-  if(!Array.isArray(values) || values.length!==texts.length || !values.every(value=>typeof value==='string' && value.trim()))throw new Error('Invalid translation response');
-  translations.set(key,{key,at:Date.now(),values});if(translations.size>100)translations.delete(translations.keys().next().value);
-  remember('helen-translations',JSON.stringify([...translations.values()]));return values.slice();
+  const savedValues=saved?.values.length===texts.length?saved.values:null;
+  if(savedValues && (Date.now()-saved.at<86400000 || offline()))return savedValues.slice();
+  if(offline())throw new Error('Bản dịch này chưa được lưu. Kết nối mạng để tải.');
+  if(translationJobs.has(key))return translationJobs.get(key);
+  const job=(async()=>{
+    try {
+      const r = await apiFetch(`${API}/api/translate`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({texts, from, to, ...context})});
+      const data=await r.json().catch(()=>({}));
+      if(!r.ok)throw Object.assign(new Error(data.error || 'Chưa dịch được. Bấm mắt để thử lại.'),{code:data.code});
+      const values=data.translations;
+      if(!Array.isArray(values) || values.length!==texts.length || !values.every(value=>typeof value==='string' && value.trim()))throw new Error('Chưa nhận được bản dịch. Hãy thử lại.');
+      translations.set(key,{key,at:Date.now(),values});if(translations.size>100)translations.delete(translations.keys().next().value);
+      remember('helen-translations',JSON.stringify([...translations.values()]));return values.slice();
+    } catch(error) {if(savedValues)return savedValues.slice();throw error;}
+  })();
+  translationJobs.set(key,job);try{return await job;}finally{translationJobs.delete(key);}
 }
 function msg(t, err, variant = '', loading=false) { $('#out').innerHTML = `<div class="status ${err?'error':variant}" role="${err?'alert':'status'}">${loading?loadingHTML(t,'default'):esc(t)}</div>`; }
 
@@ -370,23 +388,25 @@ async function searchWord({ scroll = true, recordHistory = true } = {}) {
     d.savedOnDevice=r.headers?.get('X-Helen-Cache')==='saved';
     if (recordHistory) addHistory(d.word);
     render(d, scroll);
-    if (d.enriching) {
+    if (d.enriching || (d.offlinePartial && !offline())) {
       apiFetch(`${API}/api/lookup?word=${encodeURIComponent(d.word)}&from=en&details=1`)
         .then(async response => { if (!response.ok) throw new Error('Details unavailable'); return response.json(); })
         .then(details => {
           if (request !== searchRequest) return;
-          const open = [...document.querySelectorAll('.eye')].flatMap((button, index) => button.getAttribute('aria-pressed') === 'true' ? [{index,text:button.parentElement.querySelector('.tr').textContent}] : []);
+          const open = [...document.querySelectorAll('.eye')].flatMap(button => button.getAttribute('aria-pressed') === 'true' ? [{key:button.parentElement.getAttribute('data-sense-key'),text:button.parentElement.querySelector('.tr').textContent}] : []);
+          const pending = [...document.querySelectorAll('.eye')].filter(button=>button.getAttribute('aria-busy')==='true' && button.getAttribute('data-target')===$('#target').value).map(button=>button.parentElement.getAttribute('data-sense-key'));
           const expanded = [...document.querySelectorAll('.extra-card')].map(card => card.open);
           const panels=[...document.querySelectorAll('.extra-body details[data-panel]')].map(panel=>({word:panel.closest('.entry')?.querySelector('h2')?.textContent,key:panel.dataset.panel,open:panel.open}));
           render({...details, query:d.query, from:d.from,savedOnDevice:details.savedOnDevice || d.savedOnDevice}, false);
           document.querySelectorAll('.extra-card').forEach((card,index) => { card.open=Boolean(expanded[index]); });
           document.querySelectorAll('.extra-body details[data-panel]').forEach(panel=>{const saved=panels.find(value=>value.key===panel.dataset.panel && value.word===panel.closest('.entry')?.querySelector('h2')?.textContent);if(saved) panel.open=saved.open;});
-          const buttons = document.querySelectorAll('.eye');
-          open.forEach(({index,text}) => {
-            const button = buttons[index]; if (!button) return;
+          const buttons = [...document.querySelectorAll('.eye')];
+          open.forEach(({key,text}) => {
+            const button = buttons.find(button=>button.parentElement.getAttribute('data-sense-key')===key); if (!button) return;
             button.setAttribute('aria-pressed', 'true'); button.setAttribute('aria-label', 'Hide translation'); button.textContent = '🙈';
             const box = button.parentElement.querySelector('.tr'); box.textContent = text; box.hidden = false;
           });
+          pending.forEach(key=>buttons.find(button=>button.parentElement.getAttribute('data-sense-key')===key)?.onclick());
         })
         .catch(() => {
           if (request !== searchRequest) return;
@@ -396,80 +416,174 @@ async function searchWord({ scroll = true, recordHistory = true } = {}) {
           document.querySelectorAll('.extra-indicator.is-loading').forEach(el=>{el.classList.remove('is-loading');el.textContent='+';});
         });
     }
-  } catch(error) { if (request === searchRequest) msg(error.message || 'Chưa kết nối được website. Kiểm tra Internet rồi thử lại.', true); }
+  } catch(error) { if (request === searchRequest) msg(shortError(error), true); }
   finally { resolved=true; clearTimeout(spellingTimer); }
 }
 $('#form').addEventListener('submit', e => { e.preventDefault(); cancelSpeech(); searchWord(); });
 
 const SPEECH_LANGS={en:'en-US',vi:'vi-VN',es:'es-ES',fr:'fr-FR',de:'de-DE',it:'it-IT',pt:'pt-PT',ru:'ru-RU',ja:'ja-JP',ko:'ko-KR','zh-CN':'zh-CN','zh-TW':'zh-TW',ar:'ar-SA',hi:'hi-IN',th:'th-TH',id:'id-ID',ms:'ms-MY',tr:'tr-TR',nl:'nl-NL',pl:'pl-PL',sv:'sv-SE',el:'el-GR',he:'he-IL',uk:'uk-UA'};
-let speech=null, speechActive=false, speechCanceled=false;
+let speech=null, speechActive=false, speechCanceled=false, speechTimer=null, speechUseRecorder=false;
 function resetMic() {
+  clearTimeout(speechTimer); speechTimer=null;
   speechActive=false; $('#mic').setAttribute('aria-pressed','false');
   $('#mic').setAttribute('aria-label','Tìm bằng giọng nói'); $('#mic').title='Tìm bằng giọng nói';
 }
 function cancelSpeech() {
-  if(!speechActive) return;
-  speechCanceled=true; speech?.abort(); resetMic();
-  finishLoading($('#speech-status'),'Đã dừng micro.');
+  const wasActive=speechActive, current=speech;
+  // Ignore late results from an old mobile session after typing or changing language.
+  speechCanceled=true; speech=null; resetMic();
+  if(wasActive) {try {current?.abort();} catch {} finishLoading($('#speech-status'),'Đã dừng micro.');}
 }
 function setupSpeechSearch() {
   const Recognition=globalThis.SpeechRecognition || globalThis.webkitSpeechRecognition;
   const button=$('#mic'), status=$('#speech-status');
-  if(!Recognition || globalThis.isSecureContext===false) {
-    button.disabled=true;
-    status.textContent=!Recognition?'Trình duyệt này chưa hỗ trợ tìm bằng giọng nói. Bạn có thể thử Chrome.':'Micro cần HTTPS hoặc localhost.';
-    return;
-  }
-  status.textContent='Bấm micro và đọc từ bằng ngôn ngữ đang chọn trong ô tìm kiếm.';
+  const recorder=()=>globalThis.HelenVoiceRecorder;
+  const canRecognize=()=>Boolean(Recognition) && globalThis.isSecureContext!==false;
+  const canRecord=()=>globalThis.isSecureContext!==false && recorder()?.available?.()===true;
+  const isIOS=()=>/iPhone|iPad|iPod/.test(globalThis.navigator?.userAgent || '') || (globalThis.navigator?.platform==='MacIntel' && globalThis.navigator?.maxTouchPoints>1);
+  let firstAvailability=true;
+  const availability=()=>{
+    if(speechActive || status.getAttribute('aria-busy')==='true') return;
+    const disabled=!canRecognize() && !canRecord(), changed=button.disabled!==disabled;
+    button.disabled=disabled;
+    // A background capability refresh must keep the last transcript or retry message.
+    if(!firstAvailability && !changed) return;
+    firstAvailability=false;
+    status.textContent=globalThis.isSecureContext===false?'Micro cần HTTPS hoặc localhost.':button.disabled?'Mở trang bằng Chrome hoặc Safari để dùng micro, hoặc dùng micro trên bàn phím.':'Bấm micro và đọc từ bằng ngôn ngữ đang chọn trong ô tìm kiếm.';
+  };
+  const refreshRecorder=()=>{
+    if(speechActive || globalThis.navigator?.onLine===false) return;
+    try {recorder()?.refresh?.()?.catch?.(()=>{});} catch {}
+  };
+  globalThis.addEventListener?.('helen:speech-ready',availability);
+  globalThis.addEventListener?.('online',refreshRecorder);
+  globalThis.addEventListener?.('pageshow',refreshRecorder);
+  availability();recorder()?.ready?.then(availability).catch(()=>{});
+  const startRecording=()=>{
+    const capture=recorder(), inputLanguage=$('#from').value;
+    const session={abort:()=>capture.cancel(),finishListening:()=>capture.stop()};
+    speech=session;speechCanceled=false;speechActive=true;
+    button.setAttribute('aria-pressed','true');button.setAttribute('aria-label','Dừng micro');button.title='Dừng micro';
+    audio?.pause();showLoading(status,'Đang mở micro…');
+    const fail=error=>{
+      if(speech!==session || speechCanceled) return;
+      resetMic();speech=null;finishLoading(status,error.name==='AbortError'?'Đã dừng micro.':error.message || 'Chưa nhận diện được. Bấm micro để thử lại.');
+    };
+    // Capture begins directly in this user gesture, including Safari home-screen apps.
+    try {
+      capture.start({language:SPEECH_LANGS[inputLanguage] || 'en-US',onState:({state,message})=>{
+        if(speech!==session || speechCanceled) return;
+        if(state==='transcribing') {session.finishListening=cancelSpeech;button.setAttribute('aria-label','Hủy nhận diện');button.title='Hủy nhận diện';}
+        showLoading(status,message || (state==='transcribing'?'Đang nhận diện…':'Đang nghe… Nói từ rồi bấm micro để gửi.'));
+      }}).then(result=>{
+        if(speech!==session || speechCanceled) return;
+        const text=String(result?.text || '').trim().replace(/[.!?。！？]+$/,'').trim().slice(0,100);
+        resetMic();speech=null;
+        if(!text) return finishLoading(status,'Chưa nghe rõ từ. Nói gần micro rồi thử lại.');
+        $('#q').value=text;remember('helen-query',text);finishLoading(status,`Nghe thấy: “${text}”`);searchWord();
+      }).catch(fail);
+    } catch(error) {fail(error);}
+  };
   button.addEventListener('click',()=>{
-    if(speechActive) { try {speech.stop();} catch {resetMic();} return; }
-    speech=new Recognition(); speech.lang=SPEECH_LANGS[$('#from').value] || 'en-US';
-    speech.continuous=false; speech.interimResults=true; speech.maxAlternatives=1;
-    speechCanceled=false; speechActive=true; let received=false, failed=false;
-    const current=speech;
+    if(speechActive) {speech?.finishListening?.();return;}
+    if(globalThis.navigator?.onLine===false) {finishLoading(status,'Ngoại tuyến: hãy gõ từ hoặc dùng micro trên bàn phím.');return;}
+    if(canRecord() && (isIOS() || speechUseRecorder || !canRecognize())) {startRecording();return;}
+    if(!canRecognize()) {availability();return;}
+    try {speech=new Recognition();} catch {finishLoading(status,'Không mở được micro. Mở trang bằng Chrome hoặc Safari rồi thử lại.');return;}
+    speech.lang=SPEECH_LANGS[$('#from').value] || 'en-US';
+    speech.continuous=false; speech.interimResults=true; speech.maxAlternatives=5;
+    speechCanceled=false; speechActive=true; let received=false, closed=false, draft='', alternatives=[];
+    const current=speech, inputLanguage=$('#from').value;
+    const isCurrent=()=>current===speech && !speechCanceled && !closed;
+    const clean=value=>String(value || '').trim().replace(/[.!?。！？]+$/,'').trim().slice(0,100);
+    const showChoices=(text,uncertain=false)=>{
+      finishLoading(status,`${uncertain?'Nghe gần đúng':'Nghe thấy'}: “${text}”${alternatives.length?' · Chưa đúng? Chọn từ khác:':''}`);
+      if(!alternatives.length) return;
+      const choices=document.createElement('span');choices.className='suggestions-list';
+      alternatives.forEach(word=>{
+        const choice=document.createElement('button');choice.type='button';choice.className='word-link';choice.textContent=word;
+        choice.onclick=()=>{cancelSpeech();$('#from').value=inputLanguage;$('#q').value=word;remember('helen-from',inputLanguage);remember('helen-query',word);finishLoading(status,`Đã chọn: “${word}”`);searchWord();};
+        choices.append(choice);
+      });status.append(choices);
+    };
+    const complete=(uncertain=false)=>{
+      if(!isCurrent() || !draft || received) return false;
+      received=true;closed=true;resetMic();$('#q').value=draft;remember('helen-query',draft);showChoices(draft,uncertain);searchWord();return true;
+    };
+    const stop=()=>{try {current.stop();} catch {try {current.abort();} catch {}}};
+    const expire=()=>{
+      if(!isCurrent()) return;
+      if(!complete(true)) {closed=true;resetMic();finishLoading(status,'Chưa nghe được từ. Nói gần micro rồi thử lại.');}
+      try {current.abort();} catch {}
+    };
+    current.finishListening=()=>{
+      if(!isCurrent()) return;
+      clearTimeout(speechTimer);speechTimer=setTimeout(expire,700);stop();
+    };
     button.setAttribute('aria-pressed','true'); button.setAttribute('aria-label','Dừng micro'); button.title='Dừng micro';
     audio?.pause();showLoading(status,'Đang mở micro…');
-    current.onstart=()=>{if(!speechCanceled && current===speech) showLoading(status,'Đang nghe… Bấm micro lần nữa để dừng.');};
+    // Some phones never fire onstart/onend after a permission or service failure.
+    speechTimer=setTimeout(expire,8000);
+    current.onstart=()=>{if(isCurrent()) {clearTimeout(speechTimer);speechTimer=setTimeout(expire,8000);showLoading(status,'Đang nghe… Nói rõ từ, bấm micro để dừng.');}};
     current.onresult=event=>{
-      if(speechCanceled || current!==speech) return;
-      const result=event.results[event.resultIndex ?? 0];
-      const transcript=String(result?.[0]?.transcript || '').trim().replace(/[.!?。！？]+$/,'').trim().slice(0,100);
-      if(!transcript) return;
-      if(result.isFinal) finishLoading(status,`Nghe thấy: “${transcript}”`);else showLoading(status,`Nghe thấy: “${transcript}”…`);
-      if(result.isFinal && !received) { received=true; $('#q').value=transcript; remember('helen-query',transcript); searchWord(); }
+      if(!isCurrent()) return;
+      const results=Array.from(event.results || []), parts=results.map(result=>clean(result?.[0]?.transcript));
+      const transcript=clean(parts.filter(Boolean).join(' '));if(!transcript) return;
+      draft=transcript;
+      alternatives=[...new Set(results.flatMap((result,index)=>Array.from(result || []).slice(1).map(option=>clean(parts.map((part,i)=>i===index?clean(option?.transcript):part).join(' ')))).filter(word=>word && word.toLocaleLowerCase()!==draft.toLocaleLowerCase()))].slice(0,4);
+      if(results.every(result=>result.isFinal)) {if(complete()) stop();}
+      else showLoading(status,`Nghe thấy: “${draft}”…`);
     };
     current.onerror=event=>{
-      if(current!==speech || speechCanceled) return;
-      failed=true;
-      const messages={'not-allowed':'Bạn chưa cho phép micro. Hãy cấp quyền micro cho trang rồi thử lại.','service-not-allowed':'Trình duyệt không cho phép dịch vụ nhận diện giọng nói.','audio-capture':'Không tìm thấy micro đang hoạt động.','no-speech':'Chưa nghe được từ nào. Bấm micro và thử lại.','network':'Dịch vụ nhận diện chưa kết nối được. Kiểm tra Internet rồi thử lại.','language-not-supported':'Dịch vụ nhận diện chưa hỗ trợ ngôn ngữ đang chọn.','aborted':'Đã dừng micro.'};
-      finishLoading(status,messages[event.error] || 'Chưa nhận diện được giọng nói. Hãy thử lại.');resetMic();
+      if(!isCurrent()) return;
+      if(draft && ['no-speech','network','aborted'].includes(event.error) && complete(true)) {try {current.abort();} catch {} return;}
+      closed=true;
+      const messages={'not-allowed':'Hãy cấp quyền micro cho trang trong cài đặt trình duyệt rồi thử lại.','service-not-allowed':'Mở trang bằng Chrome hoặc Safari để dùng micro.','audio-capture':'Micro đang bận hoặc chưa kết nối. Kiểm tra micro rồi thử lại.','no-speech':'Chưa nghe được từ. Nói gần micro rồi thử lại.','network':'Nhận diện cần Internet. Kiểm tra mạng rồi thử lại.','language-not-supported':'Micro chưa hỗ trợ ngôn ngữ này. Hãy gõ từ.','aborted':'Đã dừng micro.'};
+      const canRetryRecording=canRecord() && ['no-speech','network','service-not-allowed','audio-capture'].includes(event.error);
+      if(canRetryRecording) speechUseRecorder=true;
+      resetMic();finishLoading(status,canRetryRecording?'Chưa nghe rõ. Bấm micro lần nữa để thử ghi âm ngắn.':messages[event.error] || 'Chưa nhận diện được. Bấm micro để thử lại.');
+      try {current.abort();} catch {}
     };
-    current.onend=()=>{if(current!==speech) return;resetMic();if(!received && !failed && !speechCanceled) finishLoading(status,'Chưa nhận được từ nào. Bấm micro và thử lại.');};
-    try {current.start();} catch {resetMic();finishLoading(status,'Không mở được micro. Hãy thử lại.');}
+    current.onnomatch=()=>{
+      if(!isCurrent()) return;
+      if(!complete(true)) {closed=true;resetMic();finishLoading(status,'Chưa nghe rõ từ. Nói gần micro rồi thử lại.');}
+      stop();
+    };
+    current.onend=()=>{
+      if(current!==speech) return;
+      if(isCurrent() && draft) complete(true);
+      if(isCurrent()) {closed=true;resetMic();finishLoading(status,'Chưa nghe được từ. Nói gần micro rồi thử lại.');}
+    };
+    // Keep start() inside this click gesture: Safari rejects delayed microphone starts.
+    try {current.start();} catch(error) {closed=true;resetMic();finishLoading(status,error.name==='NotAllowedError'?'Hãy cấp quyền micro cho trang rồi thử lại.':'Không mở được micro. Mở trang bằng Chrome hoặc Safari rồi thử lại.');}
   });
   $('#q').addEventListener('input',cancelSpeech); $('#from').addEventListener('change',cancelSpeech);
+  document.addEventListener?.('visibilitychange',()=>{if(document.hidden) cancelSpeech();else refreshRecorder();});
+  globalThis.addEventListener?.('pagehide',cancelSpeech);
 }
 setupSpeechSearch();
 
 let aiConfigured=null;
 function aiLessonKey(word,pos,definition,language) {return JSON.stringify([word,pos,definition.trim(),language]);}
-function restoreAILessons() {
+function restoreAILessons(includeExpired=false) {
   const lessons=new Map(), now=Date.now();
   try {
     const saved=JSON.parse(stored('helen-ai-contexts') || '[]');
     if(!Array.isArray(saved)) return lessons;
     saved.slice(-20).forEach(item=>{
       const data=item?.data, age=now-item?.at, text=value=>typeof value==='string' && value.trim() && value.length<=3000;
-      if(!Number.isFinite(age) || age<0 || age>=86400000 || !data || !text(data.word) || !text(data.pos) || !text(data.definition) || !Object.hasOwn(LANGS,data.language) || !text(data.title) || !text(data.usageNote) || !text(data.videoPrompt) || !text(data.scenario?.text) || !text(data.scenario?.translation) || !Array.isArray(data.dialogue) || data.dialogue.length<4 || data.dialogue.length>6 || !data.dialogue.every(turn=>text(turn?.speaker) && text(turn?.text) && text(turn?.translation))) return;
+      if(!Number.isFinite(age) || age<0 || (!includeExpired && age>=86400000) || !data || !text(data.word) || !text(data.pos) || !text(data.definition) || !Object.hasOwn(LANGS,data.language) || !text(data.title) || !text(data.usageNote) || !text(data.videoPrompt) || !text(data.scenario?.text) || !text(data.scenario?.translation) || !Array.isArray(data.dialogue) || data.dialogue.length<4 || data.dialogue.length>6 || !data.dialogue.every(turn=>text(turn?.speaker) && text(turn?.text) && text(turn?.translation))) return;
       lessons.set(aiLessonKey(data.word,data.pos,data.definition,data.language),{data,at:item.at});
     });
   } catch {}
   return lessons;
 }
-const aiChoices=new Map(), aiLessons=restoreAILessons(), aiPanels=new Map();
+const aiChoices=new Map(), aiLessons=restoreAILessons(), aiArchives=restoreAILessons(true), aiPanels=new Map();
+globalThis.addEventListener?.('offline',()=>{aiPanels.forEach(panel=>panel.draw());});
+globalThis.addEventListener?.('online',()=>{aiPanels.forEach(panel=>panel.draw());});
 function persistAILessons() {
-  const now=Date.now();
-  remember('helen-ai-contexts',JSON.stringify([...aiLessons.values()].filter(lesson=>lesson.data && now-lesson.at<86400000).slice(-20).map(({data,at})=>({data,at}))));
+  const saved=new Map([...aiArchives,...[...aiLessons].filter(([,lesson])=>lesson.data)]);
+  remember('helen-ai-contexts',JSON.stringify([...saved.values()].filter(lesson=>lesson.data).sort((a,b)=>a.at-b.at).slice(-20).map(({data,at})=>({data,at}))));
 }
 async function loadAIStatus() {
   try {const response=await apiFetch(`${API}/api/context/status`);const status=await response.json();aiConfigured=response.ok && status.configured===true;} catch {aiConfigured=false;}
@@ -513,11 +627,13 @@ function createAISection(entry) {
   }
   function draw() {
     let lesson=aiLessons.get(key());
-    if(lesson?.data && Date.now()-lesson.at>=86400000) {aiLessons.delete(key());lesson=null;}
-    button.disabled=Boolean(lesson?.busy) || (!lesson?.data && aiConfigured!==true);
+    if(!lesson && offline()){lesson=aiArchives.get(key());if(lesson)aiLessons.set(key(),lesson);}
+    if(lesson?.data && Date.now()-lesson.at>=86400000 && !offline()) {aiLessons.delete(key());lesson=null;}
+    button.disabled=Boolean(lesson?.busy) || (!lesson?.data && (aiConfigured!==true || offline()));
     button.setAttribute('aria-busy',String(Boolean(lesson?.busy)));
     button.textContent=lesson?.busy?'Creating…':lesson?.data?'View saved context':'Generate context';
-    if(aiConfigured===null && !lesson?.data) showLoading(status,'Checking AI service…');
+    if(offline() && !lesson?.data) finishLoading(status,'Bài AI này chưa được lưu. Kết nối mạng để tạo.');
+    else if(aiConfigured===null && !lesson?.data) showLoading(status,'Checking AI service…');
     else finishLoading(status,lesson?.data?`Bài đã lưu trên trình duyệt • bản dịch: ${LANGS[$('#target').value]}.`:aiConfigured===false?'Minh họa AI chưa được bật cho website này.':lesson?.busy?'Đang tạo ngữ cảnh theo nghĩa đã chọn…':lesson?.error || `Bản dịch theo ngôn ngữ Meanings in: ${LANGS[$('#target').value]}.`);
     if(lesson?.data) {output.removeAttribute('aria-busy');renderLesson(lesson.data);}
     else if(lesson?.busy) showLoading(output,'Creating your learning context…','large');
@@ -549,12 +665,14 @@ async function updateWordTranslation() {
     const definition=result.entries?.[0]?.meanings?.[0]?.senses?.[0]?.definition || '';
     const translated = (await tr([result.word], 'en', to, {kind:'headword',definition}))[0];
     if (request === targetRequest && result === lastResult) finishLoading(box,`${LANGS[to]}: ${translated}`);
-  } catch { if (request === targetRequest) finishLoading(box,'Word translation failed. Try again.'); }
+  } catch(error) { if (request === targetRequest) finishLoading(box,shortError(error,'Chưa dịch được từ này. Hãy thử lại.')); }
 }
 function render(d, scroll = true) {
   lastResult = d;
+  if(typeof CustomEvent==='function' && document.dispatchEvent)document.dispatchEvent(new CustomEvent('helen:lookup',{detail:{result:d,url:`${API}/api/lookup?word=${encodeURIComponent(d.query || d.word)}&from=${encodeURIComponent(d.from || 'en')}`}}));
   const out = $('#out'); out.innerHTML = '';
   if(d.savedOnDevice) out.insertAdjacentHTML('beforeend','<span class="saved-result">Đang xem dữ liệu đã lưu trên thiết bị này.</span>');
+  if(d.offlinePartial) out.insertAdjacentHTML('beforeend','<span class="saved-result">Đã lưu nghĩa chính. Kết nối mạng để tải thêm.</span>');
   if (d.from !== 'en') out.insertAdjacentHTML('beforeend', `<div class="status">“${esc(d.query)}” in English: <strong>${esc(d.word)}</strong></div>`);
   out.insertAdjacentHTML('beforeend', '<div class="status" id="word-translation" role="status"></div>');
   updateWordTranslation();
@@ -572,6 +690,7 @@ function render(d, scroll = true) {
       el.insertAdjacentHTML('beforeend', `<h3 class="meaning-heading">${esc(en.word)} <em>${esc(m.pos)}</em></h3>`);
       m.senses.forEach((s, index) => {
         const row = document.createElement('div'); row.className = 'sense';
+        row.setAttribute('data-sense-key',JSON.stringify([en.word,m.pos,s.definition]));
         const examples = s.examples?.length ? s.examples : s.example ? [s.example] : [];
         row.innerHTML = `<div class="def"><span class="sense-number">${index + 1}</span> ${esc(s.definition)} <button class="say example-say definition-say" type="button" aria-label="Hear definition">🔊</button></div>${examples.length ? `<ul class="ex examples">${examples.map(example => `<li>“${esc(example)}” <button class="say example-say" type="button" aria-label="Hear example sentence">🔊</button></li>`).join('')}</ul>` : ''}
           <button class="eye" type="button" aria-pressed="false" aria-label="Show translation">👁</button><div class="tr" hidden></div>`;
@@ -585,9 +704,9 @@ function render(d, scroll = true) {
           if (open) { box.hidden = true; eye.setAttribute('aria-pressed','false'); eye.setAttribute('aria-label','Show translation'); eye.textContent='👁'; return; }
           const to = $('#target').value;
           if (lang !== to) {
-            translating=true;showLoading(box,'Translating…');box.hidden=false;eye.setAttribute('aria-busy','true');eye.disabled=true;eye.innerHTML=HAMSTER;
+            translating=true;showLoading(box,'Translating…');box.hidden=false;eye.setAttribute('aria-busy','true');eye.setAttribute('data-target',to);eye.disabled=true;eye.innerHTML=HAMSTER;
             try {const translated=(await tr([s.definition],'en',to))[0];if($('#target').value!==to){box.hidden=true;return;}finishLoading(box,translated);lang=to;}
-            catch {finishLoading(box,'Translation failed. Try again.');return;}
+            catch(error) {if($('#target').value!==to){box.hidden=true;return;}finishLoading(box,shortError(error,'Chưa dịch được câu này. Bấm mắt để thử lại.'));return;}
             finally {translating=false;eye.disabled=false;eye.removeAttribute('aria-busy');eye.textContent='👁';box.removeAttribute('aria-busy');}
           }
           box.hidden = false; eye.setAttribute('aria-pressed','true'); eye.setAttribute('aria-label','Hide translation'); eye.textContent='🙈';

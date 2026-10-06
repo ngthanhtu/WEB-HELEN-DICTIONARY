@@ -232,3 +232,96 @@ test('audio loading is animated while pending and cleaned up after an error with
   assert.equal(button.innerHTML,'🔊');assert.equal(button.disabled,false);assert.equal(button.getAttribute('aria-busy'),undefined);
   assert.equal(p.element('#audio-status').hidden,true);assert.equal(p.saved['helen-voice'],'Sarah');
 });
+
+test('simultaneous translations share a request and a failed result remains retryable',async()=>{
+  let finish,count=0;
+  const p=page({},null,{},url=>url.includes('/api/translate')?(count++,new Promise(resolve=>finish=resolve)):undefined);
+  const first=vm.runInContext("tr(['Intermediate level.'],'en','vi')",p.context);
+  const second=vm.runInContext("tr(['Intermediate level.'],'en','vi')",p.context);
+  await new Promise(resolve=>setImmediate(resolve));assert.equal(count,1);
+  finish({ok:false,status:429,json:async()=>({error:'Dịch nghĩa tạm hết hạn mức. Hãy thử lại sau.',code:'TRANSLATION_QUOTA'})});
+  const failed=await Promise.allSettled([first,second]);assert.ok(failed.every(item=>item.status==='rejected'));
+  assert.equal(vm.runInContext('translationJobs.size + translations.size',p.context),0);
+  const retry=vm.runInContext("tr(['Intermediate level.'],'en','vi')",p.context);
+  await new Promise(resolve=>setImmediate(resolve));assert.equal(count,2);
+  finish({ok:true,json:async()=>({translations:['Trình độ trung cấp.']})});
+  assert.deepEqual(Array.from(await retry),['Trình độ trung cấp.']);
+});
+
+test('definition eyes show the actual service error, clear loading and succeed on the next tap',async()=>{
+  const definition='Lying between two extremes.';let attempts=0;
+  const p=page({},null,{},(url,options)=>{
+    if(!url.includes('/api/translate') || JSON.parse(options.body).texts[0]!==definition)return;
+    attempts++;
+    return attempts===1?{ok:false,status:429,json:async()=>({error:'Dịch nghĩa tạm hết hạn mức. Hãy thử lại sau.'})}:{ok:true,json:async()=>({translations:['Nằm giữa hai cực.']})};
+  });
+  vm.runInContext(`render(${JSON.stringify({word:'intermediate',from:'en',entries:[{word:'intermediate',meanings:[{pos:'adjective',senses:[{definition}]}]}]})},false)`,p.context);
+  const row=p.created.find(node=>node.className==='sense'), eye=row.querySelector('.eye'), box=row.querySelector('.tr');
+  await eye.onclick();assert.match(box.textContent,/hết hạn mức/);assert.equal(eye.disabled,false);assert.equal(eye.getAttribute('aria-busy'),undefined);assert.equal(eye.getAttribute('aria-pressed'),undefined);
+  await eye.onclick();assert.equal(box.textContent,'Nằm giữa hai cực.');assert.equal(eye.getAttribute('aria-pressed'),'true');assert.equal(attempts,2);
+});
+
+test('a pending definition error cannot reopen a translation after changing the target language',async()=>{
+  const definition='Around the middle.';let finish;
+  const p=page({},null,{},(url,options)=>url.includes('/api/translate') && JSON.parse(options.body).texts[0]===definition?new Promise(resolve=>finish=resolve):undefined);
+  vm.runInContext(`render(${JSON.stringify({word:'intermediate',from:'en',entries:[{word:'intermediate',meanings:[{pos:'adjective',senses:[{definition}]}]}]})},false)`,p.context);
+  const row=p.created.find(node=>node.className==='sense'), eye=row.querySelector('.eye'), box=row.querySelector('.tr');
+  const pending=eye.onclick();p.element('#target').value='fr';p.element('#target').events.change();
+  finish({ok:false,status:503,json:async()=>({error:'Old-language error'})});await pending;
+  assert.equal(box.hidden,true);assert.ok(!box.textContent.includes('Old-language error'));assert.equal(eye.disabled,false);
+});
+
+test('expired saved translations still open offline and an unsaved sentence gives an immediate message',async()=>{
+  const key=JSON.stringify([['An intermediate stage.'],'en','vi','','']);
+  const p=page({'helen-translations':JSON.stringify([{key,at:Date.now()-172800000,values:['Một giai đoạn trung gian.']}])},null,{navigator:{onLine:false}});
+  assert.deepEqual(Array.from(await vm.runInContext("tr(['An intermediate stage.'],'en','vi')",p.context)),['Một giai đoạn trung gian.']);
+  await assert.rejects(vm.runInContext("tr(['A new sentence.'],'en','vi')",p.context),/chưa được lưu/);
+  assert.equal(p.requests.filter(request=>request.url.includes('/api/translate')).length,0);
+  assert.match(p.element('#voice-status').textContent,/Ngoại tuyến/);
+});
+
+test('the offline pack Vietnamese headword gloss never calls a translation provider',async()=>{
+  const p=page({},null,{navigator:{onLine:false}});
+  vm.runInContext("lastResult={word:'intermediate',offlineGloss:'trung gian; trung cấp'}",p.context);
+  assert.deepEqual(Array.from(await vm.runInContext("tr(['intermediate'],'en','vi',{kind:'headword'})",p.context)),['trung gian; trung cấp']);
+  assert.equal(p.requests.filter(request=>request.url.includes('/api/translate')).length,0);
+});
+
+test('archived AI contexts remain readable offline while new contexts require a connection',async()=>{
+  const data=savedLesson();
+  const p=page({'helen-ai-contexts':JSON.stringify([{at:Date.now()-172800000,data}])},null,{navigator:{onLine:false}});
+  await new Promise(resolve=>setImmediate(resolve));
+  vm.runInContext(`createAISection({word:'loan',meanings:[{pos:'noun',senses:[{definition:${JSON.stringify(data.definition)}}]}]})`,p.context);
+  const panel=p.created.find(node=>node.className==='ai-study'), button=panel.querySelector('.ai-generate');
+  assert.equal(button.textContent,'View saved context');assert.equal(button.disabled,false);await button.onclick();
+  assert.equal(p.requests.filter(request=>request.url.endsWith('/api/context')).length,0);
+  p.element('#target').value='fr';p.element('#target').events.change();
+  assert.equal(button.disabled,true);assert.match(panel.querySelector('.ai-status').textContent,/chưa được lưu/);
+});
+
+test('saved partial lookups refresh their extra information online and stay quiet offline',async()=>{
+  for(const onLine of [true,false]) {
+    const p=page({},url=>({ok:true,json:async()=>({word:'intermediate',from:'en',query:'intermediate',offlinePartial:!url.includes('details=1'),enriching:false,entries:[{word:'intermediate',meanings:[{pos:'adjective',senses:[{definition:'Around the middle.'}]}]}]})}),{navigator:{onLine}});
+    p.element('#q').value='intermediate';await vm.runInContext('searchWord()',p.context);await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(p.requests.filter(request=>request.url.includes('details=1')).length,onLine?1:0);
+  }
+});
+
+test('background metadata cannot discard a definition translation that is still loading',async()=>{
+  const definition='Receive something temporarily.';let finishDetails,finishTranslation,translations=0;
+  const result={query:'borrow',word:'borrow',from:'en',entries:[{word:'borrow',meanings:[{pos:'verb',senses:[{definition}]}]}]};
+  const p=page({},url=>url.includes('details=1')?new Promise(resolve=>finishDetails=resolve):{ok:true,json:async()=>({...result,enriching:true})},{},(url,options)=>{
+    if(url.includes('/api/translate') && JSON.parse(options.body).texts[0]===definition) {translations++;return new Promise(resolve=>finishTranslation=resolve);}
+  });
+  p.context.document.querySelectorAll=selector=>{
+    if(selector!=='.eye')return [];
+    const row=p.created.filter(node=>node.className==='sense').at(-1);if(!row)return [];
+    const eye=row.querySelector('.eye');eye.parentElement=row;return [eye];
+  };
+  p.element('#q').value='borrow';await vm.runInContext('searchWord()',p.context);
+  const original=p.context.document.querySelectorAll('.eye')[0], pending=original.onclick();
+  finishDetails({ok:true,json:async()=>({...result,enriching:false})});await new Promise(resolve=>setImmediate(resolve));
+  const updated=p.context.document.querySelectorAll('.eye')[0];assert.notEqual(updated,original);assert.equal(updated.getAttribute('aria-busy'),'true');assert.equal(translations,1);
+  finishTranslation({ok:true,json:async()=>({translations:['Nhận một thứ trong thời gian ngắn.']})});await pending;await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(updated.getAttribute('aria-pressed'),'true');assert.equal(updated.parentElement.querySelector('.tr').textContent,'Nhận một thứ trong thời gian ngắn.');assert.equal(updated.disabled,false);
+});

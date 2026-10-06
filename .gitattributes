@@ -1,0 +1,2 @@
+# Preserve the bundled WordNet license exactly, including its original spacing.
+public/assets/wordnet-license.txt -whitespace

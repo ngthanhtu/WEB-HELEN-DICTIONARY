@@ -17,7 +17,7 @@ Server nhận `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID`, `PORT` và tùy chọ
 
 Chọn ngôn ngữ nhập trong thanh tìm kiếm và ngôn ngữ đích tại **Meanings in**. Từ điển vẫn tra cứu định nghĩa tiếng Anh; bản dịch của từ hiển thị theo ngôn ngữ đích. Bấm mắt để xem bản dịch nghĩa. Đổi ngôn ngữ đích cập nhật bản dịch của từ, đóng các nghĩa cũ và dịch nghĩa theo ngôn ngữ mới khi bấm mắt.
 
-Trong môi trường cloud có proxy, thêm `NODE_USE_ENV_PROXY=1` vào lệnh khởi động. Cho phép HTTPS tới `api.elevenlabs.io`, `api.mymemory.translated.net`, `en.wiktionary.org`; thêm `www.dictionaryapi.com` nếu sử dụng Merriam-Webster.
+Trong môi trường cloud có proxy, thêm `NODE_USE_ENV_PROXY=1` vào lệnh khởi động. Cho phép HTTPS tới `api.elevenlabs.io`, `api.mymemory.translated.net`, `en.wiktionary.org`; thêm `www.dictionaryapi.com` nếu sử dụng Merriam-Webster và `generativelanguage.googleapis.com` nếu dùng Gemini.
 
 ## Kiểm thử
 
@@ -25,7 +25,7 @@ Trong môi trường cloud có proxy, thêm `NODE_USE_ENV_PROXY=1` vào lệnh k
 node --test tests/*.test.cjs
 ```
 
-Các kiểm thử API và trình duyệt giả lập dịch vụ ngoài, không tiêu hao quota ElevenLabs. Kiểm tra thực tế riêng bằng `/api/voices`, `/api/lookup` và `/api/translate` sau khi có quyền mạng và thông tin tài khoản hợp lệ. `/env` phải trả về 404.
+Các kiểm thử API và trình duyệt giả lập dịch vụ ngoài, không tiêu hao quota ElevenLabs/Gemini. Kiểm tra thực tế riêng bằng `/api/voices`, `/api/lookup` và `/api/translate` sau khi có quyền mạng và thông tin tài khoản hợp lệ. Với micro, các kiểm thử mô phỏng Web Speech/MediaRecorder; vẫn cần thử thu tiếng thật trên iPhone Safari và app đã thêm vào màn hình chính. `/env` phải trả về 404.
 
 Để chạy trên máy cá nhân, tải đầy đủ repository (bao gồm package.json và package-lock.json), tạo `.env` tại thư mục server với `ELEVENLABS_API_KEY` của bạn và `ELEVENLABS_VOICE_ID=EXAVITQu4vr4xnSDxMaL`, rồi chạy `npm ci` và `npm start`. Mở trang tại localhost:3000. Nếu giọng cũ đã lưu không dùng được, chọn Sarah trong mục Voice; ứng dụng không tự thay lựa chọn. Không mở index.html trực tiếp bằng file://.
 
@@ -85,11 +85,15 @@ Nút mắt và loa, ô ngôn ngữ, giọng và ô tìm kiếm có viền sáng,
 
 `loan` được giải nghĩa là “khoản vay; cho vay, cho mượn; từ vay mượn”, thay vì lặp lại chữ `loan`. `lib/vietnamese.js` có các giải nghĩa ngắn biên soạn cho các từ thường dễ nhầm như loan, may, can, ban, song, son, long, mine, bank… Khi dịch Anh–Việt, kết quả lặp nguyên văn tiếng Anh bị loại; ứng dụng thử kết quả dịch phù hợp khác. Các từ vay mượn được dùng nguyên dạng trong tiếng Việt như internet, email, taxi… vẫn được chấp nhận. Nếu dịch riêng đầu mục không có kết quả hợp lệ, định nghĩa của từ cung cấp ngữ cảnh để hiển thị giải nghĩa tiếng Việt. Đây là bước kiểm soát bản dịch, không bảo đảm mọi nghĩa của mọi từ đều được dịch hoàn hảo. Từ nhiều nghĩa vẫn cần đọc nghĩa được đánh số và ví dụ.
 
+`intermediate` có giải nghĩa biên soạn theo từ loại: trung gian/trung cấp, người hoặc vật ở mức giữa, và làm trung gian. Lỗi dịch từ và các câu trước đây xảy ra khi MyMemory hết hạn mức dịch hằng ngày. Server nay chuyển sang Gemini bằng `GEMINI_API_KEY` hiện có khi MyMemory thất bại, gom các câu cần dịch vào một lượt, dùng chung yêu cầu trùng và chỉ cache bản dịch thành công. Không thử liên tiếp nguồn đã báo hết quota. Bản dịch có giới hạn chờ tổng 6,5 giây; nếu cả hai nguồn lỗi, nút mắt có thông báo ngắn và cho bấm thử lại. Không cần key dịch mới nếu Gemini đã cấu hình trên Render.
+
 ## Tìm bằng giọng nói
 
-Bấm micro trên thanh tìm kiếm, cấp quyền micro khi trình duyệt hỏi và đọc từ bằng ngôn ngữ chọn ở bên trái thanh tìm kiếm. Chỉ kết quả nhận diện cuối cùng mới được dùng để tra cứu; bấm micro lần nữa để dừng. Gõ phím hoặc đổi ngôn ngữ nhập sẽ hủy lượt nghe đang chạy. Trình duyệt không hỗ trợ, thiếu micro, từ chối quyền, lỗi mạng hoặc không nghe được tiếng đều có thông báo riêng.
+Bấm micro trên thanh tìm kiếm, cấp quyền micro khi trình duyệt hỏi và đọc từ bằng ngôn ngữ chọn ở bên trái thanh tìm kiếm. Trên iPhone Safari và app đã cài, ứng dụng ưu tiên thu âm ngắn rồi gửi Gemini khi `GEMINI_API_KEY` đã cấu hình. Nói một từ/cụm từ rõ ràng; ứng dụng tự gửi sau khi ngừng nói hoặc bấm micro lần nữa để gửi sớm. Mỗi bản ghi tối đa 10 giây/750 KB. Gõ phím, đổi ngôn ngữ nhập hoặc chuyển ứng dụng ra nền sẽ hủy lượt nghe và tắt micro.
 
-Dùng Web Speech API (`SpeechRecognition` hoặc `webkitSpeechRecognition`), phù hợp với Chrome và các trình duyệt có hỗ trợ; cần HTTPS hoặc localhost. Dịch vụ nhận diện của một số trình duyệt gửi âm thanh tới nhà cung cấp của trình duyệt và cần Internet. Server Helen Dictionary không nhận/tích trữ bản ghi âm. Các kiểm thử nhận diện dùng sự kiện mô phỏng; kiểm tra âm thanh thật trên thiết bị có micro. Tham khảo MDN: https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition.
+Các trình duyệt hỗ trợ tiếp tục dùng Web Speech API (`SpeechRecognition` hoặc `webkitSpeechRecognition`). Nếu trình duyệt nhận được tiếng nhưng kết thúc mà không gửi kết quả cuối, ứng dụng dùng phần lời đã nhận thay vì bỏ mất. Khi có lựa chọn nhận diện khác, người dùng có thể bấm từ phù hợp; không tự sửa chính tả từ đã nói. Cần HTTPS hoặc localhost và Internet. Dịch vụ Web Speech có thể gửi âm thanh tới nhà cung cấp của trình duyệt; chế độ thu âm gửi qua server tới Gemini, không ghi âm vào file hoặc lưu audio trong cache của ứng dụng.
+
+`/api/speech/status` trả `configured` để xác nhận có cấu hình key, không xác nhận key/quota hợp lệ. `/api/speech` nhận bản ghi ngắn và trả từ nhận diện; giới hạn production 10 yêu cầu/phút/IP. Dùng chung key/model Gemini với tính năng AI, không cần thêm API key. Thiếu quyền micro, không nghe rõ, lỗi mạng và chờ quá lâu đều có thông báo ngắn. Nếu thiếu quyền, kiểm tra quyền micro của website trong Safari rồi thử lại. Tham khảo Web Speech: https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition.
 
 ## Minh họa ngữ cảnh bằng Gemini
 
@@ -102,9 +106,9 @@ Bật trên Render:
 1. Tạo API key ở https://aistudio.google.com/app/api-keys.
 2. Render → Web Service → **Environment** → thêm **GEMINI_API_KEY** và dán key vào ô Value bảo mật; Save/Deploy. Không commit hoặc gửi key trong chat.
 3. Để **GEMINI_MODEL** trống để dùng `gemini-flash-lite-latest`, đã xác minh hoạt động trên Render. Alias này theo bản Flash Lite hiện hành của Google. Nếu Google báo model mặc định không còn khả dụng (404), server kiểm tra danh sách model và ưu tiên Flash Lite bản ổn định còn hỗ trợ tạo nội dung. Không chọn Pro/image/audio và không đổi model khi lỗi quyền hoặc quota. Có thể đặt **GEMINI_MODEL** để cố định model được tài khoản hỗ trợ. Local dùng các biến tương tự trong `.env`.
-4. `/healthz` có `aiConfigured`, `/api/context/status` có `configured`; chúng xác nhận đã cấu hình key, không kiểm tra key/quota. Mở trang, tra loan, mở Explore more → AI contexts, chọn nghĩa và bấm Generate context để kiểm tra thực tế.
+4. `/healthz` có `aiConfigured`/`speechConfigured`, `/api/context/status` và `/api/speech/status` có `configured`; chúng xác nhận đã cấu hình key, không kiểm tra key/quota. Mở trang, tra loan, mở Explore more → AI contexts, chọn nghĩa và bấm Generate context để kiểm tra thực tế; thử micro trên iPhone để kiểm tra nhận diện.
 
-Gemini chỉ được gọi khi bấm tạo. Các yêu cầu trùng được dùng chung; kết quả cache theo từ, nghĩa, ngôn ngữ trong 24 giờ, tối đa 200 mục trên mỗi tiến trình. Restart Render sẽ mất cache trên server. Giới hạn production: 6 yêu cầu tạo mỗi phút/IP, tối đa 1400 token đầu ra/yêu cầu, không tự retry khi quota báo lỗi. Free tier/hạn mức phụ thuộc tài khoản, model và chính sách Google; kiểm tra trong AI Studio. Chưa có key thì giao diện ghi rõ AI chưa bật; key/quota không hợp lệ thì báo lỗi và không hiển thị bài học giả.
+Bài học Gemini chỉ được tạo khi bấm Generate context. Gemini còn dùng để nhận diện bản ghi micro và làm nguồn dịch dự phòng khi MyMemory lỗi; các lượt này tính vào hạn mức tài khoản Gemini. Yêu cầu tạo bài trùng được dùng chung; kết quả cache theo từ, nghĩa, ngôn ngữ trong 24 giờ, tối đa 200 mục trên mỗi tiến trình. Restart Render sẽ mất cache trên server. Giới hạn production: 6 yêu cầu tạo mỗi phút/IP, tối đa 1400 token đầu ra/yêu cầu, không tự retry khi quota báo lỗi. Free tier/hạn mức phụ thuộc tài khoản, model và chính sách Google; kiểm tra trong AI Studio. Chưa có key thì giao diện ghi rõ AI chưa bật; key/quota không hợp lệ thì báo lỗi và không hiển thị bài học giả.
 
 Cloud có allowlist cần thêm `generativelanguage.googleapis.com` khi kiểm tra Gemini thật. Tham khảo SDK: https://github.com/googleapis/js-genai.
 
@@ -112,7 +116,7 @@ Cloud có allowlist cần thêm `generativelanguage.googleapis.com` khi kiểm t
 
 Yêu cầu Gemini được rút gọn: đúng 4 lượt hội thoại ngắn, một câu tình huống, ghi chú sử dụng ngắn và prompt video 45–65 từ. Vẫn giữ nghĩa từ được chọn, bản dịch từng phần và các nút loa. Đầu ra ngắn giúp giảm thời gian tạo; không tự tạo trước khi người dùng bấm để tránh thêm lượt gọi. Mục tiêu dưới 5 giây phụ thuộc mạng, Gemini và việc Render free vừa khởi động lại.
 
-Trình duyệt lưu tối đa 20 bài AI thành công trong 24 giờ dưới `helen-ai-contexts`. Bài đã lưu được hiển thị ngay sau reload mà không gọi Gemini; cache phân biệt từ, từ loại, **định nghĩa** và ngôn ngữ dịch. Bài lỗi, đang tạo, hết hạn hoặc dữ liệu lưu hỏng không được dùng. Cache chỉ ở trình duyệt này, không đồng bộ sang thiết bị khác; vẫn xem lại bài đã lưu khi dịch vụ AI chưa được bật.
+Trình duyệt giữ tối đa 20 bài AI thành công dưới `helen-ai-contexts`, dùng ngay trong 24 giờ mà không gọi Gemini; cache phân biệt từ, từ loại, **định nghĩa** và ngôn ngữ dịch. Khi ngoại tuyến vẫn xem lại bài thành công đã lưu quá 24 giờ. Bài lỗi, đang tạo và dữ liệu lưu hỏng không được dùng. Cache chỉ ở trình duyệt này, không đồng bộ sang thiết bị khác; vẫn xem lại bài đã lưu khi dịch vụ AI chưa được bật.
 
 Hoạt ảnh hamster do người dùng cung cấp (Uiverse.io by Nawsome) nằm trong `public/assets/hamster.css`, phục vụ tại `/assets/hamster.css`. Các trạng thái chờ tra cứu, kiểm tra chính tả, tải giọng, dịch từ/định nghĩa, chuẩn bị âm thanh, tạo AI, tải dữ liệu bổ sung và ảnh đều có loading phù hợp kích thước. Khi hoàn tất hoặc lỗi, loading dừng; nút trở lại hoạt động. `prefers-reduced-motion` tắt chuyển động và giữ thông báo trạng thái.
 
@@ -137,7 +141,7 @@ Desktop: đầu chó theo chuột, có chấm nhỏ xác định đúng vị tr�
 
 ## Cài lên điện thoại và kết nối
 
-Website có manifest, biểu tượng và service worker để cài dạng PWA; dùng HTTPS của Render. Không cần chạy terminal trên điện thoại.
+Website có manifest, biểu tượng và service worker để cài dạng PWA; dùng HTTPS của Render. Người dùng xác nhận cài trực tiếp từ web, không cần App Store/CH Play, file APK hoặc chạy terminal trên điện thoại.
 
 - Android: mở https://helen-dictionary.onrender.com/ bằng Chrome → **Install app**, hoặc menu ⋮ → **Cài đặt ứng dụng / Thêm vào màn hình chính**.
 - iPhone/iPad: mở link trong Safari → **Chia sẻ → Thêm vào Màn hình chính → Thêm**. Bật Open as Web App nếu có. Nút Install app trên trang cũng hiện hướng dẫn này.
@@ -145,6 +149,12 @@ Website có manifest, biểu tượng và service worker để cài dạng PWA; 
 
 Giao diện nhỏ có ô chọn ngôn ngữ/voice vừa màn hình, thanh tìm kiếm giữ đủ chỗ gõ, vùng chạm tối thiểu 44 px và không tràn ngang ở 320–430 px. Ảnh hiển thị dùng WebP đã xuất nhỏ trong **public/assets/mobile** (tổng khoảng 330 KB thay vì hơn 7 MB), giữ ảnh gốc trong repository. Đổi ảnh hiển thị: IMAGE 1/2 trong CSS index.html; ảnh chính trong IMAGES.hero; ảnh chó trong public/assets/appearance.json. Có thể trỏ về ảnh gốc hoặc ảnh mới tùy ý. Server nén HTML/JSON bằng compression.
 
-Sau khi service worker đã kích hoạt, tối đa 100 phản hồi tra cứu thành công (bao gồm dữ liệu mở rộng) lưu trên thiết bị trong 24 giờ. Tra lại dùng cache ngay và có chú thích dữ liệu đã lưu; khi ngoại tuyến có thể xem cả bản cũ hơn. Không lưu lỗi hoặc tự tạo định nghĩa cho từ chưa tra. 100 bản dịch thành công lưu 24 giờ theo văn bản/ngôn ngữ/ngữ cảnh; 20 bài AI giữ cơ chế cache riêng. Dữ liệu chỉ thuộc trình duyệt/ứng dụng này, không đồng bộ giữa các máy; hệ điều hành có thể xóa cache khi thiếu dung lượng. Vào trang và tra một từ sau khi cài để lưu dữ liệu ngoại tuyến. Giọng đọc, giọng mới và tạo AI mới cần Internet.
+Mở **Saved offline** để xem và mở các từ đã lưu trên thiết bị. Tối đa 100 phản hồi tra cứu thành công (bao gồm dữ liệu mở rộng) được giữ; trong 24 giờ, tra lại mở ngay từ cache. Nếu nguồn trực tuyến lỗi hoặc chậm, ứng dụng có thể dùng bản đã lưu cũ hơn. Kết quả đầu tiên vẫn được lưu khi service worker vừa cài xong. Dữ liệu mới chỉ có định nghĩa chính được ghi rõ, không giữ loading dữ liệu mở rộng khi mất mạng. Không lưu lỗi hoặc ghi đè bản thành công bằng phản hồi lỗi.
 
-Mục tiêu phản hồi dưới 5 giây trên kết nối tốt. Bản dịch dùng tổng thời gian tối đa 6 giây cho các lần thử và giải nghĩa dự phòng. Các nguồn từ điển ngoài có giới hạn 5 giây và không còn lượt chờ lại 15 giây khi tất cả nguồn lỗi. Frontend dừng lượt chờ API sau 7,5 giây (cả tải nội dung/audio), dọn loading và cho thử lại; đây là giới hạn chờ, không phải bảo đảm thành công dưới 8 giây. Gemini có thể hoàn tất trên server sau khi client dừng; thử lại cùng nghĩa có thể nhận cache mà không tạo thêm. Render free có thể ngủ và khởi động lại lâu hơn 8 giây: app shell và dữ liệu đã lưu vẫn mở nhanh, nhưng từ/voice/AI mới cần server thức. Muốn bảo đảm server luôn sẵn sàng cần hosting không ngủ; cấu hình hiện tại tiếp tục dùng free, không đổi sang gói trả phí.
+Bấm **Download offline pack → Download** để xác nhận tải 50 từ tiếng Anh thông dụng (khoảng 106 KiB) với định nghĩa thật từ Princeton WordNet và nghĩa tiếng Việt của đầu mục do Helen Dictionary biên soạn. Bộ từ không gọi AI hoặc ElevenLabs khi tải, giữ nguyên những từ cá nhân đã lưu và vẫn chịu giới hạn 100 mục. Có thể tra các từ trong bộ này mà chưa từng tìm từng từ trước đó. Các câu định nghĩa chỉ có bản dịch nếu đã bấm mắt khi có mạng.
+
+Bộ từ nằm tại `public/assets/offline-basics.json`; sửa danh sách từ/nghĩa Việt ở đầu `scripts/build-offline-pack.cjs`, rồi chạy `node scripts/build-offline-pack.cjs` để dựng lại bằng WordNet đã cài trên server, không gọi dịch vụ mạng. Giấy phép WordNet được giữ trong bộ từ và `public/assets/wordnet-license.txt`.
+
+Ứng dụng giữ tối đa 100 bản dịch thành công theo văn bản/ngôn ngữ/ngữ cảnh và 20 bài AI. Bản còn trong 24 giờ dùng ngay; bản thành công cũ hơn vẫn đọc được khi ngoại tuyến, không tự xóa chỉ vì hết hạn làm mới. Nội dung chỉ thuộc trình duyệt/ứng dụng này, không đồng bộ giữa các máy; hệ điều hành có thể xóa cache khi thiếu dung lượng. Micro, giọng ElevenLabs, từ ngoài dữ liệu đã lưu, bản dịch chưa tải và tạo bài AI mới cần Internet. Mở trang khi có mạng một lần và tải bộ từ trước khi dùng ngoại tuyến.
+
+Mục tiêu phản hồi dưới 5 giây trên kết nối tốt. Bản dịch có giới hạn tổng 6,5 giây, nhận diện Gemini 6 giây sau khi gửi audio. Các nguồn từ điển ngoài có giới hạn 5 giây và không còn lượt chờ lại 15 giây khi tất cả nguồn lỗi. Frontend dừng lượt chờ API sau 7,5 giây (cả tải nội dung/audio), dọn loading và cho thử lại; đây là giới hạn chờ, không phải bảo đảm thành công dưới 8 giây. Tra cứu chưa lưu có hạn chờ mạng 6,5 giây; nếu có bản cũ, ứng dụng dùng bản đó khi làm mới chậm quá 2,4 giây hoặc lỗi. Gemini có thể hoàn tất trên server sau khi client dừng; thử lại cùng nghĩa có thể nhận cache mà không tạo thêm. Render free có thể ngủ và khởi động lại lâu hơn 8 giây: app shell và dữ liệu đã lưu vẫn mở nhanh, nhưng nội dung cần mạng phải chờ server thức. Cấu hình hiện tại tiếp tục dùng free; hosting không ngủ là lựa chọn nếu cần server luôn sẵn sàng.

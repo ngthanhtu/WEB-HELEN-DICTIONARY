@@ -1,5 +1,5 @@
 // Loaded only by the API test child process; no external requests or paid TTS calls.
-let quotaCalls = 0, aiCalls=0;
+let quotaCalls = 0, aiCalls=0, translationFailureCalls=0;
 global.fetch = async (input, opts = {}) => {
   const url = new URL(input);
   if (url.hostname === 'api.mymemory.translated.net') {
@@ -8,8 +8,9 @@ global.fetch = async (input, opts = {}) => {
     if(text==='identity-only' || text==='internet') return Response.json({responseStatus:200,responseData:{translatedText:text},matches:[]});
     if (text === 'empty-with-match') return Response.json({responseStatus:200,responseData:{translatedText:''},matches:[{translation:'',match:1},{translation:`${to}:valid`,match:1}]});
     if (text === 'empty') return Response.json({responseStatus:200,responseData:{translatedText:''}});
-    const failed = text === 'quota' && ++quotaCalls <= 2;
-    return Response.json({responseStatus:failed ? 429 : 200, responseData:{translatedText:failed ? 'QUOTA ERROR' : `${to}:${text}`}});
+    const failed = text === 'quota' && ++quotaCalls <= 1;
+    if(text.includes('fallback-definition') || text==='quota-every-provider') return Response.json({responseStatus:503,responseData:{translatedText:''}});
+    return Response.json({responseStatus:failed ? 503 : 200, responseData:{translatedText:failed ? 'QUOTA ERROR' : `${to}:${text}`}});
   }
   if (url.hostname === 'api.datamuse.com') {
     if (url.searchParams.has('rel_bga') || url.searchParams.has('rel_bgb')) return Response.json([{word:'the',score:1000},{word:'laboratory',score:100},{word:'.',score:80}]);
@@ -36,7 +37,20 @@ global.fetch = async (input, opts = {}) => {
   }
   if(url.hostname==='generativelanguage.googleapis.com') {
     if(!opts.body) return Response.json({models:[{name:'models/gemini-3.1-flash-lite',supportedGenerationMethods:['generateContent']},{name:'models/gemini-3-pro',supportedGenerationMethods:['generateContent']}]});
-    const request=JSON.parse(opts.body), input=JSON.parse(request.contents[0].parts[0].text);
+    const request=JSON.parse(opts.body), recording=request.contents?.[0]?.parts?.find(part=>part.inlineData)?.inlineData;
+    if(recording) {
+      const marker=Buffer.from(recording.data,'base64').toString('utf8');
+      if(marker.includes('SPEECH_QUOTA')) return Response.json({error:{code:429,message:'PRIVATE_PROVIDER_SPEECH_DETAILS',status:'RESOURCE_EXHAUSTED'}},{status:429});
+      const transcript=marker.includes('SPEECH_SILENT') ? '' : 'intermediate';
+      return Response.json({candidates:[{content:{role:'model',parts:[{text:JSON.stringify({transcript,language:'en'})}]},finishReason:'STOP'}]});
+    }
+    const input=JSON.parse(request.contents[0].parts[0].text);
+    if(Array.isArray(input.texts)) {
+      if(input.texts.some(item=>item.text==='quota' || item.text==='quota-every-provider')) return Response.json({error:{code:429,message:'Test translation quota',status:'RESOURCE_EXHAUSTED'}},{status:429});
+      if(input.texts.some(item=>item.text==='fallback-definition-transient') && ++translationFailureCalls===1) return Response.json({error:{code:503,message:'Transient upstream failure',status:'UNAVAILABLE'}},{status:503});
+      const to={Vietnamese:'vi',French:'fr',Japanese:'ja',Spanish:'es','Simplified Chinese':'zh-CN'}[input.targetLanguage] || input.targetLanguage;
+      return Response.json({candidates:[{content:{role:'model',parts:[{text:JSON.stringify({translations:input.texts.map(item=>({id:item.id,text:item.text==='empty' ? '' : item.text==='identity-only' ? item.text : `${to}:${item.text}`}))})}]},finishReason:'STOP'}]});
+    }
     if(input.word==='ai-model-retired' && url.pathname.includes('gemini-flash-lite-latest:')) return Response.json({error:{code:404,message:'Retired model',status:'NOT_FOUND'}},{status:404});
     if(input.word==='ai-quota') return Response.json({error:{code:429,message:'Test quota',status:'RESOURCE_EXHAUSTED'}},{status:429});
     const lesson={title:`Lesson ${++aiCalls}`,dialogue:[
