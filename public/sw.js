@@ -2,7 +2,8 @@
 const VERSION='helen-__BUILD_VERSION__';
 const SHELL=`${VERSION}-shell`, FILES=`${VERSION}-files`, WORDS='helen-words-v1';
 const TTL=24*60*60*1000, MAX_WORDS=100, MAX_FILES=40;
-const shell=['/','/manifest.webmanifest','/assets/pwa.css','/assets/pwa.js','/assets/hamster.css','/assets/pet-pointer.css','/assets/pet-pointer.js','/assets/icons/icon-180.png','/assets/icons/icon-192.png','/assets/icons/icon-512.png'];
+const shell=['/','/manifest.webmanifest','/assets/pwa.css','/assets/pwa.js','/assets/hamster.css','/assets/pet-pointer.css','/assets/pet-pointer.js','/assets/icons/icon-180.png','/assets/icons/icon-192.png','/assets/icons/icon-512.png',
+  '/assets/mobile/background.webp','/assets/mobile/lookup.webp','/assets/mobile/hero.webp','/assets/mobile/dog-idle.webp','/assets/mobile/dog-pressed.webp'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(SHELL).then(cache=>cache.addAll(shell)));});
 self.addEventListener('message',event=>{if(event.data?.type==='ACTIVATE_UPDATE')self.skipWaiting();});
 self.addEventListener('activate',event=>{event.waitUntil((async()=>{
