@@ -68,3 +68,20 @@ test('serves both uploaded background images with image content types',async()=>
     assert.ok((await r.arrayBuffer()).byteLength>1000);
   }
 });
+
+test('redirects missing local backgrounds to pinned GitHub images', async () => {
+  const fs = require('node:fs');
+  const tmp = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'helen-no-images-'));
+  fs.copyFileSync(path.join(__dirname, '..', 'server.js'), path.join(tmp, 'server.js'));
+  const child = spawn(process.execPath, [path.join(tmp, 'server.js')], {
+    env: {...process.env, PORT:'3201', NODE_PATH:path.join(__dirname,'..','node_modules')}, stdio:['ignore','pipe','pipe']
+  });
+  try {
+    await new Promise((resolve,reject)=>{child.stdout.once('data',resolve);child.once('error',reject);child.once('exit',code=>reject(new Error(`fixture exited ${code}`)));});
+    for (const name of ['Helennn.jpg','pexels-mart-production-7550534.jpg']) {
+      const r=await fetch(`http://127.0.0.1:3201/${name}`, {redirect:'manual'});
+      assert.equal(r.status,302);
+      assert.equal(r.headers.get('location'),`https://raw.githubusercontent.com/ngthanhtu/WEB-HELEN-DICTIONARY/bb47b87/${name}`);
+    }
+  } finally { child.kill(); fs.rmSync(tmp,{recursive:true,force:true}); }
+});

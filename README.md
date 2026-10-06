@@ -40,3 +40,5 @@ Các kiểm thử API và trình duyệt giả lập dịch vụ ngoài, không 
 Nút loa bên cạnh từng câu ví dụ dùng giọng ElevenLabs đã chọn. Các câu thêm từ Free Dictionary API hiển thị trong Usage examples. API `api.dictionaryapi.dev` không cần key, bổ sung synonym/antonym theo từ loại và có thể làm nguồn định nghĩa dự phòng. Không phải từ nào cũng có từ trái nghĩa hoặc ví dụ; không coi mọi synonym là từ thay thế được trong mọi ngữ cảnh. TTS đọc tối đa 2000 ký tự mỗi lần, tính vào quota ElevenLabs.
 
 Ảnh nền đã được cấu hình trực tiếp từ hai file mới trong repository: `pexels-mart-production-7550534.jpg` cho toàn trang và `Helennn.jpg` cho khối tiêu đề đến thanh tìm kiếm. Server phục vụ riêng các ảnh này. Biến `--page-wash` và `--lookup-wash` điều chỉnh lớp phủ sáng/tối (alpha cao hơn làm ảnh mờ hơn). Mỗi câu định nghĩa cũng có nút loa riêng, ngoài các câu ví dụ.
+
+Nếu hai ảnh mới không có cùng thư mục server.js, server tự chuyển yêu cầu ảnh sang link raw GitHub đã ghim phiên bản. Khi đó trình duyệt cần Internet để tải ảnh. Chép hai ảnh cùng thư mục vẫn là cách chạy offline. Có thể kiểm tra trực tiếp `/Helennn.jpg` và `/pexels-mart-production-7550534.jpg` trên server local.

@@ -15,7 +15,16 @@ app.use(express.json());
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.use('/images', express.static(path.join(__dirname, 'public', 'images'), { dotfiles: 'deny', index: false }));
 for (const image of ['Helennn.jpg', 'pexels-mart-production-7550534.jpg']) {
-  app.get(`/${image}`, (req, res) => res.sendFile(path.join(__dirname, image)));
+  app.get(`/${image}`, (req, res, next) => {
+    res.sendFile(path.join(__dirname, image), error => {
+      if (!error) return;
+      if (error.code === 'ENOENT') {
+        // Supports users who downloaded only the HTML/JS files. Pin the image version.
+        return res.redirect(302, `https://raw.githubusercontent.com/ngthanhtu/WEB-HELEN-DICTIONARY/bb47b87/${encodeURIComponent(image)}`);
+      }
+      next(error);
+    });
+  });
 }
 app.get('/Helen1.jpg', (req, res) => res.sendFile(path.join(__dirname, 'Helen1.jpg')));
 
