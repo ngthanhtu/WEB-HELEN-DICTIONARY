@@ -37,7 +37,7 @@ global.fetch = async (input, opts = {}) => {
   if(url.hostname==='generativelanguage.googleapis.com') {
     if(!opts.body) return Response.json({models:[{name:'models/gemini-3.1-flash-lite',supportedGenerationMethods:['generateContent']},{name:'models/gemini-3-pro',supportedGenerationMethods:['generateContent']}]});
     const request=JSON.parse(opts.body), input=JSON.parse(request.contents[0].parts[0].text);
-    if(input.word==='ai-model-retired' && url.pathname.includes('gemini-2.5-flash-lite:')) return Response.json({error:{code:404,message:'Retired model',status:'NOT_FOUND'}},{status:404});
+    if(input.word==='ai-model-retired' && url.pathname.includes('gemini-flash-lite-latest:')) return Response.json({error:{code:404,message:'Retired model',status:'NOT_FOUND'}},{status:404});
     if(input.word==='ai-quota') return Response.json({error:{code:429,message:'Test quota',status:'RESOURCE_EXHAUSTED'}},{status:429});
     const lesson={title:`Lesson ${++aiCalls}`,dialogue:[
       {speaker:'A',text:`I feel ${input.word} today.`,translation:'Hôm nay tôi thấy vui.'},
