@@ -7,6 +7,7 @@ test('source POS validation rejects known mismatches but supports compounds and 
   assert.equal(supportsPos('moment','adverb'),false);assert.equal(supportsPos('cheap','verb'),false);
   assert.equal(supportsPos('middle','adjective'),true);assert.equal(supportsPos('stumbling block','noun'),true);
   assert.equal(supportsPos('he','pronoun'),true);assert.equal(supportsPos('loose','interjection'),true);
+  assert.equal(supportsPos('constructor','noun'),true);assert.equal(supportsPos('toString','adverb'),true);
 });
 test('Wiktionary parser handles different words, languages, meanings, qualifiers and parts of speech',() => {
   const text=`==English==
