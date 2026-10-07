@@ -3,6 +3,19 @@ const assert = require('node:assert/strict');
 const { createTranslationService } = require('../lib/translation');
 
 const quota = () => Response.json({ responseStatus: 429, responseDetails: 'MYMEMORY WARNING: YOU USED ALL AVAILABLE FREE TRANSLATIONS FOR TODAY.', responseData: { translatedText: 'QUOTA ERROR' } }, { status: 429 });
+test('startup preparation resolves the Lite model and applies its fast generation settings',async()=>{
+  let listed=0;
+  const service=createTranslationService({apiKey:'test-only',fetchImpl:async(url,request)=>{
+    if(!request?.body){listed++;return Response.json({models:[{name:'models/gemini-3.1-flash-lite',supportedGenerationMethods:['generateContent']}]});}
+    assert.ok(String(url).includes('gemini-3.1-flash-lite'));
+    const body=JSON.parse(request.body);assert.equal(body.generationConfig.thinkingConfig.thinkingLevel,'MINIMAL');
+    assert.equal(body.generationConfig.maxOutputTokens,512);
+    return gemini(request,()=> 'phá vỡ sự ngượng ngùng ban đầu');
+  }});
+  await service.prepare();await service.prepare();
+  assert.equal(await service.translate('break the ice','en','vi',{kind:'headword'}),'phá vỡ sự ngượng ngùng ban đầu');
+  assert.equal(listed,1);
+});
 test('common phrasal verbs and idioms use established Vietnamese meanings without API calls',async()=>{
   const service=createTranslationService({fetchImpl:()=>{throw Error('unnecessary API call');}});
   for(const [phrase,meaning] of [['Name after','đặt tên theo'],['look after','chăm sóc'],['give up','từ bỏ'],['take after','người thân'],['put up with','chịu đựng'],['once in a blue moon','rất hiếm khi']]) {

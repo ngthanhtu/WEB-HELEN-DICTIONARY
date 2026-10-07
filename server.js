@@ -406,6 +406,7 @@ const server = app.listen(PORT, () => {
   console.log(`Helen Dictionary v4 on http://localhost:${PORT}\nElevenLabs key: ${KEY ? 'set' : 'MISSING'} | Voice ID in use: ${VOICE}`);
   // Read the spelling index during startup so the first typo does not pay its loading cost.
   warmSpellingIndex().catch(error=>console.warn(`Spelling index unavailable: ${error.code || error.name}`));
+  void translations.prepare();
   void database.initialize().then(ok => {if(database.status().configured) console.log(`Database: ${ok ? 'connected' : 'unavailable — local history and RAM cache remain active'}`);});
 });
 for (const signal of ['SIGINT','SIGTERM']) process.once(signal,() => {server.close();void database.close().finally(() => process.exit(0));});
