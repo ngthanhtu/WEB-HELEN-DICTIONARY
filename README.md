@@ -1,6 +1,25 @@
 # WEB-HELEN-DICTIONARY
 
+Helen Dictionary là một hệ thống từ điển cá nhân hóa tích hợp AI, được thiết kế tập trung vào trải nghiệm người dùng (UX) và khả năng lưu trữ ngoại tuyến (PWA). Dự án kết hợp các API ngôn ngữ (Merriam-Webster, Wiktionary), công nghệ sinh giọng nói tự nhiên (ElevenLabs) và trí tuệ nhân tạo (Gemini) để tạo ra một không gian học từ vựng trực quan, sinh động.
+
+Dự án được xây dựng với tư duy thiết kế hệ thống và quản lý luồng nghiệp vụ (Business Flow) chuyên nghiệp, thể hiện khả năng phân tích yêu cầu, tích hợp hệ thống và tối ưu hóa hiệu năng của một BA/Software Deployment.
 Dictionary is built for personalization.
+
+# Luồng nghiệp vụ & Tối ưu Hệ thống (Business Analysis & System Design)
+Xử lý dự phòng (Fallback Mechanism): Hệ thống được thiết kế để tự động chuyển nguồn dịch vụ khi lỗi (Ví dụ: Chuyển từ MyMemory sang Gemini khi hết Quota) đảm bảo tính liên tục của dịch vụ.
+
+Tối ưu hóa hiệu năng (Caching Strategy): Dữ liệu tra cứu, bản dịch và bài học AI được thiết kế lưu trữ tại 2 cấp (Memory Cache trên Backend trong 24h và LocalStorage trên Frontend), giảm thiểu số lượng API calls (tối ưu chi phí API) và đảm bảo phản hồi tức thì dưới 5s.
+
+Offline-first (PWA): Phân tích hành vi người dùng học ngôn ngữ cần tra từ mọi lúc mọi nơi, ứng dụng cho phép tải bộ từ vựng Offline (Offline Pack) và tiếp tục truy cập các từ đã tra cứu ngay cả khi mất kết nối mạng.
+
+# Công nghệ sử dụng (Tech Stack)
+Backend: Node.js 24, Express.
+Frontend: HTML/CSS thuần (Tối ưu hóa UI/UX, hỗ trợ Dark/Light mode), Progressive Web App (PWA).
+Tích hợp API (3rd Party Services):
+ElevenLabs API: Text-to-Speech (giọng đọc tự nhiên, hỗ trợ đa accent).
+Google Gemini AI: Xử lý NLP, dịch thuật ngữ cảnh, sinh hội thoại và nhận diện giọng nói (Voice-to-Text).
+Dictionary APIs: Merriam-Webster Learner's Dictionary, Wiktionary REST API, Datamuse, Princeton WordNet 3.1.
+Deployment: Render (Web Service), cấu hình tự động (CI/CD cơ bản).
 
 ## Chạy ứng dụng
 
