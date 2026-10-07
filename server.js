@@ -3,6 +3,8 @@ require('dns').setDefaultResultOrder('ipv4first');
 const express = require('express');
 const path = require('path');
 const { wordnetMeanings } = require('./lib/lexicon');
+const { studyMeanings } = require('./lib/study-lexicon');
+const {senses:learningSenses}=require('./public/assets/study-core');
 const { spellingSuggestions, autocompleteSuggestions, warmSpellingIndex } = require('./lib/spelling');
 const { voiceMetadata } = require('./lib/voice-labels');
 const { createTranslationService } = require('./lib/translation');
@@ -250,14 +252,15 @@ if(process.env.NODE_ENV==='production')app.use('/api/study',require('express-rat
 app.post('/api/study/prepare',async(req,res)=>{
   const words=req.body.words;
   if(!Array.isArray(words) || !words.length || words.length>12 || !words.every(word=>typeof word==='string' && word.trim() && word.length<=100 && !/[\x00-\x1f<>]/.test(word)))return res.status(400).json({error:'Chọn tối đa 12 từ hợp lệ mỗi lượt.'});
-  const selected=[...new Set(words.map(word=>word.trim().toLowerCase()))],results=[],missing=[];
-  const jobs=selected.map(async word=>{
-    try{
-      const meanings=await wordnetMeanings(word);
-      if(meanings.length)results.push({word,entries:[{word,source:'Princeton WordNet',meanings}]});else missing.push(word);
-    }catch{missing.push(word);}
-  });
-  let timer;await Promise.race([Promise.all(jobs),new Promise(resolve=>{timer=setTimeout(resolve,3500);})]);clearTimeout(timer);
+  const selected=[...new Set(words.map(word=>word.trim().toLowerCase()))],results=[];
+  for(const word of selected){
+    const grouped=new Map();
+    for(const sense of learningSenses({entries:[{source:'Princeton WordNet',meanings:studyMeanings(word)}]})){
+      if(!grouped.has(sense.pos))grouped.set(sense.pos,[]);
+      grouped.get(sense.pos).push({...sense,relationSource:sense.source});
+    }
+    if(grouped.size)results.push({word,entries:[{word,source:'Princeton WordNet',meanings:[...grouped].map(([pos,senses])=>({pos,senses}))}]});
+  }
   const ready=new Set(results.map(result=>result.word));res.json({results,missing:selected.filter(word=>!ready.has(word))});
 });
 const collocations=word=>collocationService.lookup(word);

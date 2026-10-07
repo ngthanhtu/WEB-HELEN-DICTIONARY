@@ -200,3 +200,5 @@ Review mở thẻ nghĩa và ví dụ theo từng từ loại. **Chưa nhớ** h
 Nghĩa, ví dụ và tiến độ lưu riêng trên thiết bị trong `helen-study-v1`, tối đa 100 từ. Dữ liệu này chưa đồng bộ giữa thiết bị. Mở thẻ và chấm quiz không gọi API, dùng được ngoại tuyến sau khi app đã cập nhật và từ đã chuẩn bị. Giọng ElevenLabs vẫn cần mạng. Chuẩn bị từ cũ ưu tiên bản tra đã lưu; phần thiếu dùng WordNet cục bộ của server, tối đa 12 từ/lượt, dừng chờ sau 4,5 giây. Từ ngoài WordNet được bổ sung bằng cách mở lại từ trong từ điển khi có mạng. Nếu bộ nhớ thiết bị đầy, app báo tiến độ chỉ giữ trong phiên hiện tại.
 
 `npm run audit:study` rà soát khả năng tạo thẻ/câu hỏi của mọi bản ghi WordNet đã cài. Đây là kiểm tra cấu trúc và điều kiện tạo câu hỏi, không phải xác nhận mọi bản dịch hay mọi đáp án ngữ nghĩa trên thế giới đều chính xác.
+
+Đường chuẩn bị bài học đọc trực tiếp bộ đệm WordNet đã nạp trước khi server lắng nghe, tránh hàng loạt thao tác đọc đĩa nhỏ của thư viện cũ khi Render vừa khởi động. Mỗi từ trả tối đa 16 nghĩa, phân bổ giữa các từ loại, mỗi nghĩa tối đa 2 ví dụ để giảm dữ liệu trên điện thoại; không giới hạn số nghĩa ở phần tra cứu từ điển chính.

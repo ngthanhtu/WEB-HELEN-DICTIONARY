@@ -50,7 +50,9 @@
   function quizSense(item){return item.senses.find(sense=>!cloze(item.word,sense.definition));}
   function question(item,deck,index=0,random=Math.random){
     const eligible=item.senses.filter(sense=>!cloze(item.word,sense.definition));
-    const sense=eligible[index%eligible.length];if(!sense)return null;
+    const contextual=eligible.filter(sense=>sense.examples.some(example=>cloze(item.word,example)));
+    const pool=index%2===1 && contextual.length?contextual:eligible;
+    const sense=pool[index%pool.length];if(!sense)return null;
     const example=sense.examples.find(value=>cloze(item.word,value));
     if(example && index%2===1)return {type:'cloze',word:item.word,pos:sense.pos,prompt:cloze(item.word,example),definition:sense.definition,original:example,source:sense.source};
     const distractors=deck.filter(other=>other.word!==item.word && other.senses.some(s=>s.pos===sense.pos) && !item.senses.some(s=>s.synonyms.includes(other.word)) && !other.senses.some(s=>answer(s.definition)===answer(sense.definition) || s.synonyms.includes(item.word))).map(other=>other.word);

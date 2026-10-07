@@ -1,7 +1,14 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const study=require('../public/assets/study-core');
+const {studyMeanings}=require('../lib/study-lexicon');
 const result=(word,definition,extra={})=>({word,entries:[{source:'Test dictionary',meanings:[{pos:'noun',senses:[{definition,...extra}]}]}]});
 const card=(word,definition,extra)=>study.card(result(word,definition,extra),null,1000);
+test('the direct local reader handles all parts of speech, phrases, source examples and unknown words',()=>{
+  const premium=studyMeanings('premium');assert.deepEqual(premium.map(group=>group.pos),['noun','adjective']);assert.ok(premium[0].senses.some(sense=>/payment|reward|remuneration/.test(sense.definition)));
+  assert.ok(studyMeanings('youth').length);assert.ok(studyMeanings('serendipity').length);
+  assert.ok(studyMeanings('carry out').some(group=>group.pos==='verb'));assert.ok(studyMeanings('quickly').some(group=>group.pos==='adverb'));assert.ok(studyMeanings('loan').flatMap(g=>g.senses).some(sense=>sense.examples.length));
+  assert.deepEqual(studyMeanings('zzunknownlearningword'),[]);assert.deepEqual(studyMeanings('name after'),[]);
+});
 test('learning stores distinct senses and represents every part of speech',()=>{
   const data={word:'draft',entries:[{source:'WordNet',meanings:[{pos:'noun',senses:Array.from({length:30},(_,i)=>({definition:`Noun meaning ${i}`}))},{pos:'verb',senses:[{definition:'write a preliminary version'}]},{pos:'adjective',senses:[{definition:'preliminary'}]}]}]};
   const value=study.card(data,null,1000);assert.equal(value.senses.length,16);assert.deepEqual(value.senses.slice(0,3).map(s=>s.pos),['noun','verb','adjective']);
@@ -42,6 +49,8 @@ test('cloze replaces only exact words and phrases, masks repeated occurrences, a
   const value=card('loan','money borrowed',{example:'The bank approved a loan.'});const q=study.question(value,[value],1);
   assert.equal(q.type,'cloze');assert.equal(q.prompt,'The bank approved a ____.');assert.equal(q.original,'The bank approved a loan.');
   assert.equal(study.question(card('loan','a loan is money borrowed'),[],0),null);
+  const multiple=study.card({word:'loan',entries:[{meanings:[{pos:'noun',senses:[{definition:'borrowed money'},{definition:'something temporarily lent',example:'This book is on loan.'},{definition:'another sense without a usable sentence'}]}]}]});
+  assert.equal(study.question(multiple,[multiple],3).type,'cloze');assert.equal(study.question(multiple,[multiple],3).original,'This book is on loan.');
 });
 test('preparing an entire saved deck stays small and never requires an API',()=>{
   const deck=Array.from({length:100},(_,i)=>card(`word${i}`,`Definition ${i}`));const start=performance.now();

@@ -1,6 +1,7 @@
 // Structural eligibility audit over every installed WordNet record; no remote translation calls.
 const fs=require('node:fs'),path=require('node:path'),study=require('../public/assets/study-core');
 const directory=require('wordnet-db').path;
+const {studyMeanings}=require('../lib/study-lexicon');
 const all=new Set(),review=new Set(),quiz=new Set(),cloze=new Set();let senses=0,errors=0;
 for(const file of ['noun','verb','adj','adv'])for(const line of fs.readFileSync(path.join(directory,`data.${file}`),'utf8').split('\n')){
   if(!/^\d{8} /.test(line))continue;
@@ -14,5 +15,6 @@ for(const file of ['noun','verb','adj','adv'])for(const line of fs.readFileSync(
     if(examples.some(example=>study.cloze(word,example)))cloze.add(word);
   }
 }
-console.log(JSON.stringify({dataset:'Installed Princeton WordNet',synsets:senses,headwords:all.size,reviewEligible:review.size,quizEligible:quiz.size,exactExampleEligible:cloze.size,errors,scope:'All local records checked for usable definitions and exact-answer quiz eligibility. Does not verify all translations or guarantee unambiguous semantic alternatives.'},null,2));
+let indexed=0;for(const word of all){const found=studyMeanings(word);if(found.length)indexed++;else errors++;}
+console.log(JSON.stringify({dataset:'Installed Princeton WordNet',synsets:senses,headwords:all.size,directReaderHeadwords:indexed,reviewEligible:review.size,quizEligible:quiz.size,exactExampleEligible:cloze.size,errors,scope:'All local records checked for usable definitions, direct indexed lookup and exact-answer quiz eligibility. Does not verify all translations or guarantee unambiguous semantic alternatives.'},null,2));
 if(errors)process.exitCode=1;

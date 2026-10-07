@@ -27,6 +27,8 @@ test('learning preparation returns real local senses, separates unknown words an
   assert.deepEqual(data.results.map(item=>item.word).sort(),['brotherhood','premium','serendipity','youth']);
   assert.ok(data.missing.includes('zzunknownlearningword'));assert.ok(data.missing.includes('name after'));
   const premium=data.results.find(item=>item.word==='premium');assert.ok(premium.entries[0].meanings.some(meaning=>meaning.pos==='noun'));assert.ok(premium.entries[0].meanings.some(meaning=>meaning.pos==='adjective'));
+  const polysemous=await request(['run','take','make','break','give','go','set','get','turn','fall','hold','stand']);const body=await polysemous.text();assert.ok(body.length<200000);assert.equal(JSON.parse(body).results.length,12);
+  for(const result of JSON.parse(body).results)assert.ok(result.entries[0].meanings.flatMap(group=>group.senses).length<=16);
   for(const words of [[],Array(13).fill('loan'),['<script>'],['a'.repeat(101)],[42]])assert.equal((await request(words)).status,400);
 });
 test('serves the application without exposing the env file', async () => {
@@ -144,6 +146,8 @@ test('redirects missing local backgrounds to pinned GitHub images', async () => 
   fs.copyFileSync(path.join(__dirname, '..', 'server.js'), path.join(tmp, 'server.js'));
   fs.cpSync(path.join(__dirname,'..','lib'),path.join(tmp,'lib'),{recursive:true});
   fs.cpSync(path.join(__dirname,'..','data'),path.join(tmp,'data'),{recursive:true});
+  fs.mkdirSync(path.join(tmp,'public','assets'),{recursive:true});
+  fs.copyFileSync(path.join(__dirname,'..','public','assets','study-core.js'),path.join(tmp,'public','assets','study-core.js'));
   const child = spawn(process.execPath, [path.join(tmp, 'server.js')], {
     env: {...process.env, DATABASE_URL:'', MYSQL_HOST:'', PORT:'3201', NODE_PATH:path.join(__dirname,'..','node_modules')}, stdio:['ignore','pipe','pipe']
   });
