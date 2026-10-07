@@ -4,7 +4,7 @@ const { spawn } = require('node:child_process');
 const path = require('node:path');
 const base = 'http://127.0.0.1:3199';
 const server = spawn(process.execPath, ['--require', path.join(__dirname, 'mock-upstream.cjs'), 'server.js'], {
-  cwd: path.join(__dirname, '..'), env: { ...process.env, PORT: '3199', HELEN_DISABLE_WORDNET:'1', ELEVENLABS_API_KEY: 'test-only', GEMINI_API_KEY:'test-only', ELEVENLABS_VOICE_ID: 'testDefault' }, stdio: ['ignore', 'pipe', 'pipe']
+  cwd: path.join(__dirname, '..'), env: { ...process.env, DATABASE_URL:'', MYSQL_HOST:'', PORT: '3199', HELEN_DISABLE_WORDNET:'1', ELEVENLABS_API_KEY: 'test-only', GEMINI_API_KEY:'test-only', ELEVENLABS_VOICE_ID: 'testDefault' }, stdio: ['ignore', 'pipe', 'pipe']
 });
 const ready = new Promise((resolve, reject) => { server.stdout.once('data', resolve); server.once('error', reject); server.once('exit', code => reject(new Error(`server exited ${code}`))); });
 after(() => server.kill());
@@ -126,8 +126,9 @@ test('redirects missing local backgrounds to pinned GitHub images', async () => 
   const tmp = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'helen-no-images-'));
   fs.copyFileSync(path.join(__dirname, '..', 'server.js'), path.join(tmp, 'server.js'));
   fs.cpSync(path.join(__dirname,'..','lib'),path.join(tmp,'lib'),{recursive:true});
+  fs.cpSync(path.join(__dirname,'..','data'),path.join(tmp,'data'),{recursive:true});
   const child = spawn(process.execPath, [path.join(tmp, 'server.js')], {
-    env: {...process.env, PORT:'3201', NODE_PATH:path.join(__dirname,'..','node_modules')}, stdio:['ignore','pipe','pipe']
+    env: {...process.env, DATABASE_URL:'', MYSQL_HOST:'', PORT:'3201', NODE_PATH:path.join(__dirname,'..','node_modules')}, stdio:['ignore','pipe','pipe']
   });
   try {
     await new Promise((resolve,reject)=>{child.stdout.once('data',resolve);child.once('error',reject);child.once('exit',code=>reject(new Error(`fixture exited ${code}`)));});

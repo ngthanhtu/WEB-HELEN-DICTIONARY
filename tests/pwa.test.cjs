@@ -1,5 +1,5 @@
 const {test}=require('node:test'), assert=require('node:assert/strict'), vm=require('node:vm'), fs=require('node:fs');
-const entry=(word='loan',extra={})=>({query:word,from:'en',word,enriching:false,entries:[{word,meanings:[{pos:'noun',senses:[{definition:'A sum of money lent to someone.'}]}]}],...extra});
+const entry=(word='loan',extra={})=>({query:word,from:'en',word,enriching:false,lexicalRevision:2,entries:[{word,meanings:[{pos:'noun',senses:[{definition:'A sum of money lent to someone.'}]}]}],...extra});
 function worker(network,{quickTimers=false}={}) {
   const events={}, stores=new Map(), deadlines=[];
   const caches={keys:async()=>[...stores.keys()],delete:async name=>stores.delete(name),open:async name=>{
@@ -94,4 +94,13 @@ test('app updates consolidate old lookup keys while preserving saved words',asyn
   let done;w.events.activate({waitUntil:promise=>done=promise});await done;
   assert.deepEqual((await w.caches.keys()).sort(),['helen-test-shell','helen-words-v1','unrelated-cache']);assert.equal((await words.keys()).length,1);assert.equal((await (await w.get('/api/lookup?word=loan')).json()).enriching,false);
   await w.message({type:'ACTIVATE_UPDATE'});assert.equal(w.context.activated,true);
+});
+test('new lexical revision refreshes old empty relation lists while preserving their offline fallback',async()=>{
+  let online=true,calls=0;
+  const fresh=entry('drawback');fresh.entries[0].meanings[0].senses[0].synonyms=['hindrance'];
+  const w=worker(async()=>{calls++;if(!online)throw Error('offline');return Response.json(fresh);});
+  const cache=await w.caches.open('helen-words-v1'),key='https://helen.test/api/lookup?word=drawback&from=en';
+  await cache.put(key,new Response(JSON.stringify(entry('drawback',{lexicalRevision:1})),{headers:{'X-Helen-Saved-At':String(Date.now())}}));
+  assert.deepEqual((await (await w.get('/api/lookup?word=drawback')).json()).entries[0].meanings[0].senses[0].synonyms,['hindrance']);assert.equal(calls,1);
+  online=false;assert.deepEqual((await (await w.get('/api/lookup?word=drawback')).json()).entries[0].meanings[0].senses[0].synonyms,['hindrance']);assert.equal(calls,1);
 });

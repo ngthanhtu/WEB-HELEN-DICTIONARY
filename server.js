@@ -9,6 +9,9 @@ const { teachingCollocations, corpusPhrases } = require('./lib/collocations');
 const { createTranslationService } = require('./lib/translation');
 const { createSpeechService } = require('./lib/speech-ai');
 const { createContextService, languages: contextLanguages } = require('./lib/context-ai');
+const { REVISION, words: relationWords, wiktionaryRelations, mergeRelations } = require('./lib/thesaurus');
+const { createDatabase } = require('./lib/database');
+const { supportsPos } = require('./lib/word-pos');
 // Injected variables take precedence; .env takes precedence over legacy env.
 require('dotenv').config({ path: [path.join(__dirname, '.env'), path.join(__dirname, 'env')], quiet: true });
 // Avoid loading the large SDK during the first mobile translation or recording request.
@@ -29,11 +32,24 @@ if (process.env.NODE_ENV === 'production') {
 const PORT = process.env.PORT || 3000;
 const KEY = process.env.ELEVENLABS_API_KEY;
 const VOICE = process.env.ELEVENLABS_VOICE_ID || 'EXAVITQu4vr4xnSDxMaL'; // Sarah (premade); users can explicitly select another voice
-const contexts=createContextService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL});
-const translations=createTranslationService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL});
+const database = createDatabase();
+const contexts=createContextService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,store:database});
+const translations=createTranslationService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,store:database});
 const speech=createSpeechService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL});
 const cache = new Map(); // successful results only
-const memo = async (k, fn) => { if (cache.has(k)) return cache.get(k); const v = await fn(); cache.set(k, v); return v; };
+const memo = async (k, fn) => {
+  if (cache.has(k)) return cache.get(k);
+  const key = require('node:crypto').createHash('sha256').update(KEY || '').digest('hex') + k;
+  const old = await database.get('tts-v1',key);
+  if (old?.value?.audio && typeof old.value.audio === 'string') {
+    const buffer = Buffer.from(old.value.audio,'base64');cache.set(k,buffer);return buffer;
+  }
+  const value = await fn();cache.set(k,value);
+  if (cache.size > 1000) cache.delete(cache.keys().next().value);
+  // Cache successful short pronunciations; recordings and credentials are never persisted.
+  if (value.length <= 300000) void database.set('tts-v1',key,{audio:value.toString('base64')});
+  return value;
+};
 
 // Short microphone clips are larger than normal dictionary JSON requests.
 app.use('/api/speech',express.json({limit:'2mb'}));
@@ -45,7 +61,25 @@ app.use((error,req,res,next)=>{
   next(error);
 });
 app.use(require('compression')());
-app.get('/healthz', (req, res) => res.json({ status: 'ok', version: process.env.RENDER_GIT_COMMIT?.slice(0, 7) || 'local', voiceConfigured: Boolean(KEY), aiConfigured:contexts.configured,speechConfigured:speech.configured }));
+app.get('/healthz', (req, res) => res.json({ status: 'ok', version: process.env.RENDER_GIT_COMMIT?.slice(0, 7) || 'local', voiceConfigured: Boolean(KEY), aiConfigured:contexts.configured,speechConfigured:speech.configured,database:database.status() }));
+app.get('/api/history/status',(req,res) => res.json(database.status()));
+function deviceToken(req,res,next) {
+  if (req.headers.origin && req.headers.origin !== `${req.protocol}://${req.get('host')}`) return res.status(403).json({error:'Yêu cầu không hợp lệ.'});
+  const token = req.get('X-Helen-Device');
+  if (!/^[a-f0-9]{64}$/.test(token || '')) return res.status(401).json({error:'Mở lại website để đồng bộ lịch sử.',code:'HISTORY_DEVICE'});
+  req.deviceToken = token;res.set('Cache-Control','no-store');next();
+}
+if (process.env.NODE_ENV === 'production') app.use('/api/history',require('express-rate-limit').rateLimit({windowMs:60000,limit:60,standardHeaders:'draft-8',legacyHeaders:false,message:{error:'Đợi một phút rồi đồng bộ lại lịch sử.'}}));
+app.get('/api/history',deviceToken,async(req,res) => {
+  try {res.json({history:await database.history(req.deviceToken)});}
+  catch(error) {res.status(error.status || 503).json({error:error.message,code:error.code});}
+});
+app.post('/api/history',deviceToken,async(req,res) => {
+  const events = req.body.events;
+  if (!Array.isArray(events) || !events.length || events.length > 100 || !events.every(event => event && /^[a-f0-9-]{36}$/.test(event.id || '') && ['search','clear'].includes(event.action) && typeof event.at === 'string' && Number.isFinite(Date.parse(event.at)) && Date.parse(event.at) <= Date.now() + 60000 && Date.parse(event.at) >= 0 && (event.action === 'clear' || typeof event.word === 'string' && event.word.trim() && event.word.length <= 100 && !/[\x00-\x1f<>]/.test(event.word)))) return res.status(400).json({error:'Dữ liệu lịch sử không hợp lệ.',code:'HISTORY_INVALID'});
+  try {await database.saveHistory(req.deviceToken,events.map(event => ({...event,word:event.word?.trim()})));res.json({saved:true});}
+  catch(error) {res.status(error.status || 503).json({error:error.message,code:error.code});}
+});
 app.get('/api/speech/status',(req,res)=>res.json({configured:speech.configured,provider:'Gemini'}));
 app.post('/api/speech',async(req,res)=>{
   try {res.json(await speech.transcribe(req.body));}
@@ -101,14 +135,30 @@ async function definitions(word) {
 }
 
 // IPA: first English {{IPA|en|...}} in the page wikitext. Bounded to 2s so it never slows the search.
-async function ipa(word) {
-  const r = await get(`https://en.wiktionary.org/w/api.php?action=parse&page=${encodeURIComponent(word)}&prop=wikitext&redirects=1&format=json&origin=*`, {}, 2000);
-  if (!r || !r.ok) return '';
+async function wikiDetails(word) {
+  const deadline = Date.now() + 4500;
+  const page = async (title, budget) => {
+    const response = await get(`https://en.wiktionary.org/w/api.php?action=parse&page=${encodeURIComponent(title)}&prop=wikitext%7Crevid&redirects=1&format=json&origin=*`, {}, budget);
+    if (!response?.ok) return null;
+    try {return (await response.json()).parse;}catch {return null;}
+  };
+  const parsed = await page(word,3500);
+  if (!parsed) return {ipa:'',groups:[],available:false};
   try {
-    const wt = (await r.json()).parse.wikitext['*'];
+    const wt = parsed.wikitext['*'];
     const m = wt.match(/\{\{IPA\|en\|(\/[^|}]+\/|\[[^|}]+\])/);
-    return m ? m[1] : '';
-  } catch { return ''; }
+    let groups = wiktionaryRelations(wt,word,parsed.revid);
+    const references = [...new Set(groups.flatMap(group=>group.references || []))].filter(title=>/^Thesaurus:[\p{L}\p{N} '\u2019-]{1,100}$/u.test(title));
+    const remaining = deadline-Date.now();
+    if(remaining>100 && references.length) {
+      const extra = await Promise.all(references.slice(0,6).map(async title => {
+        const data = await page(title,remaining);
+        return data?.wikitext?.['*'] ? wiktionaryRelations(data.wikitext['*'],title,data.revid) : [];
+      }));groups.push(...extra.flat());
+    }
+    groups = groups.map(group=>({...group,synonyms:relationWords(group.synonyms,word).filter(value=>supportsPos(value,group.pos)),antonyms:relationWords(group.antonyms,word).filter(value=>supportsPos(value,group.pos))})).filter(group=>group.synonyms.length || group.antonyms.length);
+    return {ipa:m ? m[1] : '',groups,available:Boolean(wt.trim())};
+  } catch { return {ipa:'',groups:[],available:false}; }
 }
 
 // Optional better source: Merriam-Webster Learner's Dictionary (free key, non-commercial, 1000 queries/day).
@@ -137,10 +187,10 @@ async function relatedDictionary(word, timeout = 5000) {
   try {
     const data = await r.json();
     if (!Array.isArray(data)) return null;
-    const unique = values => [...new Set(values.filter(v => typeof v === 'string' && v.trim()).map(clean))].slice(0, 12);
+    const unique = values => relationWords(values.map(clean),word);
     return data.flatMap(entry => (entry.meanings || []).map(m => ({
       pos: String(m.partOfSpeech || '').toLowerCase(),
-      senses: (m.definitions || []).filter(d => d.definition).slice(0, 5).map(d => ({definition:clean(d.definition), example:clean(d.example),examples:d.example?[clean(d.example)]:[],synonyms:unique(d.synonyms||[]),antonyms:unique(d.antonyms||[]),relationSource:'Free Dictionary API'})),
+      senses: (m.definitions || []).filter(d => d.definition).map(d => ({definition:clean(d.definition), example:clean(d.example),examples:d.example?[clean(d.example)]:[],synonyms:unique(d.synonyms||[]),antonyms:unique(d.antonyms||[]),relationSource:'Free Dictionary API'})),
       synonyms: unique(m.synonyms || []),
       antonyms: unique(m.antonyms || []),
       usageExamples: unique((m.definitions || []).map(d => d.example))
@@ -170,7 +220,7 @@ async function datamuseDefinitions(word) {
 // Datamuse complements dictionary entries with explicit synonym/antonym relations.
 async function wordRelations(word) {
   const load = async relation => {
-    const r = await get(`https://api.datamuse.com/words?${relation}=${encodeURIComponent(word)}&md=p&max=12`, {}, 3500);
+    const r = await get(`https://api.datamuse.com/words?${relation}=${encodeURIComponent(word)}&md=p&max=100`, {}, 3500);
     if (!r || !r.ok) return null;
     try {
       const data = await r.json();
@@ -201,7 +251,7 @@ async function collocations(word) {
 }
 function beginLookup(word) {
   if (lookups.has(word)) return lookups.get(word);
-  const related = relatedDictionary(word), relations = wordRelations(word), pronunciation = ipa(word);
+  const related = relatedDictionary(word), relations = wordRelations(word), wiki = wikiDetails(word);
   const phrases = collocations(word);
   const lexical = process.env.HELEN_DISABLE_WORDNET === '1' ? Promise.resolve([]) : wordnetMeanings(word).catch(() => null);
   const candidates = [
@@ -209,7 +259,7 @@ function beginLookup(word) {
     [mwDefs(word), "Merriam-Webster's Learner's Dictionary"], [datamuseDefinitions(word), 'Datamuse']
   ];
   const first = lexical.then(meanings => {
-    if (meanings?.length) return {word,ipa:'',source:'Princeton WordNet',meanings:meanings.map(m=>({...m,relationsPending:true}))};
+    if (meanings?.length) return {word,ipa:'',source:'Princeton WordNet',meanings:mergeRelations(word,meanings).map(m=>({...m,relationsPending:true}))};
     return Promise.any(candidates.map(async ([result, source]) => {
     const meanings = await result;
     if (!meanings?.length) throw new Error('No usable definitions');
@@ -226,27 +276,14 @@ function beginLookup(word) {
     throw error;
   }).then(entry=>({...entry,collocations:{teaching:teachingCollocations(word),corpus:[],pending:true}}));
   const complete = first.then(async entry => {
-    const [extra, links, ipaText, combinations] = await Promise.all([related, relations, pronunciation, phrases]);
-    const unique = items => [...new Set(items)].slice(0,12);
-    const meanings = entry.meanings.map(m => {
-      const matches=(extra || []).filter(r=>r.pos===m.pos);
-      const tag={noun:'n',verb:'v',adjective:'adj',adverb:'adv'}[m.pos];
-      const forPos=list=>(list||[]).filter(x=>tag && x.tags.includes(tag)).map(x=>x.word);
-      return {...m,relationsPending:false,
-        synonyms:unique([...(m.synonyms||[]),...matches.flatMap(r=>r.synonyms)]),
-        relatedSynonyms:unique(forPos(links.synonyms)),
-        antonyms:unique([...(m.antonyms||[]),...matches.flatMap(r=>r.antonyms)]),
-        relatedAntonyms:unique(forPos(links.antonyms)),
-        senses:m.senses.map(s => {
-          const same = matches.flatMap(r=>r.senses).filter(other=>other.definition.trim().toLowerCase()===s.definition.trim().toLowerCase());
-          return {...s,synonyms:unique([...(s.synonyms||[]),...same.flatMap(r=>r.synonyms||[])]),antonyms:unique([...(s.antonyms||[]),...same.flatMap(r=>r.antonyms||[])])};
-        }),
-        relationsUnavailable:!extra && (links.synonyms===null || links.antonyms===null),
-        usageExamples:unique(matches.flatMap(r=>r.usageExamples)).filter(e=>!m.senses.some(s=>s.example===e)).slice(0,4)};
-    });
-    const entries=[{...entry,ipa:ipaText,meanings,relatedSource:[extra?.length?'Free Dictionary API':null,links.synonyms!==null||links.antonyms!==null?'Datamuse':null].filter(Boolean).join(', ')||null}];
+    const [extra, links, wikiData, combinations] = await Promise.all([related, relations, wiki, phrases]);
+    const meanings = mergeRelations(word,entry.meanings,extra,links,wikiData);
+    const entries=[{...entry,ipa:wikiData.ipa,meanings,relatedSource:[extra?.length?'Free Dictionary API':null,links.synonyms!==null||links.antonyms!==null?'Datamuse':null,wikiData.groups.length?'Wiktionary (CC BY-SA 4.0)':null].filter(Boolean).join(', ')||null}];
     entries[0].collocations=combinations;
     cache.set(`d|${word}`,entries);
+    if (cache.size > 1000) cache.delete(cache.keys().next().value);
+    void database.set(`dictionary-v${REVISION}`,word,entries,meanings.some(m => m.relationsUnavailable) || combinations.unavailable ? 300000 : 86400000);
+    void database.vocabulary(word,entries,REVISION);
     return entries;
   });
   // Observe background failures even if the caller only requests the early result.
@@ -261,6 +298,11 @@ app.get('/api/lookup', async (req, res) => {
   try {
     word=(from==='en'?raw:await translations.translate(raw,from,'en',{kind:'lookup'})).trim().toLowerCase();
     let entries=cache.get(`d|${word}`), enriching=false;
+    const durable = entries ? null : await database.get(`dictionary-v${REVISION}`,word);
+    if (durable?.value?.[0]?.meanings?.length) {
+      entries=durable.value;cache.set(`d|${word}`,entries);
+      if (!durable.fresh) void beginLookup(word).complete.catch(()=>{});
+    }
     if (!entries) {
       const task=beginLookup(word);
       if (req.query.details==='1') entries=await task.complete;
@@ -271,7 +313,7 @@ app.get('/api/lookup', async (req, res) => {
         if (!entries) { entries=[entry]; enriching=true; }
       }
     }
-    res.json({query:raw,from,word,entries,enriching});
+    res.json({query:raw,from,word,entries,enriching,lexicalRevision:REVISION});
   } catch(e) {
     const suggestions=e.status===404 ? await spellingSuggestions(word).catch(()=>[]) : [];
     res.status(e.status||502).json({error:e.message || 'Lookup failed. Try again.',...(e.code?{code:e.code}:{}),query:raw,word,suggestions,suggestionLanguage:'en'});
@@ -282,7 +324,7 @@ app.get('/api/context/status',(req,res)=>res.json({configured:contexts.configure
 app.post('/api/context',async(req,res)=>{
   const {word:input,meaningIndex=0,senseIndex=0,language='vi'}=req.body;
   const word=typeof input==='string'?input.trim().toLowerCase():'';
-  if(!word || word.length>100 || typeof language!=='string' || !Object.hasOwn(contextLanguages,language) || !Number.isInteger(meaningIndex) || !Number.isInteger(senseIndex) || meaningIndex<0 || meaningIndex>20 || senseIndex<0 || senseIndex>20) return res.status(400).json({error:'Từ, nghĩa hoặc ngôn ngữ không hợp lệ.'});
+  if(!word || word.length>100 || typeof language!=='string' || !Object.hasOwn(contextLanguages,language) || !Number.isInteger(meaningIndex) || !Number.isInteger(senseIndex) || meaningIndex<0 || meaningIndex>100 || senseIndex<0 || senseIndex>200) return res.status(400).json({error:'Từ, nghĩa hoặc ngôn ngữ không hợp lệ.'});
   if(!contexts.configured) return res.status(501).json({error:'Minh họa AI chưa được bật cho website này.'});
   try {
     const entry=cache.get(`d|${word}`)?.[0] || await beginLookup(word).first;
@@ -348,8 +390,10 @@ app.get('/api/tts', async (req, res) => {
   } catch (e) { res.status(502).json({ error: e.message || 'Voice service is unavailable.', upstream_status: e.upstreamStatus }); }
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Helen Dictionary v4 on http://localhost:${PORT}\nElevenLabs key: ${KEY ? 'set' : 'MISSING'} | Voice ID in use: ${VOICE}`);
   // Read the spelling index during startup so the first typo does not pay its loading cost.
   warmSpellingIndex().catch(error=>console.warn(`Spelling index unavailable: ${error.code || error.name}`));
+  void database.initialize().then(ok => {if(database.status().configured) console.log(`Database: ${ok ? 'connected' : 'unavailable — local history and RAM cache remain active'}`);});
 });
+for (const signal of ['SIGINT','SIGTERM']) process.once(signal,() => {server.close();void database.close().finally(() => process.exit(0));});
