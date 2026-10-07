@@ -190,3 +190,13 @@ Pipeline đồng/trái nghĩa áp dụng cho mọi từ: WordNet theo nghĩa, Fr
 `drawback` có phần bổ sung biên soạn cho nghĩa nhược điểm/bất lợi, gồm disadvantage, obstacle, hindrance, handicap, detriment, impediment, stumbling block; đối nghĩa advantage, benefit. Có chú thích các sắc thái và không áp dụng cho nghĩa hoàn thuế. File `data/thesaurus-supplements.json` dành cho bổ sung theo nghĩa; cơ chế lấy dữ liệu chung hoạt động cho mọi từ, không phụ thuộc danh sách này.
 
 `npm run audit:lexicon` kiểm tra toàn bộ dữ liệu WordNet cài cùng server: 117.791 synset, 148.897 đầu mục và 7.983 liên kết antonym. Đây là kiểm tra cấu trúc/liên kết dữ liệu, không chứng minh mọi từ tiếng Anh đều có đối nghĩa trực tiếp hoặc mọi nguồn đều có danh sách đầy đủ. Nếu nguồn phụ lỗi thì báo chưa tải được; nguồn chưa ghi nhận không đồng nghĩa với khẳng định từ đó không có đồng/trái nghĩa. Cache PWA cũ được làm mới theo phiên bản quan hệ, vẫn giữ bản cũ để dùng ngoại tuyến.
+
+## Review and Quiz
+
+Lưu ☆ từ khi tra cứu, mở **Study · Review & Quiz**, rồi chọn **Review due words** hoặc **Quick quiz**. Với từ yêu thích đã lưu trước bản cập nhật, chọn **Prepare saved words** một lần. Từ đã có dữ liệu có thể học ngay trong khi phần còn lại được chuẩn bị; có thể hủy mà không mất dữ liệu đã tải.
+
+Review mở thẻ nghĩa và ví dụ theo từng từ loại. **Chưa nhớ** hẹn ôn lại sau 10 phút; **Hơi nhớ** tăng khoảng cách chậm; **Đã nhớ** lần lượt hẹn 1 ngày, 3 ngày, rồi tăng dần (tối đa 365 ngày). Mỗi lượt tối đa 20 thẻ đến hạn. Quiz có tối đa 10 câu từ danh sách yêu thích, dùng nghĩa tiếng Anh hoặc ví dụ có sẵn; chọn đáp án hoặc điền từ. Quiz không thay đổi lịch ôn; cuối lượt có thể Review các từ trả lời sai. Câu hỏi tránh đáp án nhiễu có cùng nghĩa hoặc được nguồn xác nhận là từ đồng nghĩa; nếu không đủ lựa chọn phù hợp, chuyển sang gõ đáp án.
+
+Nghĩa, ví dụ và tiến độ lưu riêng trên thiết bị trong `helen-study-v1`, tối đa 100 từ. Dữ liệu này chưa đồng bộ giữa thiết bị. Mở thẻ và chấm quiz không gọi API, dùng được ngoại tuyến sau khi app đã cập nhật và từ đã chuẩn bị. Giọng ElevenLabs vẫn cần mạng. Chuẩn bị từ cũ ưu tiên bản tra đã lưu; phần thiếu dùng WordNet cục bộ của server, tối đa 12 từ/lượt, dừng chờ sau 4,5 giây. Từ ngoài WordNet được bổ sung bằng cách mở lại từ trong từ điển khi có mạng. Nếu bộ nhớ thiết bị đầy, app báo tiến độ chỉ giữ trong phiên hiện tại.
+
+`npm run audit:study` rà soát khả năng tạo thẻ/câu hỏi của mọi bản ghi WordNet đã cài. Đây là kiểm tra cấu trúc và điều kiện tạo câu hỏi, không phải xác nhận mọi bản dịch hay mọi đáp án ngữ nghĩa trên thế giới đều chính xác.

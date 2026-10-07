@@ -19,6 +19,16 @@ test('typeahead API returns prefix words and phrasal verbs without looking up de
   assert.equal(data.suggestions[0],'name');assert.ok(data.suggestions.includes('name after'));
   assert.equal((await fetch(`${base}/api/suggestions?word=${'a'.repeat(101)}`)).status,400);
 });
+test('learning preparation returns real local senses, separates unknown words and rejects invalid batches',async()=>{
+  await ready;
+  const request=words=>fetch(`${base}/api/study/prepare`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({words})});
+  const start=Date.now(),response=await request(['premium','brotherhood','youth','serendipity','name after','zzunknownlearningword','premium']);
+  assert.equal(response.status,200);const data=await response.json();assert.ok(Date.now()-start<5000);
+  assert.deepEqual(data.results.map(item=>item.word).sort(),['brotherhood','premium','serendipity','youth']);
+  assert.ok(data.missing.includes('zzunknownlearningword'));assert.ok(data.missing.includes('name after'));
+  const premium=data.results.find(item=>item.word==='premium');assert.ok(premium.entries[0].meanings.some(meaning=>meaning.pos==='noun'));assert.ok(premium.entries[0].meanings.some(meaning=>meaning.pos==='adjective'));
+  for(const words of [[],Array(13).fill('loan'),['<script>'],['a'.repeat(101)],[42]])assert.equal((await request(words)).status,400);
+});
 test('serves the application without exposing the env file', async () => {
   await ready;
   assert.equal((await fetch(base)).status, 200);

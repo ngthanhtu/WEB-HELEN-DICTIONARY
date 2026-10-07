@@ -245,6 +245,21 @@ app.get('/api/spelling', async (req,res) => {
   if(word.length>100) return res.status(400).json({error:'Use at most 100 characters.'});
   res.json({word,suggestions:await spellingSuggestions(word).catch(()=>[])});
 });
+// Learning preparation uses the installed dictionary only, never waits for remote APIs.
+if(process.env.NODE_ENV==='production')app.use('/api/study',require('express-rate-limit').rateLimit({windowMs:60000,limit:30,standardHeaders:'draft-8',legacyHeaders:false,message:{error:'Đợi một phút rồi chuẩn bị thêm từ.'}}));
+app.post('/api/study/prepare',async(req,res)=>{
+  const words=req.body.words;
+  if(!Array.isArray(words) || !words.length || words.length>12 || !words.every(word=>typeof word==='string' && word.trim() && word.length<=100 && !/[\x00-\x1f<>]/.test(word)))return res.status(400).json({error:'Chọn tối đa 12 từ hợp lệ mỗi lượt.'});
+  const selected=[...new Set(words.map(word=>word.trim().toLowerCase()))],results=[],missing=[];
+  const jobs=selected.map(async word=>{
+    try{
+      const meanings=await wordnetMeanings(word);
+      if(meanings.length)results.push({word,entries:[{word,source:'Princeton WordNet',meanings}]});else missing.push(word);
+    }catch{missing.push(word);}
+  });
+  let timer;await Promise.race([Promise.all(jobs),new Promise(resolve=>{timer=setTimeout(resolve,3500);})]);clearTimeout(timer);
+  const ready=new Set(results.map(result=>result.word));res.json({results,missing:selected.filter(word=>!ready.has(word))});
+});
 const collocations=word=>collocationService.lookup(word);
 app.get('/api/collocations',async(req,res)=>{
   const word=String(req.query.word || '').trim().toLowerCase();
