@@ -48,17 +48,25 @@
   }
   const due=(cards,now=Date.now())=>cards.filter(item=>item.dueAt<=now).sort((a,b)=>a.dueAt-b.dueAt || a.word.localeCompare(b.word));
   function quizSense(item){return item.senses.find(sense=>!cloze(item.word,sense.definition));}
+  function quizCards(deck){const seen=new Set();return deck.filter(item=>item && quizSense(item) && !seen.has(item.word) && seen.add(item.word));}
+  function quizPlan(deck,currentWord='',random=Math.random){
+    const eligible=quizCards(deck);if(eligible.length<3)return [];
+    const items=[...eligible];for(let i=items.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[items[i],items[j]]=[items[j],items[i]];}
+    const current=answer(currentWord);if(items[0]?.word===current){const index=items.findIndex(item=>item.word!==current);[items[0],items[index]]=[items[index],items[0]];}
+    return items.slice(0,10).map((item,index)=>question(item,eligible,index,random)).filter(Boolean);
+  }
   function question(item,deck,index=0,random=Math.random){
     const eligible=item.senses.filter(sense=>!cloze(item.word,sense.definition));
     const contextual=eligible.filter(sense=>sense.examples.some(example=>cloze(item.word,example)));
     const pool=index%2===1 && contextual.length?contextual:eligible;
-    const sense=pool[index%pool.length];if(!sense)return null;
+    const sense=pool[Math.floor(random()*Math.min(pool.length,3))];if(!sense)return null;
     const example=sense.examples.find(value=>cloze(item.word,value));
     if(example && index%2===1)return {type:'cloze',word:item.word,pos:sense.pos,prompt:cloze(item.word,example),definition:sense.definition,original:example,source:sense.source};
     const distractors=deck.filter(other=>other.word!==item.word && other.senses.some(s=>s.pos===sense.pos) && !item.senses.some(s=>s.synonyms.includes(other.word)) && !other.senses.some(s=>answer(s.definition)===answer(sense.definition) || s.synonyms.includes(item.word))).map(other=>other.word);
     const shuffle=values=>{const list=[...new Set(values)];for(let i=list.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[list[i],list[j]]=[list[j],list[i]];}return list;};
     const choices=shuffle(distractors).slice(0,3);
-    return {type:choices.length>=2?'choice':'type',word:item.word,pos:sense.pos,prompt:sense.definition,source:sense.source,choices:choices.length>=2?shuffle([item.word,...choices]):[]};
+    const accepted=[item.word,...(!example?deck.filter(other=>other.senses.some(s=>s.pos===sense.pos && (sense.synonyms.includes(other.word) || answer(s.definition)===answer(sense.definition)))).map(other=>other.word):[])];
+    return {type:choices.length>=2?'choice':'type',word:item.word,pos:sense.pos,prompt:sense.definition,context:example?cloze(item.word,example):null,original:example || null,source:sense.source,accepted:[...new Set(accepted)],choices:choices.length>=2?shuffle([item.word,...choices]):[]};
   }
   function read(storage){
     try {const value=JSON.parse(storage.getItem(KEY)||'{}');if(value.version!==1 || !Array.isArray(value.cards))return [];
@@ -66,6 +74,6 @@
     }catch{return [];}
   }
   function write(storage,cards){try{storage.setItem(KEY,JSON.stringify({version:1,cards:cards.slice(0,100)}));return true;}catch{return false;}}
-  root.HelenStudyCore={DAY,KEY,answer,cloze,senses,card,grade,due,question,quizSense,read,write};
+  root.HelenStudyCore={DAY,KEY,answer,cloze,senses,card,grade,due,question,quizSense,quizCards,quizPlan,read,write};
   if(typeof module!=='undefined')module.exports=root.HelenStudyCore;
 })(typeof window==='undefined'?globalThis:window);

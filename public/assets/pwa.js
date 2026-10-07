@@ -105,7 +105,12 @@
   update.addEventListener('click',()=>{if(registration?.waiting){reloading=true;registration.waiting.postMessage({type:'ACTIVATE_UPDATE'});}});
   navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).then(value=>{
     registration=value;
-    const offer=()=>{if(value.waiting && navigator.serviceWorker.controller)update.hidden=false;};
+    const offer=()=>{
+      if(!value.waiting || !navigator.serviceWorker.controller)return;
+      update.hidden=false;
+      const refreshing=performance.getEntriesByType?.('navigation')[0]?.type==='reload';
+      if(refreshing && !document.querySelector('#study')?.dataset.session){reloading=true;value.waiting.postMessage({type:'ACTIVATE_UPDATE'});}
+    };
     offer();value.addEventListener('updatefound',()=>{const worker=value.installing;worker?.addEventListener('statechange',offer);});
     return navigator.serviceWorker.ready;
   }).then(value=>{registration=value;captureCurrent();refreshLibrary();}).catch(()=>{

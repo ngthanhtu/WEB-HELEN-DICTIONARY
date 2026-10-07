@@ -193,6 +193,8 @@ Pipeline đồng/trái nghĩa áp dụng cho mọi từ: WordNet theo nghĩa, Fr
 
 ## Review and Quiz
 
+Quick quiz mở khi có ít nhất **3 từ yêu thích khác nhau có dữ liệu câu hỏi**, hiển thị số từ còn thiếu. Bài trộn tối đa 10 từ và tránh từ đang tra ở câu đầu. Kết quả tra cứu tạm ẩn khi làm quiz rồi hiện lại khi kết thúc; lịch ôn không thay đổi. Câu hỏi sử dụng nghĩa và ví dụ có nguồn, chỉ che đúng đầu mục trong câu nguồn. Các câu hỏi gõ từ theo định nghĩa không có ví dụ chấp nhận từ đã lưu khác khi nguồn xác nhận cùng nghĩa/từ loại; câu điền từ đối chiếu từ trong ví dụ nguồn.
+
 Lưu ☆ từ khi tra cứu, mở **Study · Review & Quiz**, rồi chọn **Review due words** hoặc **Quick quiz**. Với từ yêu thích đã lưu trước bản cập nhật, chọn **Prepare saved words** một lần. Từ đã có dữ liệu có thể học ngay trong khi phần còn lại được chuẩn bị; có thể hủy mà không mất dữ liệu đã tải.
 
 Review mở thẻ nghĩa và ví dụ theo từng từ loại. **Chưa nhớ** hẹn ôn lại sau 10 phút; **Hơi nhớ** tăng khoảng cách chậm; **Đã nhớ** lần lượt hẹn 1 ngày, 3 ngày, rồi tăng dần (tối đa 365 ngày). Mỗi lượt tối đa 20 thẻ đến hạn. Quiz có tối đa 10 câu từ danh sách yêu thích, dùng nghĩa tiếng Anh hoặc ví dụ có sẵn; chọn đáp án hoặc điền từ. Quiz không thay đổi lịch ôn; cuối lượt có thể Review các từ trả lời sai. Câu hỏi tránh đáp án nhiễu có cùng nghĩa hoặc được nguồn xác nhận là từ đồng nghĩa; nếu không đủ lựa chọn phù hợp, chuyển sang gõ đáp án.
@@ -202,3 +204,5 @@ Nghĩa, ví dụ và tiến độ lưu riêng trên thiết bị trong `helen-st
 `npm run audit:study` rà soát khả năng tạo thẻ/câu hỏi của mọi bản ghi WordNet đã cài. Đây là kiểm tra cấu trúc và điều kiện tạo câu hỏi, không phải xác nhận mọi bản dịch hay mọi đáp án ngữ nghĩa trên thế giới đều chính xác.
 
 Đường chuẩn bị bài học đọc trực tiếp bộ đệm WordNet đã nạp trước khi server lắng nghe, tránh hàng loạt thao tác đọc đĩa nhỏ của thư viện cũ khi Render vừa khởi động. Mỗi từ trả tối đa 16 nghĩa, phân bổ giữa các từ loại, mỗi nghĩa tối đa 2 ví dụ để giảm dữ liệu trên điện thoại; không giới hạn số nghĩa ở phần tra cứu từ điển chính.
+
+Refresh ưu tiên HTML từ server và tải CSS/JavaScript có cùng mã phiên bản triển khai. Khi offline hoặc kết nối chậm, app dùng bản đã cài đầy đủ; HTML của bản mới không thay thế bộ offline cũ cho đến khi bản mới cài xong. Trên lượt reload, worker mới đã sẵn sàng sẽ được kích hoạt tự động nếu không có phiên học đang chạy. Với app còn giữ cache từ bản trước thay đổi này, bấm **Update app** một lần để cập nhật cơ chế refresh; từ và lịch ôn được giữ.

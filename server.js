@@ -89,11 +89,14 @@ app.post('/api/speech',async(req,res)=>{
   try {res.json(await speech.transcribe(req.body));}
   catch(error) {res.status(error.status || 503).json({error:error.message || 'Chưa nhận diện được. Hãy thử lại hoặc gõ từ.',code:error.code || 'SPEECH_SERVICE'});}
 });
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+const buildVersion=process.env.RENDER_GIT_COMMIT?.replace(/[^a-zA-Z0-9]/g,'').slice(0,12) || 'mobile-v1';
+app.get('/', (req, res) => {
+  const html=require('fs').readFileSync(path.join(__dirname,'index.html'),'utf8');
+  res.set({'Cache-Control':'no-cache','X-Helen-Build':buildVersion}).type('html').send(html.replace(/(\/assets\/[^"\s]+\.(?:css|js))(?=")/g,`$1?v=${buildVersion}`));
+});
 app.get('/manifest.webmanifest',(req,res)=>res.type('application/manifest+json').sendFile(path.join(__dirname,'public','manifest.webmanifest')));
 app.get('/sw.js',(req,res)=>{
-  const version=process.env.RENDER_GIT_COMMIT?.replace(/[^a-zA-Z0-9]/g,'').slice(0,12) || 'mobile-v1';
-  res.set('Cache-Control','no-cache').type('text/javascript').send(require('fs').readFileSync(path.join(__dirname,'public','sw.js'),'utf8').replace('__BUILD_VERSION__',version));
+  res.set('Cache-Control','no-cache').type('text/javascript').send(require('fs').readFileSync(path.join(__dirname,'public','sw.js'),'utf8').replace('__BUILD_VERSION__',buildVersion));
 });
 app.use('/images', express.static(path.join(__dirname, 'public', 'images'), { dotfiles: 'deny', index: false }));
 app.use('/assets', express.static(path.join(__dirname, 'public', 'assets'), { dotfiles: 'deny', index: false }));

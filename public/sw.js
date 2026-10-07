@@ -1,11 +1,11 @@
 // Render's commit replaces this token so each deploy installs a fresh app shell.
-const VERSION='helen-__BUILD_VERSION__';
+const BUILD='__BUILD_VERSION__',VERSION=`helen-${BUILD}`;
 const SHELL=`${VERSION}-shell`, FILES=`${VERSION}-files`, WORDS='helen-words-v1';
 const TTL=24*60*60*1000, MAX_WORDS=100, MAX_FILES=40;
 const SAVED_WAIT=2400, NETWORK_WAIT=6500;
 const LEXICAL_REVISION=2;
 const shell=['/','/manifest.webmanifest','/assets/pwa.css','/assets/pwa.js','/assets/study.css','/assets/study-core.js','/assets/study.js','/assets/voice-recorder.js','/assets/history-sync.js','/assets/autocomplete.js','/assets/appearance.json','/assets/hamster.css','/assets/pet-pointer.css','/assets/pet-pointer.js','/assets/icons/icon-180.png','/assets/icons/icon-192.png','/assets/icons/icon-512.png',
-  '/assets/mobile/background.webp','/assets/mobile/lookup.webp','/assets/mobile/hero.webp','/assets/mobile/dog-idle.webp','/assets/mobile/dog-pressed.webp'];
+  '/assets/mobile/background.webp','/assets/mobile/lookup.webp','/assets/mobile/hero.webp','/assets/mobile/dog-idle.webp','/assets/mobile/dog-pressed.webp'].map(url=>/\.(css|js)$/.test(url)?`${url}?v=${BUILD}`:url);
 self.addEventListener('install',event=>{event.waitUntil(caches.open(SHELL).then(cache=>cache.addAll(shell)));});
 self.addEventListener('activate',event=>{event.waitUntil((async()=>{
   for(const name of await caches.keys())if(name.startsWith('helen-') && ![SHELL,FILES,WORDS].includes(name))await caches.delete(name);
@@ -128,10 +128,29 @@ self.addEventListener('message',event=>{
     event.ports?.[0]?.postMessage({saved:success});
   })());
 });
+async function appPage(request,event){
+  const cache=await caches.open(SHELL),previous=await cache.match('/');let timer;
+  const controller=new AbortController();
+  const network=(async()=>{
+    const response=await fetch(request,{cache:'no-cache',signal:controller.signal});
+    // Keep the installed offline HTML paired with its own cached scripts/styles.
+    // A newer build is served online and installs its complete offline shell separately.
+    if(response.ok && response.headers.get('Content-Type')?.includes('text/html') && response.headers.get('X-Helen-Build')===BUILD)await cache.put('/',response.clone());
+    return response;
+  })();
+  if(previous && event.waitUntil)event.waitUntil(network.catch(()=>{}));
+  try{
+    const response=await Promise.race([network,new Promise(resolve=>{timer=setTimeout(()=>resolve(null),previous?2200:6500);})]);
+    if(response?.ok)return response;
+    if(previous)return previous;
+    controller.abort();return response || new Response('Kết nối chậm. Hãy tải lại trang.',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}});
+  }catch{if(previous)return previous;return new Response('Chưa kết nối được. Hãy thử lại khi có mạng.',{status:503});}
+  finally{clearTimeout(timer);}
+}
 self.addEventListener('fetch',event=>{
   const request=event.request, url=new URL(request.url);
   if(request.method!=='GET' || url.origin!==self.location.origin)return;
-  if(request.mode==='navigate' && url.pathname==='/') {event.respondWith((async()=>{const cache=await caches.open(SHELL);return (await cache.match('/')) || fetch(request);})());return;}
+  if(request.mode==='navigate' && url.pathname==='/') {event.respondWith(appPage(request,event));return;}
   if(url.pathname==='/api/lookup') {event.respondWith(word(request,event));return;}
   // Account status, voice lists, audio and AI calls always use the live server.
   if(url.pathname.startsWith('/api/') || url.pathname==='/healthz' || url.pathname==='/sw.js')return;

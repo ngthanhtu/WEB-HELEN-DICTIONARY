@@ -57,3 +57,15 @@ test('preparing an entire saved deck stays small and never requires an API',()=>
   for(const value of deck){const question=study.question(value,deck,0);assert.ok(question);assert.ok(question.choices.includes(value.word));}
   assert.ok(performance.now()-start<1000);assert.ok(JSON.stringify(deck).length<500000);
 });
+test('quiz requires three distinct eligible words and does not begin with the word being looked up',()=>{
+  const loan=card('loan','borrowed money'),tree=card('tree','a woody plant'),brother=card('brother','a male sibling');
+  assert.deepEqual(study.quizPlan([loan]),[]);assert.deepEqual(study.quizPlan([loan,tree]),[]);assert.deepEqual(study.quizPlan([loan,loan,tree]),[]);
+  const plan=study.quizPlan([loan,tree,brother],'loan',()=>.99);assert.equal(plan.length,3);assert.notEqual(plan[0].word,'loan');assert.deepEqual(plan.map(q=>q.word).sort(),['brother','loan','tree']);
+  assert.deepEqual(study.quizPlan([loan,tree,card('self','self means the individual')]),[]);
+});
+test('definition questions include a masked source example and typed answers recognize source-confirmed saved synonyms',()=>{
+  const loan=card('loan','borrowed money',{example:'The bank approved a loan.'});const q=study.question(loan,[loan],0);
+  assert.equal(q.context,'The bank approved a ____.');assert.equal(q.original,'The bank approved a loan.');assert.equal(study.cloze('loan',q.context),null);
+  const brother=card('brother','a male sibling',{synonyms:['blood brother']}),synonym=card('blood brother','a male sibling');
+  const typed=study.question(brother,[brother,synonym],0);assert.equal(typed.type,'type');assert.deepEqual(typed.accepted,['brother','blood brother']);
+});

@@ -11,6 +11,23 @@ function worker(network,{quickTimers=false}={}) {
   const request=url=>({method:'GET',url:`https://helen.test${url}`});
   return {context,caches,events,request,deadlines,get:(url,event)=>{context.input=request(url);context.fetchEvent=event;return vm.runInContext('word(input,fetchEvent)',context);},message:async data=>{let done,reply;events.message({data,ports:[{postMessage:value=>reply=value}],waitUntil:value=>done=value,source:{url:'https://helen.test/'}});await done;return reply;}};
 }
+test('refresh serves fresh online HTML while keeping the previous complete app usable offline',async()=>{
+  let online=true;const w=worker(async()=>{if(!online)throw Error('offline');return new Response('new page',{headers:{'Content-Type':'text/html','X-Helen-Build':'next'}});});
+  const cache=await w.caches.open('helen-test-shell');await cache.put('/',new Response('installed page'));
+  const navigate=()=>{let response;w.events.fetch({request:{...w.request('/'),mode:'navigate'},waitUntil(){},respondWith:promise=>response=promise});return response;};
+  assert.equal(await (await navigate()).text(),'new page');assert.equal(await (await cache.match('/')).text(),'installed page');
+  online=false;assert.equal(await (await navigate()).text(),'installed page');
+});
+test('a slow reload uses the installed page promptly without caching server errors',async()=>{
+  let finish;const w=worker(()=>new Promise(resolve=>finish=resolve),{quickTimers:true});const cache=await w.caches.open('helen-test-shell');await cache.put('/',new Response('installed page'));
+  let response,background;w.events.fetch({request:{...w.request('/'),mode:'navigate'},waitUntil:promise=>background=promise,respondWith:promise=>response=promise});
+  assert.equal(await (await response).text(),'installed page');assert.ok(w.deadlines.includes(2200));finish(new Response('server error',{status:503}));await background;assert.equal(await (await cache.match('/')).text(),'installed page');
+});
+test('script and stylesheet version queries bypass stale asset caches',async()=>{
+  const w=worker(async()=>new Response('new script')),cache=await w.caches.open('helen-test-shell');await cache.put('https://helen.test/assets/study.js?v=old',new Response('old script'));
+  let response;w.events.fetch({request:w.request('/assets/study.js?v=new'),respondWith:value=>response=value});assert.equal(await (await response).text(),'new script');
+  assert.ok(vm.runInContext("shell.includes('/assets/study.js?v=test')",w.context));
+});
 test('saved words open offline, are isolated by source language and never cache failures',async()=>{
   let online=true,calls=0;
   const w=worker(async()=>{calls++;if(!online)throw Error('offline');return Response.json(entry());});

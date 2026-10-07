@@ -3,7 +3,8 @@
   const core=window.HelenStudyCore,host=document.querySelector('#study');if(!core || !host)return;
   const $=selector=>host.querySelector(selector),storage=window.localStorage;
   const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  let cards=core.read(storage),session=null,preparing=false,controller=null,cancelled=false,volatile=false;
+  let cards=core.read(storage),session=null,preparing=false,controller=null,cancelled=false,volatile=false,quizOutHidden=null;
+  function endSession(){session=null;delete host.dataset.session;const out=document.querySelector('#out');if(quizOutHidden!==null && out)out.hidden=quizOutHidden;quizOutHidden=null;}
   function favorites(){try{const values=JSON.parse(storage.getItem('helen-favorites')||'[]');return Array.isArray(values)?[...new Set(values.filter(v=>typeof v==='string').map(core.answer))].slice(0,100):[];}catch{return [];}}
   const active=()=>{const selected=new Set(favorites());return cards.filter(item=>selected.has(item.word));};
   function save(){volatile=!core.write(storage,cards);if(volatile)$('#study-status').textContent='Bộ nhớ thiết bị đầy. Tiến độ chỉ giữ trong phiên này; hãy giải phóng dung lượng.';}
@@ -15,14 +16,16 @@
   }
   function refresh(){
     const list=active(),due=core.due(list),missing=favorites().filter(word=>!list.some(item=>item.word===word));
+    const ready=core.quizCards(list).length;host.dataset.quizReady=String(ready>=3);
+    $('#quiz-readiness').textContent=ready>=3?`Quiz ready · ${ready} từ để trộn câu hỏi theo nghĩa và ngữ cảnh.`:favorites().length<3?`Lưu thêm ${3-favorites().length} từ yêu thích để mở Quick quiz · tối thiểu 3 từ.`:`Cần 3 từ có dữ liệu câu hỏi để mở Quick quiz · hiện ${ready}/3. Chuẩn bị dữ liệu hoặc mở lại từ cần bổ sung.`;
     $('#study-count').textContent=`${due.length} cần ôn · ${list.length} sẵn sàng`;
     $('#study-progress').textContent=list.length?`${due.length} từ đến hạn. ${missing.length?`${missing.length} từ cần chuẩn bị dữ liệu.`:'Nghĩa, ví dụ và tiến độ đã lưu trên thiết bị.'}`:'Lưu ☆ một từ khi tra cứu để bắt đầu. Từ yêu thích cũ có thể chuẩn bị bên dưới.';
     $('#start-review').disabled=due.length===0 || Boolean(session);
-    $('#start-quiz').disabled=!list.some(core.quizSense) || Boolean(session);
+    $('#start-quiz').disabled=ready<3 || Boolean(session);
     $('#prepare-study').hidden=missing.length===0 && !preparing;
     $('#prepare-study').disabled=preparing || Boolean(session);
     $('#cancel-prepare').hidden=!preparing;
-    if(!due.length && list.length){const next=Math.min(...list.map(item=>item.dueAt));$('#study-next').textContent=`Lần ôn tiếp: ${new Date(next).toLocaleString('vi-VN',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})}. Quiz vẫn mở để luyện thêm.`;}else $('#study-next').textContent='';
+    if(!due.length && list.length){const next=Math.min(...list.map(item=>item.dueAt));$('#study-next').textContent=`Lần ôn tiếp: ${new Date(next).toLocaleString('vi-VN',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})}.${ready>=3?' Quiz vẫn mở để luyện thêm.':''}`;}else $('#study-next').textContent='';
   }
   function setStatus(message){if(!volatile)$('#study-status').textContent=message;}
   const focus=()=>$('#study-stage').querySelector('button,input')?.focus({preventScroll:true});
@@ -44,10 +47,10 @@
       $('.study-audio').onclick=event=>window.speak?.(item.word,event.currentTarget);
     }else{
       const q=session.questions[session.index];
-      $('#study-stage').innerHTML=`<p class="study-eyebrow">Quiz · ${session.index+1}/${session.items.length}</p><p>${q.type==='cloze'?'Điền từ đã lưu vào chỗ trống.':'Từ đã lưu nào phù hợp với nghĩa này?'}</p><span class="study-pos">${esc(q.pos)}</span><h3 class="study-prompt">${esc(q.prompt)}</h3>${q.type==='cloze'?`<p class="muted">${esc(q.definition)}</p>`:''}${q.type==='choice'?`<div class="quiz-options">${q.choices.map(word=>`<button class="word-link" data-choice="${esc(word)}" type="button">${esc(word)}</button>`).join('')}</div>`:'<form id="quiz-form"><label for="quiz-answer">Your answer</label><input id="quiz-answer" autocomplete="off" autocapitalize="none" spellcheck="false" required maxlength="100"><button class="word-link" type="submit">Check answer</button></form>'}<div id="quiz-feedback" role="status"></div>`;
+      $('#study-stage').innerHTML=`<p class="study-eyebrow">Quiz · ${session.index+1}/${session.items.length}</p><p>${q.type==='cloze'?'Điền từ đã lưu vào chỗ trống.':'Từ đã lưu nào phù hợp với nghĩa này?'}</p><span class="study-pos">${esc(q.pos)}</span><h3 class="study-prompt">${esc(q.prompt)}</h3>${q.type==='cloze'?`<p class="muted">${esc(q.definition)}</p>`:q.context?`<p class="quiz-context">${esc(q.context)}</p>`:''}${q.type==='choice'?`<div class="quiz-options">${q.choices.map(word=>`<button class="word-link" data-choice="${esc(word)}" type="button">${esc(word)}</button>`).join('')}</div>`:'<form id="quiz-form"><label for="quiz-answer">Your answer</label><input id="quiz-answer" autocomplete="off" autocapitalize="none" spellcheck="false" required maxlength="100"><button class="word-link" type="submit">Check answer</button></form>'}<div id="quiz-feedback" role="status"></div>`;
       const respond=value=>{
         if(session?.answered)return;session.answered=true;
-        const correct=core.answer(value)===core.answer(q.word);session.correct+=Number(correct);
+        const correct=(q.type==='type'?q.accepted || [q.word]:[q.word]).some(word=>core.answer(value)===core.answer(word));session.correct+=Number(correct);
         if(!correct)session.mistakes.push(q.word);
         $('#study-stage').querySelectorAll('button,input').forEach(node=>node.disabled=true);
         const feedback=$('#quiz-feedback');feedback.className=correct?'quiz-feedback correct':'quiz-feedback incorrect';
@@ -60,16 +63,20 @@
     focus();
   }
   function finish(){
-    const done=session;session=null;$('#end-study').hidden=true;
+    const done=session;endSession();$('#end-study').hidden=true;
     $('#study-stage').innerHTML=done.mode==='review'?'<h3>Review complete</h3><p>Lịch ôn đã cập nhật. Từ chưa nhớ sẽ đến hạn sau 10 phút.</p>':`<h3>Quiz complete · ${done.correct}/${done.items.length}</h3><p>Quiz để luyện thêm; lịch ôn giữ theo đánh giá trong Review.</p>${done.mistakes.length?`<p>Từ nên xem lại: ${done.mistakes.map(esc).join(', ')}.</p><button class="word-link" id="review-mistakes" type="button">Review these words</button>`:'<p>Bạn trả lời đúng tất cả câu trong lượt này.</p>'}`;
     if($('#review-mistakes'))$('#review-mistakes').onclick=()=>start('review',done.mistakes);
     refresh();
   }
   function start(mode,words){
-    const list=active();let items=mode==='review'?(words?list.filter(item=>words.includes(item.word)):core.due(list)):list.filter(core.quizSense);
-    if(mode==='quiz'){items=[...items];for(let i=items.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[items[i],items[j]]=[items[j],items[i]];}}
+    if(session)return;
+    const list=active(),current=typeof lastResult!=='undefined'?lastResult?.word:document.querySelector('#q')?.value;
+    const questions=mode==='quiz'?core.quizPlan(list,current):[];
+    if(mode==='quiz' && questions.length<3){setStatus('Quick quiz cần ít nhất 3 từ có dữ liệu câu hỏi.');return;}
+    let items=mode==='review'?(words?list.filter(item=>words.includes(item.word)):core.due(list)):questions.map(q=>list.find(item=>item.word===q.word));
     items=items.slice(0,mode==='quiz'?10:20);if(!items.length)return;
-    session={mode,items,index:0,correct:0,mistakes:[],answered:false,questions:mode==='quiz'?items.map((item,index)=>core.question(item,list,index)):[]};
+    session={mode,items,index:0,correct:0,mistakes:[],answered:false,questions};host.dataset.session=mode;
+    const out=document.querySelector('#out');if(mode==='quiz' && out){quizOutHidden=out.hidden;out.hidden=true;}
     $('#end-study').hidden=false;refresh();showCard();setStatus('');
   }
   async function prepare(){
@@ -97,10 +104,10 @@
   }
   $('#start-review').onclick=()=>start('review');$('#start-quiz').onclick=()=>start('quiz');$('#prepare-study').onclick=prepare;
   $('#cancel-prepare').onclick=()=>{cancelled=true;controller?.abort();};
-  $('#end-study').onclick=()=>{session=null;$('#study-stage').hidden=true;$('#end-study').hidden=true;refresh();setStatus('Đã dừng. Những thẻ đã đánh giá vẫn giữ tiến độ.');};
+  $('#end-study').onclick=()=>{endSession();$('#study-stage').hidden=true;$('#end-study').hidden=true;refresh();setStatus('Đã dừng. Những thẻ đã đánh giá vẫn giữ tiến độ.');};
   document.addEventListener('helen:lookup',event=>capture(event.detail?.result));
-  document.addEventListener('helen:favorites',event=>{if(event.detail?.result)capture(event.detail.result);if(session && session.items.some(item=>!favorites().includes(item.word))){session=null;$('#study-stage').hidden=true;$('#end-study').hidden=true;setStatus('Danh sách từ đã thay đổi. Bắt đầu lại với các từ đang lưu.');}refresh();});
-  window.addEventListener('storage',event=>{if([core.KEY,'helen-favorites'].includes(event.key)){cards=core.read(storage);session=null;$('#study-stage').hidden=true;$('#end-study').hidden=true;refresh();setStatus('Đã cập nhật dữ liệu từ tab khác.');}});
+  document.addEventListener('helen:favorites',event=>{if(event.detail?.result)capture(event.detail.result);if(session && session.items.some(item=>!favorites().includes(item.word))){endSession();$('#study-stage').hidden=true;$('#end-study').hidden=true;setStatus('Danh sách từ đã thay đổi. Bắt đầu lại với các từ đang lưu.');}refresh();});
+  window.addEventListener('storage',event=>{if([core.KEY,'helen-favorites'].includes(event.key)){cards=core.read(storage);endSession();$('#study-stage').hidden=true;$('#end-study').hidden=true;refresh();setStatus('Đã cập nhật dữ liệu từ tab khác.');}});
   window.addEventListener('pageshow',refresh);window.addEventListener('online',refresh);window.addEventListener('offline',refresh);
   host.addEventListener('toggle',refresh);setInterval(()=>{if(!document.hidden && host.open)refresh();},30000);
   refresh();if(typeof lastResult!=='undefined')capture(lastResult);

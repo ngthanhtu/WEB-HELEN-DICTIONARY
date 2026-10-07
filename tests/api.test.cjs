@@ -36,6 +36,10 @@ test('serves the application without exposing the env file', async () => {
   assert.equal((await fetch(base)).status, 200);
   assert.equal((await fetch(`${base}/env`)).status, 404);
 });
+test('online HTML revalidates and loads CSS and JavaScript from one deployment version',async()=>{
+  await ready;const response=await fetch(base),html=await response.text();assert.match(response.headers.get('cache-control'),/no-cache/);const build=response.headers.get('x-helen-build');assert.ok(build);
+  const urls=[...html.matchAll(/(?:src|href)="(\/assets\/[^"\s]+\.(?:css|js)[^"\s]*)"/g)].map(match=>match[1]);assert.ok(urls.length>=10);assert.ok(urls.every(url=>url.endsWith(`?v=${build}`)));
+});
 test('serves the supplied loading animation stylesheet',async()=>{
   await ready;const response=await fetch(`${base}/assets/hamster.css`);
   assert.equal(response.status,200);assert.match(response.headers.get('content-type'),/text\/css/);
