@@ -12,6 +12,13 @@ async function translate(text, to) {
   await ready;
   return fetch(`${base}/api/translate`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({texts:[text], from:'en', to}) });
 }
+test('typeahead API returns prefix words and phrasal verbs without looking up definitions',async()=>{
+  await ready;
+  const response=await fetch(`${base}/api/suggestions?word=name`);
+  assert.equal(response.status,200);const data=await response.json();
+  assert.equal(data.suggestions[0],'name');assert.ok(data.suggestions.includes('name after'));
+  assert.equal((await fetch(`${base}/api/suggestions?word=${'a'.repeat(101)}`)).status,400);
+});
 test('serves the application without exposing the env file', async () => {
   await ready;
   assert.equal((await fetch(base)).status, 200);

@@ -3,7 +3,7 @@ require('dns').setDefaultResultOrder('ipv4first');
 const express = require('express');
 const path = require('path');
 const { wordnetMeanings } = require('./lib/lexicon');
-const { spellingSuggestions, warmSpellingIndex } = require('./lib/spelling');
+const { spellingSuggestions, autocompleteSuggestions, warmSpellingIndex } = require('./lib/spelling');
 const { voiceMetadata } = require('./lib/voice-labels');
 const { teachingCollocations, corpusPhrases } = require('./lib/collocations');
 const { createTranslationService } = require('./lib/translation');
@@ -25,6 +25,7 @@ if (process.env.NODE_ENV === 'production') {
   app.use('/api/tts', limit(12));
   app.use('/api/lookup', limit(30));
   app.use('/api/spelling', limit(30));
+  app.use('/api/suggestions', limit(120));
   app.use('/api/translate', limit(60));
   app.post('/api/context', limit(6));
   app.post('/api/speech', limit(10));
@@ -233,6 +234,11 @@ async function wordRelations(word) {
 }
 
 const lookups = new Map();
+app.get('/api/suggestions', async(req,res)=>{
+  const word=String(req.query.word||'').trim();
+  if(word.length>100)return res.status(400).json({error:'Use at most 100 characters.'});
+  res.json({word,suggestions:await autocompleteSuggestions(word).catch(()=>[])});
+});
 // Local suggestions stay responsive while remote dictionaries verify exact matches.
 app.get('/api/spelling', async (req,res) => {
   const word=String(req.query.word||'').trim().toLowerCase();

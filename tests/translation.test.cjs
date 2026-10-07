@@ -3,6 +3,33 @@ const assert = require('node:assert/strict');
 const { createTranslationService } = require('../lib/translation');
 
 const quota = () => Response.json({ responseStatus: 429, responseDetails: 'MYMEMORY WARNING: YOU USED ALL AVAILABLE FREE TRANSLATIONS FOR TODAY.', responseData: { translatedText: 'QUOTA ERROR' } }, { status: 429 });
+test('common phrasal verbs and idioms use established Vietnamese meanings without API calls',async()=>{
+  const service=createTranslationService({fetchImpl:()=>{throw Error('unnecessary API call');}});
+  for(const [phrase,meaning] of [['Name after','đặt tên theo'],['look after','chăm sóc'],['give up','từ bỏ'],['take after','người thân'],['put up with','chịu đựng'],['once in a blue moon','rất hiếm khi']]) {
+    assert.ok((await service.translate(phrase,'en','vi',{kind:'headword'})).includes(meaning));
+  }
+});
+test('uncurated headwords use semantic AI before a plausible but literal translation and ignore the old cache namespace',async()=>{
+  let primary=0,ai=0;const written=[];
+  const service=createTranslationService({apiKey:'test-only',store:{get:async(namespace)=>namespace==='translation-v2'?{value:'kéo chân'}:null,set:async(...args)=>written.push(args)},fetchImpl:async(url,request)=>{
+    if(String(url).includes('mymemory')){primary++;return Response.json({responseStatus:200,responseData:{translatedText:'kéo chân'}});}
+    ai++;const input=JSON.parse(JSON.parse(request.body).contents[0].parts[0].text);
+    assert.equal(input.texts[0].purpose,'learnerGloss');assert.match(input.texts[0].dictionaryDefinition,/joke/);
+    return gemini(request,()=> 'trêu chọc, đùa với ai');
+  }});
+  const options={kind:'headword',definition:'to joke with someone by making them believe something untrue'};
+  assert.equal(await service.translate('pull someone\'s leg','en','vi',options),'trêu chọc, đùa với ai');
+  assert.equal(await service.translate('pull someone\'s leg','en','vi',options),'trêu chọc, đùa với ai');
+  assert.equal(primary,0);assert.equal(ai,1);assert.equal(written[0][0],'translation-semantic-v3');
+});
+test('AI quota uses the dictionary definition instead of falling back to a literal headword',async()=>{
+  const service=createTranslationService({apiKey:'test-only',fetchImpl:async(url,request)=>{
+    if(!String(url).includes('mymemory'))return Response.json({error:{code:429,status:'RESOURCE_EXHAUSTED',message:'quota'}},{status:429});
+    assert.equal(new URL(url).searchParams.get('q'),'to make a situation less tense');
+    return Response.json({responseStatus:200,responseData:{translatedText:'làm cho tình huống bớt căng thẳng'}});
+  }});
+  assert.equal(await service.translate('break the ice','en','vi',{kind:'headword',definition:'to make a situation less tense'}),'Giải nghĩa: làm cho tình huống bớt căng thẳng');
+});
 function gemini(request, textFor = text => `vi:${text}`) {
   const input = JSON.parse(JSON.parse(request.body).contents[0].parts[0].text);
   return Response.json({ candidates: [{ content: { role: 'model', parts: [{ text: JSON.stringify({ translations: input.texts.map(item => ({ id: item.id, text: textFor(item.text, input.targetLanguage) })) }) }] }, finishReason: 'STOP' }] });

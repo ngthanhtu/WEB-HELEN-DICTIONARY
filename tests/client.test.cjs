@@ -49,6 +49,15 @@ test('saved translations survive reload, separate languages and stay usable offl
   assert.equal(reloaded.requests.filter(request=>request.url.includes('/api/translate')).length,0);
   await assert.rejects(vm.runInContext("tr(['hello'],'en','ja')",reloaded.context),/offline/);
 });
+test('online semantic glosses replace old literal headword cache while offline access is retained',async()=>{
+  const oldKey=JSON.stringify([['name after'],'en','vi','headword','to name in honour of']);
+  const saved={'helen-translations':JSON.stringify([{key:oldKey,at:Date.now(),values:['tên sau']}])};
+  const p=page({...saved});
+  assert.deepEqual(Array.from(await vm.runInContext("tr(['name after'],'en','vi',{kind:'headword',definition:'to name in honour of'})",p.context)),['vi:hello']);
+  assert.equal(p.requests.filter(request=>request.url.includes('/api/translate')).length,1);
+  const offlinePage=page({...saved},null,{navigator:{onLine:false}});
+  assert.deepEqual(Array.from(await vm.runInContext("tr(['name after'],'en','vi',{kind:'headword',definition:'to name in honour of'})",offlinePage.context)),['tên sau']);
+});
 test('slow mobile requests cancel, retain POST data and report a retryable deadline',async()=>{
   const p=page({},null,{AbortController,setTimeout:(fn,ms)=>setTimeout(fn,ms===7500?20:ms)},(url,options)=>url==='/slow'?new Promise((resolve,reject)=>options.signal.addEventListener('abort',()=>reject(new Error('aborted')))):undefined);
   await assert.rejects(vm.runInContext("apiFetch('/slow',{method:'POST',body:'kept'})",p.context),/7,5 giây/);

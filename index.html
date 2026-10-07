@@ -54,6 +54,11 @@ a,button,select,input{font:inherit}
 .search input{flex:1;min-width:0;border:0;background:transparent;padding:0 var(--space-3);color:var(--text-primary);min-height:44px}
 .search input:focus-visible{outline:0}
 .search:focus-within{outline:3px solid var(--link);outline-offset:2px;box-shadow:0 10px 26px rgba(24,41,98,.25),0 0 0 6px var(--soft-glow)}
+.search-suggestions{margin:8px 0 0;border:1px solid var(--border);border-radius:16px;background:var(--surface-base);box-shadow:0 8px 22px var(--soft-glow);max-height:320px;overflow:auto;overscroll-behavior:contain}
+.search-suggestions[hidden]{display:none}
+.search-suggestions [role=option]{padding:10px 18px;min-height:44px;cursor:pointer;border-bottom:1px solid var(--border);color:var(--text-primary)}
+.search-suggestions [role=option]:last-child{border-bottom:0}
+.search-suggestions [role=option]:hover,.search-suggestions [aria-selected=true]{background:var(--translation-bg);color:var(--link);box-shadow:inset 4px 0 var(--accent)}
 .btn{border:0;border-radius:var(--radius-pill);padding:var(--space-3) var(--space-6);min-height:44px;min-width:44px;font-weight:700;cursor:pointer;background:var(--accent);color:#1d2a57;transition:transform .15s}
 .btn:hover{background:var(--surface-muted)}.btn:active{transform:scale(.97)}.btn:disabled{opacity:.5;cursor:not-allowed}
 .img-slot{aspect-ratio:4/3;border-radius:var(--radius-md);background:var(--surface-base);border:2px dashed var(--text-primary);overflow:hidden}
@@ -168,10 +173,11 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
     <p>English definitions, IPA and your selected voice. Tap the eye to reveal the translation in any language you choose.</p>
     <form class="search" id="form" role="search">
       <select id="from" aria-label="Search language"></select>
-      <input id="q" type="search" placeholder="Search a word" autocomplete="off" aria-label="Word to search" required>
+      <input id="q" type="search" placeholder="Search a word" autocomplete="off" autocapitalize="none" spellcheck="false" role="combobox" aria-autocomplete="list" aria-controls="search-suggestions" aria-expanded="false" aria-label="Word to search" required>
       <button class="mic" id="mic" type="button" aria-label="Tìm bằng giọng nói" aria-pressed="false" title="Tìm bằng giọng nói"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/></svg></button>
       <button class="btn" type="submit">Search</button>
     </form>
+    <div id="search-suggestions" class="search-suggestions" role="listbox" aria-label="Suggested English words and phrases" hidden></div>
     <p class="speech-status" id="speech-status" role="status"></p>
   </div>
   <!-- Paste your image link in IMAGES.hero below. Empty = blank box. -->
@@ -188,6 +194,7 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
 
 <script src="/assets/voice-recorder.js"></script>
 <script src="/assets/history-sync.js"></script>
+<script src="/assets/autocomplete.js"></script>
 <script>
 // ===== CONFIG =====
 const API = ''; // '' = same server. Set e.g. 'https://yourdomain.com' if hosted separately.
@@ -208,7 +215,10 @@ function shortError(error,fallback='Chưa kết nối được. Hãy thử lại
 // Stop indefinite waits on weak mobile connections; successful responses remain cached.
 async function apiFetch(url,options={}) {
   if(typeof AbortController==='undefined') return fetch(url,options);
-  const controller=new AbortController(), timer=setTimeout(()=>controller.abort(),7500);
+  const controller=new AbortController();let timedOut=false;
+  const cancel=()=>controller.abort();
+  options.signal?.addEventListener('abort',cancel,{once:true});if(options.signal?.aborted)cancel();
+  const timer=setTimeout(()=>{timedOut=true;controller.abort();},7500);
   try {
     const response=await fetch(url,{...options,signal:controller.signal});
     // Include slow response bodies (especially audio) in the same deadline.
@@ -217,8 +227,8 @@ async function apiFetch(url,options={}) {
     headers.delete('Content-Encoding');headers.delete('Content-Length');
     return new Response(body,{status:response.status,statusText:response.statusText,headers});
   }
-  catch(error) {if(controller.signal.aborted) throw new Error('Phản hồi chậm (7,5 giây). Hãy thử lại.');throw error;}
-  finally {clearTimeout(timer);}
+  catch(error) {if(timedOut) throw new Error('Phản hồi chậm (7,5 giây). Hãy thử lại.');throw error;}
+  finally {clearTimeout(timer);options.signal?.removeEventListener('abort',cancel);}
 }
 // Loading animation adapted from Uiverse.io by Nawsome, supplied by the user.
 const HAMSTER='<span class="wheel-and-hamster" aria-hidden="true"><span class="wheel"></span><span class="hamster"><span class="hamster__body"><span class="hamster__head"><span class="hamster__ear"></span><span class="hamster__eye"></span><span class="hamster__nose"></span></span><span class="hamster__limb hamster__limb--fr"></span><span class="hamster__limb hamster__limb--fl"></span><span class="hamster__limb hamster__limb--br"></span><span class="hamster__limb hamster__limb--bl"></span><span class="hamster__tail"></span></span></span><span class="spoke"></span></span>';
@@ -337,7 +347,7 @@ try {
 } catch {}
 async function tr(texts, from, to, context = {}) {
   if(context.kind==='headword' && from==='en' && to==='vi' && texts.length===1 && lastResult?.offlineGloss && lastResult.word.toLowerCase()===String(texts[0]).toLowerCase())return [lastResult.offlineGloss];
-  const key=JSON.stringify([texts,from,to,context.kind || '',context.definition || '']), saved=translations.get(key) || (offline() && context.kind==='definition'?translations.get(JSON.stringify([texts,from,to,'',''])):undefined);
+  const key=JSON.stringify([texts,from,to,context.kind==='headword'?'headword-v3':context.kind || '',context.definition || '']), saved=translations.get(key) || (offline() && context.kind==='headword'?translations.get(JSON.stringify([texts,from,to,'headword',context.definition || ''])):undefined) || (offline() && context.kind==='definition'?translations.get(JSON.stringify([texts,from,to,'',''])):undefined);
   const savedValues=saved?.values.length===texts.length?saved.values:null;
   if(savedValues && (Date.now()-saved.at<86400000 || offline()))return savedValues.slice();
   if(offline())throw new Error('Bản dịch này chưa được lưu. Kết nối mạng để tải.');
@@ -371,6 +381,7 @@ function showSuggestions(data, provisional = false) {
 }
 let searchRequest = 0;
 async function searchWord({ scroll = true, recordHistory = true } = {}) {
+  autocomplete?.close();
   const word = $('#q').value.trim(); if (!word) return;
   const from = $('#from').value, request = ++searchRequest;
   remember('helen-query', $('#q').value); remember('helen-from', from);
@@ -428,6 +439,7 @@ async function searchWord({ scroll = true, recordHistory = true } = {}) {
   finally { resolved=true; clearTimeout(spellingTimer); }
 }
 $('#form').addEventListener('submit', e => { e.preventDefault(); cancelSpeech(); searchWord(); });
+const autocomplete=globalThis.HelenAutocomplete?.create({input:$('#q'),list:$('#search-suggestions'),language:$('#from'),fetch:apiFetch,api:API,onSelect:word=>{cancelSpeech();remember('helen-query',word);searchWord();}});
 
 const SPEECH_LANGS={en:'en-US',vi:'vi-VN',es:'es-ES',fr:'fr-FR',de:'de-DE',it:'it-IT',pt:'pt-PT',ru:'ru-RU',ja:'ja-JP',ko:'ko-KR','zh-CN':'zh-CN','zh-TW':'zh-TW',ar:'ar-SA',hi:'hi-IN',th:'th-TH',id:'id-ID',ms:'ms-MY',tr:'tr-TR',nl:'nl-NL',pl:'pl-PL',sv:'sv-SE',el:'el-GR',he:'he-IL',uk:'uk-UA'};
 let speech=null, speechActive=false, speechCanceled=false, speechTimer=null, speechUseRecorder=false;
