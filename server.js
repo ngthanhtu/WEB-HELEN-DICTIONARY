@@ -251,21 +251,25 @@ async function collocations(word) {
 }
 function beginLookup(word) {
   if (lookups.has(word)) return lookups.get(word);
-  const related = relatedDictionary(word), relations = wordRelations(word), wiki = wikiDetails(word);
-  const phrases = collocations(word);
   const lexical = process.env.HELEN_DISABLE_WORDNET === '1' ? Promise.resolve([]) : wordnetMeanings(word).catch(() => null);
-  const candidates = [
-    [definitions(word), 'Wiktionary'], [related, 'Free Dictionary API'],
-    [mwDefs(word), "Merriam-Webster's Learner's Dictionary"], [datamuseDefinitions(word), 'Datamuse']
-  ];
-  const first = lexical.then(meanings => {
+  // Let local disk reads finish before starting remote DNS lookups on libuv's shared worker pool.
+  const sources = lexical.then(() => {
+    const related = relatedDictionary(word), relations = wordRelations(word), wiki = wikiDetails(word), phrases = collocations(word);
+    return {related,relations,wiki,phrases,candidates:[
+      [definitions(word), 'Wiktionary'], [related, 'Free Dictionary API'],
+      [mwDefs(word), "Merriam-Webster's Learner's Dictionary"], [datamuseDefinitions(word), 'Datamuse']
+    ]};
+  });
+  const first = lexical.then(async meanings => {
     if (meanings?.length) return {word,ipa:'',source:'Princeton WordNet',meanings:mergeRelations(word,meanings).map(m=>({...m,relationsPending:true}))};
+    const {candidates} = await sources;
     return Promise.any(candidates.map(async ([result, source]) => {
     const meanings = await result;
     if (!meanings?.length) throw new Error('No usable definitions');
     return {word, ipa:'', source, meanings:meanings.map(m => ({...m, relationsPending:true}))};
     }));
   }).catch(async () => {
+    const {candidates} = await sources;
     const results = await Promise.all(candidates.map(([p]) => p));
     // Do not retry a confirmed missing word for another 15 seconds.
     if (results.some(r => Array.isArray(r))) {
@@ -276,6 +280,7 @@ function beginLookup(word) {
     throw error;
   }).then(entry=>({...entry,collocations:{teaching:teachingCollocations(word),corpus:[],pending:true}}));
   const complete = first.then(async entry => {
+    const {related,relations,wiki,phrases} = await sources;
     const [extra, links, wikiData, combinations] = await Promise.all([related, relations, wiki, phrases]);
     const meanings = mergeRelations(word,entry.meanings,extra,links,wikiData);
     const entries=[{...entry,ipa:wikiData.ipa,meanings,relatedSource:[extra?.length?'Free Dictionary API':null,links.synonyms!==null||links.antonyms!==null?'Datamuse':null,wikiData.groups.length?'Wiktionary (CC BY-SA 4.0)':null].filter(Boolean).join(', ')||null}];
