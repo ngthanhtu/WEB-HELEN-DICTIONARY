@@ -1,5 +1,5 @@
 const {test}=require('node:test'), assert=require('node:assert/strict'), vm=require('node:vm'), fs=require('node:fs');
-const entry=(word='loan',extra={})=>({query:word,from:'en',word,enriching:false,lexicalRevision:2,entries:[{word,meanings:[{pos:'noun',senses:[{definition:'A sum of money lent to someone.'}]}]}],...extra});
+const entry=(word='loan',extra={})=>({query:word,from:'en',word,enriching:false,lexicalRevision:2,collocationRevision:2,entries:[{word,meanings:[{pos:'noun',senses:[{definition:'A sum of money lent to someone.'}]}]}],...extra});
 function worker(network,{quickTimers=false}={}) {
   const events={}, stores=new Map(), deadlines=[];
   const caches={keys:async()=>[...stores.keys()],delete:async name=>stores.delete(name),open:async name=>{

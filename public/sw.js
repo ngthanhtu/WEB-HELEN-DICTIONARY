@@ -65,7 +65,7 @@ async function word(request,event) {
   const cache=await caches.open(WORDS), key=lookupKey(request), previous=key && await cache.match(key);
   const previousData=previous && await previous.clone().json().catch(()=>null);
   const details=new URL(request.url).searchParams.get('details')==='1';
-  if(previous && (previousData?.offlinePack || previousData?.lexicalRevision===LEXICAL_REVISION) && Date.now()-Number(previous.headers.get('X-Helen-Saved-At'))<TTL && (!details || !previousData?.enriching))return saved(previous);
+  if(previous && (previousData?.offlinePack || previousData?.lexicalRevision===LEXICAL_REVISION && previousData?.collocationRevision===2) && !previousData?.entries?.some(entry=>entry.collocations?.unavailable) && Date.now()-Number(previous.headers.get('X-Helen-Saved-At'))<TTL && (!details || !previousData?.enriching))return saved(previous);
   const controller=new AbortController();let timer;
   const network=(async()=>{
     const response=await fetch(request,{signal:controller.signal});

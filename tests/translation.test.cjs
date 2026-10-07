@@ -3,6 +3,22 @@ const assert = require('node:assert/strict');
 const { createTranslationService } = require('../lib/translation');
 
 const quota = () => Response.json({ responseStatus: 429, responseDetails: 'MYMEMORY WARNING: YOU USED ALL AVAILABLE FREE TRANSLATIONS FOR TODAY.', responseData: { translatedText: 'QUOTA ERROR' } }, { status: 429 });
+test('single-word summaries include multiple parts of speech and separate different sense contexts in cache',async()=>{
+  let calls=0;
+  const senses=[{pos:'noun',definition:'a preliminary version of a text'},{pos:'noun',definition:'a current of air'},{pos:'verb',definition:'to write a preliminary version'}];
+  const service=createTranslationService({apiKey:'test-only',fetchImpl:async(url,request)=>{
+    calls++;const input=JSON.parse(JSON.parse(request.body).contents[0].parts[0].text);
+    assert.deepEqual(input.texts[0].dictionarySenses,senses);
+    return gemini(request,()=> 'bản nháp; luồng gió; soạn thảo');
+  }});
+  assert.equal(await service.translate('draft','en','vi',{kind:'headword',senses}),'bản nháp; luồng gió; soạn thảo');
+  assert.equal(await service.translate('draft','en','vi',{kind:'headword',senses}),'bản nháp; luồng gió; soạn thảo');assert.equal(calls,1);
+});
+test('premium retains reward, extra payment, insurance and quality senses without a network dependency',async()=>{
+  const service=createTranslationService({fetchImpl:()=>{throw Error('must not fetch');}});
+  const gloss=await service.translate('premium','en','vi',{kind:'headword',definition:'a payment for insurance'});
+  for(const meaning of ['phần thưởng','khoản trả thêm','phí bảo hiểm','cao cấp'])assert.ok(gloss.includes(meaning));
+});
 test('startup preparation resolves the Lite model and applies its fast generation settings',async()=>{
   let listed=0;
   const service=createTranslationService({apiKey:'test-only',fetchImpl:async(url,request)=>{
@@ -33,7 +49,7 @@ test('uncurated headwords use semantic AI before a plausible but literal transla
   const options={kind:'headword',definition:'to joke with someone by making them believe something untrue'};
   assert.equal(await service.translate('pull someone\'s leg','en','vi',options),'trêu chọc, đùa với ai');
   assert.equal(await service.translate('pull someone\'s leg','en','vi',options),'trêu chọc, đùa với ai');
-  assert.equal(primary,0);assert.equal(ai,1);assert.equal(written[0][0],'translation-semantic-v3');
+  assert.equal(primary,0);assert.equal(ai,1);assert.equal(written[0][0],'translation-semantic-v4');
 });
 test('AI quota uses the dictionary definition instead of falling back to a literal headword',async()=>{
   const service=createTranslationService({apiKey:'test-only',fetchImpl:async(url,request)=>{

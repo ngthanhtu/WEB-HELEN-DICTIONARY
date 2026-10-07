@@ -5,7 +5,6 @@ const path = require('path');
 const { wordnetMeanings } = require('./lib/lexicon');
 const { spellingSuggestions, autocompleteSuggestions, warmSpellingIndex } = require('./lib/spelling');
 const { voiceMetadata } = require('./lib/voice-labels');
-const { teachingCollocations, corpusPhrases } = require('./lib/collocations');
 const { createTranslationService } = require('./lib/translation');
 const { createSpeechService } = require('./lib/speech-ai');
 const { createContextService, languages: contextLanguages } = require('./lib/context-ai');
@@ -34,6 +33,7 @@ const PORT = process.env.PORT || 3000;
 const KEY = process.env.ELEVENLABS_API_KEY;
 const VOICE = process.env.ELEVENLABS_VOICE_ID || 'EXAVITQu4vr4xnSDxMaL'; // Sarah (premade); users can explicitly select another voice
 const database = createDatabase();
+const collocationService=require('./lib/collocation-service').createCollocationService({get,store:database});
 const persistDictionary = require('./lib/persist-dictionary').createDictionaryPersistence(database, REVISION);
 const contexts=createContextService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,store:database});
 const translations=createTranslationService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,store:database});
@@ -245,17 +245,18 @@ app.get('/api/spelling', async (req,res) => {
   if(word.length>100) return res.status(400).json({error:'Use at most 100 characters.'});
   res.json({word,suggestions:await spellingSuggestions(word).catch(()=>[])});
 });
-async function collocations(word) {
-  const teaching = teachingCollocations(word);
-  if (!/^[a-z]{2,48}$/.test(word)) return {teaching,corpus:[],unavailable:false};
-  const results = await Promise.all(['rel_bgb','rel_bga'].map(async relation => {
-    const response = await get(`https://api.datamuse.com/words?${relation}=${encodeURIComponent(word)}&max=40`, {}, 2500);
-    if (!response?.ok) return null;
-    try { return await response.json(); } catch { return null; }
-  }));
-  const known = new Set(teaching.map(item=>item.phrase));
-  return {teaching,corpus:[...corpusPhrases(word,results[0],true),...corpusPhrases(word,results[1],false)].filter(item=>!known.has(item.phrase)),unavailable:results.some(data=>!Array.isArray(data))};
-}
+const collocations=word=>collocationService.lookup(word);
+app.get('/api/collocations',async(req,res)=>{
+  const word=String(req.query.word || '').trim().toLowerCase();
+  if(!word || word.length>100)return res.status(400).json({error:'Nhập từ hoặc cụm từ tối đa 100 ký tự.'});
+  const existing=cache.get(`d|${word}`);
+  const meanings=existing?.[0]?.meanings || (process.env.HELEN_DISABLE_WORDNET==='1'?[]:await wordnetMeanings(word).catch(()=>[]));
+  const data=await collocationService.lookup(word,meanings);
+  if(existing) {
+    const entries=existing.map(entry=>({...entry,collocations:data}));cache.set(`d|${word}`,entries);persistDictionary(word,entries);
+  }
+  res.json(data);
+});
 function beginLookup(word) {
   if (lookups.has(word)) return lookups.get(word);
   const lexical = process.env.HELEN_DISABLE_WORDNET === '1' ? Promise.resolve([]) : wordnetMeanings(word).catch(() => null);
@@ -285,13 +286,13 @@ function beginLookup(word) {
     const error = new Error('Cannot reach dictionary services. Please try again.');
     error.status = results.some(r => Array.isArray(r)) ? 404 : 502;
     throw error;
-  }).then(entry=>({...entry,collocations:{teaching:teachingCollocations(word),corpus:[],pending:true}}));
+  }).then(entry=>({...entry,collocations:{...collocationService.base(word,entry.meanings),pending:true}}));
   const complete = first.then(async entry => {
     const {related,relations,wiki,phrases} = await sources;
     const [extra, links, wikiData, combinations] = await Promise.all([related, relations, wiki, phrases]);
     const meanings = mergeRelations(word,entry.meanings,extra,links,wikiData);
     const entries=[{...entry,ipa:wikiData.ipa,meanings,relatedSource:[extra?.length?'Free Dictionary API':null,links.synonyms!==null||links.antonyms!==null?'Datamuse':null,wikiData.groups.length?'Wiktionary (CC BY-SA 4.0)':null].filter(Boolean).join(', ')||null}];
-    entries[0].collocations=combinations;
+    entries[0].collocations={...collocationService.base(word,meanings),...combinations,examples:collocationService.base(word,meanings).examples};
     cache.set(`d|${word}`,entries);
     if (cache.size > 1000) cache.delete(cache.keys().next().value);
     persistDictionary(word,entries);
@@ -325,7 +326,7 @@ app.get('/api/lookup', async (req, res) => {
       }
     }
     if (!enriching) persistDictionary(word,entries);
-    res.json({query:raw,from,word,entries,enriching,lexicalRevision:REVISION});
+    res.json({query:raw,from,word,entries,enriching,lexicalRevision:REVISION,collocationRevision:collocationService.revision});
   } catch(e) {
     const suggestions=e.status===404 ? await spellingSuggestions(word).catch(()=>[]) : [];
     res.status(e.status||502).json({error:e.message || 'Lookup failed. Try again.',...(e.code?{code:e.code}:{}),query:raw,word,suggestions,suggestionLanguage:'en'});
@@ -354,11 +355,12 @@ app.post('/api/context',async(req,res)=>{
 
 app.post('/api/translate', async (req, res) => {
   try {
-    const { texts = [], from = 'en', to = 'vi', kind, definition } = req.body;
+    const { texts = [], from = 'en', to = 'vi', kind, definition, senses } = req.body;
     const deadline=Date.now()+6500;
     if (!Array.isArray(texts) || texts.length > 40 || !texts.every(text=>typeof text==='string' && text.trim() && text.length<=450)) return res.status(400).json({ error: 'Nội dung dịch không hợp lệ.', code:'TRANSLATION_INVALID' });
     res.json({ translations: await Promise.all(texts.map(async t => {
-      try { return await translations.translate(t,from,to,{deadline,kind,definition:typeof definition==='string'?definition.slice(0,450):undefined}); }
+      const dictionarySenses=Array.isArray(senses)?senses:kind==='headword' && from==='en'?(cache.get(`d|${t.toLowerCase().trim()}`) || []).flatMap(entry=>(entry.meanings || []).flatMap(meaning=>(meaning.senses || []).slice(0,3).map(sense=>({pos:meaning.pos,definition:sense.definition})))):undefined;
+      try { return await translations.translate(t,from,to,{deadline,kind,definition:typeof definition==='string'?definition.slice(0,450):undefined,senses:dictionarySenses}); }
       catch(error) {
         // A dictionary definition supplies context when the isolated headword is ambiguous.
         if(error.code==='TRANSLATION_UNAVAILABLE' && kind==='headword' && from==='en' && to==='vi' && typeof definition==='string' && definition.trim()) return `Giải nghĩa: ${await translate(definition.slice(0,450),from,to,deadline)}`;

@@ -347,7 +347,7 @@ try {
 } catch {}
 async function tr(texts, from, to, context = {}) {
   if(context.kind==='headword' && from==='en' && to==='vi' && texts.length===1 && lastResult?.offlineGloss && lastResult.word.toLowerCase()===String(texts[0]).toLowerCase())return [lastResult.offlineGloss];
-  const key=JSON.stringify([texts,from,to,context.kind==='headword'?'headword-v3':context.kind || '',context.definition || '']), saved=translations.get(key) || (offline() && context.kind==='headword'?translations.get(JSON.stringify([texts,from,to,'headword',context.definition || ''])):undefined) || (offline() && context.kind==='definition'?translations.get(JSON.stringify([texts,from,to,'',''])):undefined);
+  const key=JSON.stringify([texts,from,to,context.kind==='headword'?'headword-v4':context.kind || '',context.definition || '',...(context.kind==='headword'?[context.senses || []]:[])]), saved=translations.get(key) || (offline() && context.kind==='headword'?(translations.get(JSON.stringify([texts,from,to,'headword-v3',context.definition || ''])) || translations.get(JSON.stringify([texts,from,to,'headword',context.definition || '']))):undefined) || (offline() && context.kind==='definition'?translations.get(JSON.stringify([texts,from,to,'',''])):undefined);
   const savedValues=saved?.values.length===texts.length?saved.values:null;
   if(savedValues && (Date.now()-saved.at<86400000 || offline()))return savedValues.slice();
   if(offline())throw new Error('Bản dịch này chưa được lưu. Kết nối mạng để tải.');
@@ -684,7 +684,8 @@ async function updateWordTranslation() {
   showLoading(box,'Translating word…');
   try {
     const definition=result.entries?.[0]?.meanings?.[0]?.senses?.[0]?.definition || '';
-    const translated = (await tr([result.word], 'en', to, {kind:'headword',definition}))[0];
+    const senses=(result.entries || []).flatMap(entry=>(entry.meanings || []).flatMap(meaning=>(meaning.senses || []).slice(0,3).map(sense=>({pos:meaning.pos || '',definition:sense.definition?.slice(0,250) || ''})))).filter(sense=>sense.definition).slice(0,12);
+    const translated = (await tr([result.word], 'en', to, {kind:'headword',definition,senses}))[0];
     if (request === targetRequest && result === lastResult) finishLoading(box,`${LANGS[to]}: ${translated}`);
   } catch(error) { if (request === targetRequest) finishLoading(box,shortError(error,'Chưa dịch được từ này. Hãy thử lại.')); }
 }
@@ -775,7 +776,7 @@ function render(d, scroll = true) {
         extraBody.append(usage);
       }
     });
-    const collocationData=en.collocations || {teaching:[],corpus:[],pending:true};
+    let collocationData=en.collocations || {teaching:[],corpus:[],pending:true},combinationRequest=false;
     const phrases=document.createElement('details'); phrases.className='collocations foldout';phrases.setAttribute('data-panel','collocations');
     phrases.innerHTML='<summary>Collocations</summary>';
     function addPhrases(items,container) {
@@ -793,17 +794,47 @@ function render(d, scroll = true) {
         }); container.append(list);
       }
     }
-    if(collocationData.teaching.length) {
+    function drawCombinations() {
+    phrases.innerHTML='<summary>Collocations</summary>';
+    if(collocationData.teaching?.length) {
       addPhrases(collocationData.teaching,phrases);
       phrases.insertAdjacentHTML('beforeend','<p class="src">Helen Dictionary — cụm từ và ví dụ biên soạn. Đối chiếu với từng nghĩa khi sử dụng.</p>');
     }
-    if(collocationData.corpus.length) {
+    if(collocationData.examples?.length) {
+      const examples=document.createElement('details');examples.className='foldout';examples.setAttribute('data-panel','dictionary-combinations');
+      examples.innerHTML='<summary>Combinations in dictionary examples</summary><p>Cụm trích từ ví dụ từ điển; nghĩa và cách dùng phụ thuộc câu ví dụ.</p>';
+      addPhrases(collocationData.examples,examples);phrases.append(examples);
+    }
+    if(collocationData.corpus?.length) {
       const corpus=document.createElement('details');corpus.className='foldout';corpus.setAttribute('data-panel','corpus');
       corpus.innerHTML='<summary>Common word combinations (Datamuse)</summary><p>Gợi ý từ dữ liệu thống kê, chưa phân biệt từ loại hoặc từng nghĩa. Một số cụm có thể thuộc ngữ cảnh chuyên ngành; đây không phải danh sách collocations đã biên tập.</p>';
       addPhrases(collocationData.corpus,corpus); phrases.append(corpus);
     }
-    if(!collocationData.teaching.length && !collocationData.corpus.length) phrases.insertAdjacentHTML('beforeend',`<p class="${collocationData.pending?'pending':''}">${collocationData.pending?loadingHTML('Loading collocations…'):collocationData.unavailable?'Chưa kết nối được nguồn cụm từ. Hãy thử lại sau.':'Nguồn hiện tại chưa có cụm từ phù hợp cho từ này.'}</p>`);
+    if(!collocationData.teaching?.length && !collocationData.corpus?.length && !collocationData.examples?.length) phrases.insertAdjacentHTML('beforeend',`<p class="${collocationData.pending?'pending':''}">${collocationData.pending?loadingHTML('Loading collocations…'):collocationData.unavailable?'Nguồn cụm từ đang chậm. Định nghĩa và ví dụ vẫn dùng được.':'Chưa có cụm từ được nguồn xác nhận cho từ này.'}</p>`);
+    if(collocationData.stale)phrases.insertAdjacentHTML('beforeend','<p class="src">Đang dùng cụm từ đã lưu; dữ liệu được cập nhật ở nền.</p>');
+    if(collocationData.unavailable && !collocationData.pending) {
+      const retry=document.createElement('button');retry.type='button';retry.className='word-link';retry.textContent='Retry combinations';retry.onclick=loadCombinations;phrases.append(retry);
+    }
+    }
+    async function loadCombinations() {
+      if(combinationRequest || offline())return;
+      combinationRequest=true;
+      collocationData={...collocationData,pending:true};drawCombinations();
+      try {
+        const response=await apiFetch(`${API}/api/collocations?word=${encodeURIComponent(en.word)}`);
+        if(!response.ok)throw Error('unavailable');const data=await response.json();
+        if(!Array.isArray(data.teaching) || !Array.isArray(data.corpus))throw Error('invalid');
+        if(phrases.isConnected===false)return;
+        collocationData=data;en.collocations=data;drawCombinations();
+      } catch {
+        if(phrases.isConnected===false)return;
+        collocationData={...collocationData,pending:false,unavailable:true};drawCombinations();
+      } finally {combinationRequest=false;}
+    }
+    drawCombinations();
     extraBody.append(phrases);
+    if(collocationData.pending || collocationData.unavailable || collocationData.revision!==2)void loadCombinations();
+    phrases.addEventListener('toggle',()=>{if(phrases.open && collocationData.unavailable)void loadCombinations();});
     const aiSection=createAISection(en);if(aiSection) extraBody.append(aiSection);
     if (en.relatedSource) extraBody.insertAdjacentHTML('beforeend', `<p class="src">Related words and additional examples: ${esc(en.relatedSource)}. Chọn từ thay thế theo nghĩa và ngữ cảnh; từ đồng nghĩa/trái nghĩa dưới mỗi nghĩa được nguồn xác nhận; gợi ý theo từ loại nằm trong mục Từ liên quan.</p>`);
     el.append(extraCard);

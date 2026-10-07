@@ -42,6 +42,14 @@ test('changing target requests and displays the selected language immediately',a
   assert.equal(p.saved['helen-target'],'ja');
   assert.equal(JSON.parse(p.requests.find(r=>r.url.includes('/api/translate')).options.body).to,'ja');
 });
+test('the headword summary sends common senses from noun, verb and adjective groups',async()=>{
+  const p=page();
+  vm.runInContext("lastResult={word:'draft',entries:[{meanings:[{pos:'noun',senses:[{definition:'a preliminary text'},{definition:'a current of air'}]},{pos:'verb',senses:[{definition:'write a preliminary text'}]},{pos:'adjective',senses:[{definition:'preliminary'}]}]}]}",p.context);
+  await vm.runInContext('updateWordTranslation()',p.context);
+  const body=JSON.parse(p.requests.find(request=>request.url.includes('/api/translate')).options.body);
+  assert.deepEqual(body.senses.map(sense=>sense.pos),['noun','noun','verb','adjective']);
+  assert.equal(body.senses[1].definition,'a current of air');
+});
 test('saved translations survive reload, separate languages and stay usable offline',async()=>{
   const p=page();assert.deepEqual(Array.from(await vm.runInContext("tr(['hello'],'en','vi')",p.context)),['vi:hello']);
   const reloaded=page(p.saved,null,{},url=>url.includes('/api/translate')?Promise.reject(new Error('offline')):undefined);
