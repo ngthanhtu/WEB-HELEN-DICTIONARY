@@ -1,7 +1,13 @@
 const {test,after} = require('node:test'), assert = require('node:assert/strict');
 const {wiktionaryRelations,mergeRelations,words} = require('../lib/thesaurus');
 const {wordnetMeanings,close} = require('../lib/lexicon');
+const {supportsPos}=require('../lib/word-pos');
 after(close);
+test('source POS validation rejects known mismatches but supports compounds and grammatical words outside WordNet',()=>{
+  assert.equal(supportsPos('moment','adverb'),false);assert.equal(supportsPos('cheap','verb'),false);
+  assert.equal(supportsPos('middle','adjective'),true);assert.equal(supportsPos('stumbling block','noun'),true);
+  assert.equal(supportsPos('he','pronoun'),true);assert.equal(supportsPos('loose','interjection'),true);
+});
 test('Wiktionary parser handles different words, languages, meanings, qualifiers and parts of speech',() => {
   const text=`==English==
 ===Noun===

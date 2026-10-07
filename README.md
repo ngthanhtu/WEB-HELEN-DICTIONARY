@@ -8,7 +8,7 @@ Dictionary is built for personalization.
 # Luồng nghiệp vụ & Tối ưu Hệ thống (Business Analysis & System Design)
 Xử lý dự phòng (Fallback Mechanism): Hệ thống được thiết kế để tự động chuyển nguồn dịch vụ khi lỗi (Ví dụ: Chuyển từ MyMemory sang Gemini khi hết Quota) đảm bảo tính liên tục của dịch vụ.
 
-Tối ưu hóa hiệu năng (Caching Strategy): Dữ liệu tra cứu, bản dịch và bài học AI được thiết kế lưu trữ tại 2 cấp (Memory Cache trên Backend trong 24h và LocalStorage trên Frontend), giảm thiểu số lượng API calls (tối ưu chi phí API) và đảm bảo phản hồi tức thì dưới 5s.
+Tối ưu hóa hiệu năng (Caching Strategy): Dữ liệu tra cứu, bản dịch và bài học AI dùng cache RAM, database MySQL/TiDB khi được kết nối và bộ nhớ trên Frontend/PWA. Cache database giữ kết quả qua lần restart; cache trên thiết bị hỗ trợ ngoại tuyến, giảm API calls và hướng tới phản hồi dưới 5s khi kết nối ổn định.
 
 Offline-first (PWA): Phân tích hành vi người dùng học ngôn ngữ cần tra từ mọi lúc mọi nơi, ứng dụng cho phép tải bộ từ vựng Offline (Offline Pack) và tiếp tục truy cập các từ đã tra cứu ngay cả khi mất kết nối mạng.
 
