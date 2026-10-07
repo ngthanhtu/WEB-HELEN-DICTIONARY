@@ -36,5 +36,8 @@ test('real MySQL survives new connections, separates cache namespaces, refreshes
     assert.deepEqual((await second.history(token)).map(item=>item.word),['drawback']);
     assert.equal((await second.history(token))[0].count,1);
     await second.vocabulary('drawback',[{word:'drawback',meanings:[]}],2);
+    const batchKeys=Array.from({length:40},(_,i)=>`${key}-${i}`);
+    assert.ok((await Promise.all(batchKeys.map(item=>second.set('test-bulk',item,'cached')))).every(Boolean),'all successful translations in a batch must persist, not be dropped when four connections are occupied');
+    for(const item of batchKeys)assert.equal((await second.get('test-bulk',item)).value,'cached');
   } finally {await second.close();}
 });
