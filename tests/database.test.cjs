@@ -1,5 +1,42 @@
 const {test}=require('node:test'), assert=require('node:assert/strict'), crypto=require('node:crypto');
 const {createDatabase,configuration}=require('../lib/database');
+test('slow cache read does not disable subsequent durable writes',async()=>{
+  const written=[];
+  const db=createDatabase({MYSQL_HOST:'127.0.0.1',MYSQL_USER:'test',MYSQL_DATABASE:'test',MYSQL_SSL:'false'}, {
+    createPool:()=>({getConnection:async()=>({
+      execute:async(sql,params)=>{
+        if(sql.startsWith('SELECT'))await new Promise(resolve=>setTimeout(resolve,350));
+        if(sql.startsWith('INSERT'))written.push({sql,params});
+        return [[]];
+      },release(){},destroy(){}
+    }),end:async()=>{}})
+  });
+  try {
+    assert.equal(await db.initialize(),true);
+    assert.equal(await db.get('dictionary-v2','serendipity'),null);
+    assert.equal(db.status().connected,true);
+    assert.equal(await db.set('dictionary-v2','serendipity',[{word:'serendipity'}]),true);
+    assert.equal(await db.vocabulary('serendipity',[{word:'serendipity'}],2),true);
+    assert.equal(written.length,2);
+    assert.equal(db.status().persistence.cacheWrites,1);
+    assert.equal(db.status().persistence.vocabularyWrites,1);
+  } finally {await db.close();}
+});
+test('completed RAM entries are persisted and successful writes are deduplicated',async()=>{
+  const {createDictionaryPersistence}=require('../lib/persist-dictionary');
+  const writes=[];
+  const persist=createDictionaryPersistence({status:()=>({configured:true}),
+    set:async(...args)=>{writes.push(args);return true;},
+    vocabulary:async(...args)=>{writes.push(args);return true;}
+  },2);
+  const entries=[{word:'serendipity',meanings:[]}];
+  persist('serendipity',entries);persist('serendipity',entries);
+  await new Promise(resolve=>setImmediate(resolve));
+  persist('serendipity',entries);
+  assert.equal(writes.length,2);
+  assert.equal(writes[0][0],'dictionary-v2');
+  assert.equal(writes[1][0],'serendipity');
+});
 test('MySQL configuration verifies remote TLS, preserves encoded URL values and never disables certificates',() => {
   assert.equal(configuration({}),null);
   const config=configuration({DATABASE_URL:'mysql://learner:p%40ss%3Aword@db.example:4000/helen'});

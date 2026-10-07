@@ -69,6 +69,7 @@ test('runtime word cache is bounded and never captures voice, AI, credentials or
   assert.equal((await (await w.caches.open('helen-words-v1')).keys()).length,100);
   for(const path of ['/api/voices','/api/tts?voice=Sarah','/api/context/status','/healthz']) {
     let intercepted=false;w.events.fetch({request:w.request(path),respondWith:()=>{intercepted=true;}});assert.equal(intercepted,false,path);
+    w.events.fetch({request:{...w.request(path),mode:'navigate'},respondWith:()=>{intercepted=true;}});assert.equal(intercepted,false,`navigation ${path}`);
   }
   let intercepted=false;w.events.fetch({request:{...w.request('/api/context'),method:'POST'},respondWith:()=>{intercepted=true;}});assert.equal(intercepted,false);
 });

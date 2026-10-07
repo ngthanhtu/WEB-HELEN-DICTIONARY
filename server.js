@@ -33,6 +33,7 @@ const PORT = process.env.PORT || 3000;
 const KEY = process.env.ELEVENLABS_API_KEY;
 const VOICE = process.env.ELEVENLABS_VOICE_ID || 'EXAVITQu4vr4xnSDxMaL'; // Sarah (premade); users can explicitly select another voice
 const database = createDatabase();
+const persistDictionary = require('./lib/persist-dictionary').createDictionaryPersistence(database, REVISION);
 const contexts=createContextService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,store:database});
 const translations=createTranslationService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,store:database});
 const speech=createSpeechService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL});
@@ -287,8 +288,7 @@ function beginLookup(word) {
     entries[0].collocations=combinations;
     cache.set(`d|${word}`,entries);
     if (cache.size > 1000) cache.delete(cache.keys().next().value);
-    void database.set(`dictionary-v${REVISION}`,word,entries,meanings.some(m => m.relationsUnavailable) || combinations.unavailable ? 300000 : 86400000);
-    void database.vocabulary(word,entries,REVISION);
+    persistDictionary(word,entries);
     return entries;
   });
   // Observe background failures even if the caller only requests the early result.
@@ -318,6 +318,7 @@ app.get('/api/lookup', async (req, res) => {
         if (!entries) { entries=[entry]; enriching=true; }
       }
     }
+    if (!enriching) persistDictionary(word,entries);
     res.json({query:raw,from,word,entries,enriching,lexicalRevision:REVISION});
   } catch(e) {
     const suggestions=e.status===404 ? await spellingSuggestions(word).catch(()=>[]) : [];

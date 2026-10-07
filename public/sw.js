@@ -131,7 +131,7 @@ self.addEventListener('message',event=>{
 self.addEventListener('fetch',event=>{
   const request=event.request, url=new URL(request.url);
   if(request.method!=='GET' || url.origin!==self.location.origin)return;
-  if(request.mode==='navigate') {event.respondWith((async()=>{const cache=await caches.open(SHELL);return (await cache.match('/')) || fetch(request);})());return;}
+  if(request.mode==='navigate' && url.pathname==='/') {event.respondWith((async()=>{const cache=await caches.open(SHELL);return (await cache.match('/')) || fetch(request);})());return;}
   if(url.pathname==='/api/lookup') {event.respondWith(word(request,event));return;}
   // Account status, voice lists, audio and AI calls always use the live server.
   if(url.pathname.startsWith('/api/') || url.pathname==='/healthz' || url.pathname==='/sw.js')return;
