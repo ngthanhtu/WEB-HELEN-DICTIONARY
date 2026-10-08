@@ -3,6 +3,12 @@ const assert = require('node:assert/strict');
 const { createTranslationService } = require('../lib/translation');
 
 const quota = () => Response.json({ responseStatus: 429, responseDetails: 'MYMEMORY WARNING: YOU USED ALL AVAILABLE FREE TRANSLATIONS FOR TODAY.', responseData: { translatedText: 'QUOTA ERROR' } }, { status: 429 });
+test('translation diagnostics report provider status without exposing keys, request content or raw error messages',async()=>{
+  const service=createTranslationService({apiKey:'private-test-key',fetchImpl:async(url)=>String(url).includes('mymemory')?quota():Response.json({error:{code:400,status:'INVALID_ARGUMENT',message:'unsupported thinking option private-test-key'}},{status:400})});
+  await assert.rejects(service.translate('a new sentence','en','vi'));
+  const status=service.status();assert.deepEqual(status.primaryError,{status:429,reason:'quota'});assert.deepEqual(status.aiError,{status:400,reason:'model-options'});
+  assert.ok(!JSON.stringify(status).includes('private-test-key'));assert.ok(!JSON.stringify(status).includes('a new sentence'));
+});
 test('single-word summaries include multiple parts of speech and separate different sense contexts in cache',async()=>{
   let calls=0;
   const senses=[{pos:'noun',definition:'a preliminary version of a text'},{pos:'noun',definition:'a current of air'},{pos:'verb',definition:'to write a preliminary version'}];

@@ -66,7 +66,7 @@ app.use((error,req,res,next)=>{
   next(error);
 });
 app.use(require('compression')());
-app.get('/healthz', (req, res) => res.json({ status: 'ok', version: process.env.RENDER_GIT_COMMIT?.slice(0, 7) || 'local', voiceConfigured: Boolean(KEY), aiConfigured:contexts.configured,speechConfigured:speech.configured,database:database.status() }));
+app.get('/healthz', (req, res) => res.json({ status: 'ok', version: process.env.RENDER_GIT_COMMIT?.slice(0, 7) || 'local', voiceConfigured: Boolean(KEY), aiConfigured:contexts.configured,speechConfigured:speech.configured,translation:translations.status(),database:database.status() }));
 app.get('/api/history/status',(req,res) => res.json(database.status()));
 function deviceToken(req,res,next) {
   if (req.headers.origin && req.headers.origin !== `${req.protocol}://${req.get('host')}`) return res.status(403).json({error:'Yêu cầu không hợp lệ.'});
