@@ -9,7 +9,7 @@
   const closeDialog=dialog=>{if(dialog.close)dialog.close();else {dialog.removeAttribute('open');dialog.hidden=true;}};
   function connection() {
     status.hidden=navigator.onLine;
-    status.textContent=navigator.onLine?'':'Ngoại tuyến: mở từ, bản dịch và bài AI đã lưu. Micro và giọng ElevenLabs cần mạng.';
+    status.textContent=navigator.onLine?'':'Ngoại tuyến: mở từ, bản dịch, bài AI và âm thanh đã lưu. Micro và nội dung mới cần mạng.';
   }
   syncInstall();connection();
   matchMedia('(display-mode: standalone)').addEventListener('change',syncInstall);
@@ -34,12 +34,58 @@
     status.hidden=false;status.textContent='Trình duyệt này chưa hỗ trợ lưu từ ngoại tuyến. Hãy mở bằng Chrome hoặc Safari.';return;
   }
   const library=document.createElement('details');library.className='offline-library';
-  library.innerHTML='<summary>Saved offline <span id="offline-count">(0)</span></summary><p id="offline-summary" role="status">Đang kiểm tra dữ liệu trên thiết bị…</p><div class="offline-word-list"></div><button class="word-link" id="download-offline-pack" type="button" disabled>Download offline pack</button><p class="offline-note">Lưu tối đa 100 mục tra. Bấm mắt hoặc tạo AI khi có mạng để lưu thêm bản dịch và bài học. Từ mới, micro và ElevenLabs cần Internet.</p>';
+  library.innerHTML='<summary>Saved offline <span id="offline-count">(0)</span></summary><p id="offline-summary" role="status">Đang kiểm tra dữ liệu trên thiết bị…</p><div class="offline-word-list"></div><button class="word-link" id="download-offline-pack" type="button" disabled>Download offline pack</button><section class="offline-audio" aria-label="Offline pronunciation"><h3>Offline pronunciation</h3><p id="offline-audio-summary" role="status">Âm thanh đã nghe được lưu tự động trên thiết bị.</p><div class="offline-actions"><button class="btn" id="download-favorite-audio" type="button">Save favorite audio</button><button class="word-link" id="cancel-favorite-audio" type="button" hidden>Stop</button><button class="word-link" id="clear-offline-audio" type="button">Clear audio</button></div><p id="offline-audio-progress" role="status"></p><p class="offline-note">Lưu giọng của tối đa 10 từ yêu thích mỗi lượt, dùng hạn mức ElevenLabs. Chỉ tải giọng đang chọn; từ và câu đã nghe mở lại không cần mạng. Tối đa 100 âm thanh / 20 MiB. Xoá âm thanh không xoá từ hoặc lịch ôn.</p></section><p class="offline-note">Lưu tối đa 100 mục tra. Bấm mắt hoặc tạo AI khi có mạng để lưu thêm bản dịch và bài học. Từ mới và micro cần Internet.</p>';
   document.querySelector('.app-tools').insertAdjacentElement('afterend',library);
   const packButton=library.querySelector('#download-offline-pack'), summary=library.querySelector('#offline-summary'), list=library.querySelector('.offline-word-list');
   const packDialog=document.createElement('dialog');packDialog.className='offline-dialog';
   packDialog.innerHTML='<h2>Offline pack</h2><p>Tải bộ từ tiếng Anh thông dụng và nghĩa tiếng Việt về thiết bị này? Chỉ tải khi bạn xác nhận; không gọi dịch vụ AI hay giọng đọc.</p><p>Các câu định nghĩa chỉ có bản dịch nếu bạn đã bấm mắt khi có mạng.</p><div class="offline-actions"><button class="btn" id="confirm-offline-pack" type="button">Download</button><button class="word-link" id="cancel-offline-pack" type="button">Cancel</button></div>';
   document.body.append(packDialog);
+  const audioStore=window.HelenOfflineAudio,audioButton=library.querySelector('#download-favorite-audio'),audioSummary=library.querySelector('#offline-audio-summary'),audioProgress=library.querySelector('#offline-audio-progress'),audioStop=library.querySelector('#cancel-favorite-audio'),audioClear=library.querySelector('#clear-offline-audio');
+  let audioController=null,audioVoice='';
+  const audioDialog=document.createElement('dialog');audioDialog.className='offline-dialog';
+  audioDialog.innerHTML='<h2>Save favorite audio</h2><p id="offline-audio-confirm-copy"></p><p>Dùng hạn mức ElevenLabs. Không đổi giọng tự động. Mỗi lượt tải tối đa 10 từ; bạn có thể dừng bất cứ lúc nào.</p><div class="offline-actions"><button class="btn" id="confirm-favorite-audio" type="button">Download</button><button class="word-link" id="cancel-audio-dialog" type="button">Cancel</button></div>';
+  document.body.append(audioDialog);
+  const favoriteWords=()=>{try{const value=JSON.parse(localStorage.getItem('helen-favorites') || '[]');return Array.isArray(value)?value:[];}catch{return [];}};
+  const chosenVoice=()=>typeof selectedVoice==='string'?selectedVoice:document.querySelector('#voice').value;
+  async function refreshAudio(){
+    const clips=await audioStore?.inventory() || [],bytes=clips.reduce((sum,clip)=>sum+clip.bytes,0);
+    audioSummary.textContent=audioStore?.available?`${clips.length} âm thanh · ${(bytes/1024/1024).toFixed(1)} MiB · ${clips.filter(clip=>clip.voice===chosenVoice()).length} cho giọng đang chọn.`:'Trình duyệt chưa hỗ trợ lưu âm thanh ngoại tuyến.';
+    audioButton.disabled=Boolean(audioController) || !audioStore?.available || !navigator.onLine || !chosenVoice() || !favoriteWords().length;
+    audioClear.disabled=Boolean(audioController) || !clips.length;
+  }
+  document.querySelector('#voice').addEventListener('change',refreshAudio);
+  document.addEventListener('helen:favorites',refreshAudio);
+  document.addEventListener('helen:audio-saved',()=>{if(library.open)refreshAudio();});
+  audioDialog.querySelector('#cancel-audio-dialog').onclick=()=>closeDialog(audioDialog);
+  audioButton.onclick=async()=>{
+    audioVoice=chosenVoice();const planned=await audioStore.plan(favoriteWords(),audioVoice);
+    if(!planned.remaining){audioProgress.textContent='Đã lưu giọng đọc của tất cả từ yêu thích cho giọng này.';return;}
+    const label=document.querySelector('#voice').selectedOptions?.[0]?.textContent || audioVoice;
+    audioDialog.querySelector('#offline-audio-confirm-copy').textContent=`Tải ${planned.words.length} từ bằng ${label} (${planned.words.join(', ')}). ${planned.cached} từ đã có âm thanh; ${planned.remaining} từ còn cần tải.`;
+    showDialog(audioDialog);
+  };
+  audioStop.onclick=()=>audioController?.abort();
+  window.addEventListener('pagehide',()=>audioController?.abort());
+  audioClear.onclick=()=>{
+    const dialog=document.createElement('dialog');dialog.className='offline-dialog';
+    dialog.innerHTML='<h2>Clear saved audio?</h2><p>Chỉ xoá âm thanh trên thiết bị này. Từ đã lưu, bài AI và lịch ôn được giữ.</p><div class="offline-actions"><button class="btn" type="button">Clear audio</button><button class="word-link" type="button">Cancel</button></div>';
+    const [clear,cancel]=dialog.querySelectorAll('button');cancel.onclick=()=>{closeDialog(dialog);dialog.remove();};
+    clear.onclick=async()=>{clear.disabled=true;const removed=await audioStore.clear();audioProgress.textContent=removed?'Đã xoá âm thanh. Từ và lịch ôn được giữ.':'Chưa xoá được. Hãy thử lại.';closeDialog(dialog);dialog.remove();await refreshAudio();};
+    document.body.append(dialog);showDialog(dialog);
+    dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+  };
+  audioDialog.querySelector('#confirm-favorite-audio').onclick=async()=>{
+    if(audioController)return;
+    closeDialog(audioDialog);audioController=new AbortController();audioStop.hidden=false;audioButton.disabled=true;audioClear.disabled=true;
+    try{
+      const outcome=await audioStore.download({words:favoriteWords(),voice:audioVoice,signal:audioController.signal,online:()=>navigator.onLine,
+        fetchAudio:(text,voice,signal)=>apiFetch(`/api/tts?${new URLSearchParams({text,voice})}`,{signal}),
+        onProgress:progress=>{if(!progress.done)showLoading(audioProgress,`Saving ${progress.saved+1}/${progress.total}: ${progress.text}`);}
+      });
+      audioProgress.textContent=`Đã lưu ${outcome.saved}/${outcome.total} âm thanh.${outcome.cancelled?' Đã dừng.':''}${outcome.message?` ${outcome.message}`:''}`;
+    }catch{audioProgress.textContent='Chưa tải được. Âm thanh đã lưu vẫn được giữ; hãy thử lại.';}
+    finally{audioController=null;audioStop.hidden=true;audioProgress.removeAttribute('aria-busy');await refreshAudio();}
+  };
   library.addEventListener('toggle',()=>{if(library.open)refreshLibrary();});
   library.querySelector('#download-offline-pack').addEventListener('click',()=>showDialog(packDialog));
   packDialog.querySelector('#cancel-offline-pack').addEventListener('click',()=>closeDialog(packDialog));
@@ -56,6 +102,7 @@
     try {const values=JSON.parse(localStorage.getItem(key) || '[]');return Array.isArray(values)?values.filter(value=>value && (field?value[field]:value.data)).length:0;}catch{return 0;}
   }
   async function refreshLibrary() {
+    await refreshAudio();
     try {
       const {words=[]}=await workerMessage({type:'OFFLINE_WORDS'});
       library.querySelector('#offline-count').textContent=`(${words.length})`;

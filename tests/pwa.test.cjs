@@ -28,6 +28,7 @@ test('script and stylesheet version queries bypass stale asset caches',async()=>
   let response;w.events.fetch({request:w.request('/assets/study.js?v=new'),respondWith:value=>response=value});assert.equal(await (await response).text(),'new script');
   assert.ok(vm.runInContext("shell.includes('/assets/study.js?v=test')",w.context));
   assert.ok(vm.runInContext("shell.includes('/assets/sense-core.js?v=test')",w.context));
+  assert.ok(vm.runInContext("shell.includes('/assets/offline-audio.js?v=test')",w.context));
 });
 test('saved words open offline, are isolated by source language and never cache failures',async()=>{
   let online=true,calls=0;
@@ -108,10 +109,12 @@ test('optional offline pack needs a valid bounded pack and preserves personal sa
 });
 test('app updates consolidate old lookup keys while preserving saved words',async()=>{
   const w=worker(async()=>Response.json(entry()));
-  for(const name of ['helen-old-shell','helen-old-files','helen-test-shell','helen-words-v1','unrelated-cache'])await w.caches.open(name);
+  for(const name of ['helen-old-shell','helen-old-files','helen-test-shell','helen-words-v1','helen-audio-v1','unrelated-cache'])await w.caches.open(name);
+  const audio=await w.caches.open('helen-audio-v1');await audio.put('https://helen.test/__helen_audio__?text=loan&voice=Sarah',new Response('saved clip'));
   const words=await w.caches.open('helen-words-v1');await words.put('https://helen.test/api/lookup?word=loan',Response.json(entry('loan',{enriching:true})));await words.put('https://helen.test/api/lookup?word=loan&details=1',Response.json(entry('loan')));
   let done;w.events.activate({waitUntil:promise=>done=promise});await done;
-  assert.deepEqual((await w.caches.keys()).sort(),['helen-test-shell','helen-words-v1','unrelated-cache']);assert.equal((await words.keys()).length,1);assert.equal((await (await w.get('/api/lookup?word=loan')).json()).enriching,false);
+  assert.deepEqual((await w.caches.keys()).sort(),['helen-audio-v1','helen-test-shell','helen-words-v1','unrelated-cache']);assert.equal((await words.keys()).length,1);assert.equal((await (await w.get('/api/lookup?word=loan')).json()).enriching,false);
+  assert.equal(await (await audio.match('https://helen.test/__helen_audio__?text=loan&voice=Sarah')).text(),'saved clip');
   await w.message({type:'ACTIVATE_UPDATE'});assert.equal(w.context.activated,true);
 });
 test('new lexical revision refreshes old empty relation lists while preserving their offline fallback',async()=>{

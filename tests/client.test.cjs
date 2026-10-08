@@ -291,9 +291,37 @@ test('audio loading is animated while pending and cleaned up after an error with
   const button=p.element('#test-speaker');button.innerHTML='🔊';
   const waiting=vm.runInContext("speak('loan',document.querySelector('#test-speaker'))",p.context);
   assert.match(button.innerHTML,/wheel-and-hamster/);assert.equal(button.disabled,true);assert.equal(p.element('#audio-status').hidden,false);
+  await new Promise(resolve=>setImmediate(resolve));
   complete({ok:false,status:503,json:async()=>({error:'Voice offline.'})});await waiting;
   assert.equal(button.innerHTML,'🔊');assert.equal(button.disabled,false);assert.equal(button.getAttribute('aria-busy'),undefined);
   assert.equal(p.element('#audio-status').hidden,true);assert.equal(p.saved['helen-voice'],'Sarah');
+});
+test('saved pronunciation opens offline without a TTS request and an unsaved different voice never falls back',async()=>{
+  const played=[];
+  const audio={get:async(text,voice)=>text==='loan' && voice==='Sarah'?new Response('clip',{headers:{'Content-Type':'audio/mpeg'}}):null,inventory:async()=>[{voice:'Sarah'}]};
+  const p=page({'helen-voice':'Sarah'},null,{navigator:{onLine:false},HelenOfflineAudio:audio,Audio:class{constructor(url){played.push(url);}async play(){}pause(){}}});
+  await vm.runInContext("speak('loan',document.querySelector('#speaker'))",p.context);
+  assert.equal(played.length,1);assert.equal(p.requests.filter(request=>request.url.includes('/api/tts')).length,0);
+  vm.runInContext("selectedVoice='Bella'",p.context);await vm.runInContext("speak('loan',document.querySelector('#speaker'))",p.context);
+  assert.equal(played.length,1);assert.match(p.element('#voice-status').textContent,/chưa được lưu/);
+});
+test('successful online audio is saved under the requested voice while provider errors are not saved',async()=>{
+  const saved=[];
+  const p=page({'helen-voice':'Sarah'},null,{HelenOfflineAudio:{get:async()=>null,save:async(text,voice)=>{saved.push([text,voice]);return true;}},Audio:class{async play(){}pause(){}}},url=>url.includes('/api/tts')?new Response('clip',{headers:{'Content-Type':'audio/mpeg'}}):undefined);
+  await new Promise(resolve=>setImmediate(resolve));await vm.runInContext("speak('loan',document.querySelector('#speaker'))",p.context);
+  assert.deepEqual(saved,[['loan','Sarah']]);
+  const failed=page({'helen-voice':'Sarah'},null,{HelenOfflineAudio:{get:async()=>null,save:async()=>{throw Error('must not save');}}},url=>url.includes('/api/tts')?Response.json({error:'Voice request failed'},{status:503}):undefined);
+  await vm.runInContext("speak('loan',document.querySelector('#speaker'))",failed.context);
+  assert.match(failed.element('#voice-status').textContent,/Voice request failed/);
+});
+test('changing voices during a slow clip clears loading and never plays the old voice',async()=>{
+  let finish,played=0;const stored=[];
+  const p=page({'helen-voice':'Sarah'},null,{HelenOfflineAudio:{get:async()=>null,save:async(text,voice)=>{stored.push(voice);return true;}},Audio:class{async play(){played++;}pause(){}}},url=>url.includes('/api/tts')?new Promise(resolve=>finish=resolve):undefined);
+  await new Promise(resolve=>setImmediate(resolve));
+  const waiting=vm.runInContext("speak('loan',document.querySelector('#speaker'))",p.context);await new Promise(resolve=>setImmediate(resolve));
+  p.element('#voice').value='Bella';p.element('#voice').events.change();assert.equal(p.element('#audio-status').hidden,true);
+  finish(new Response('clip',{headers:{'Content-Type':'audio/mpeg'}}));await waiting;
+  assert.equal(played,0);assert.equal(p.saved['helen-voice'],'Bella');assert.deepEqual(stored,['Sarah']);
 });
 
 test('simultaneous translations share a request and a failed result remains retryable',async()=>{

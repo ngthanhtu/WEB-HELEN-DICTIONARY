@@ -56,6 +56,8 @@ a,button,select,input{font:inherit}
 .search:focus-within{outline:3px solid var(--link);outline-offset:2px;box-shadow:0 10px 26px rgba(24,41,98,.25),0 0 0 6px var(--soft-glow)}
 .search-suggestions{margin:8px 0 0;border:1px solid var(--border);border-radius:16px;background:var(--surface-base);box-shadow:0 8px 22px var(--soft-glow);max-height:320px;overflow:auto;overscroll-behavior:contain}
 .search-suggestions[hidden]{display:none}
+#search-suggestions-status{font-size:13px;margin:8px 0 0;max-width:100%;color:var(--text-tertiary)}
+#search-suggestions-status[hidden]{display:none}
 .search-suggestions [role=option]{padding:10px 18px;min-height:44px;cursor:pointer;border-bottom:1px solid var(--border);color:var(--text-primary)}
 .search-suggestions [role=option]:last-child{border-bottom:0}
 .search-suggestions [role=option]:hover,.search-suggestions [aria-selected=true]{background:var(--translation-bg);color:var(--link);box-shadow:inset 4px 0 var(--accent)}
@@ -190,6 +192,7 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
       <button class="btn" type="submit">Search</button>
     </form>
     <div id="search-suggestions" class="search-suggestions" role="listbox" aria-label="Suggested English words and phrases" hidden></div>
+    <p id="search-suggestions-status" role="status" hidden></p>
     <p class="speech-status" id="speech-status" role="status"></p>
   </div>
   <!-- Paste your image link in IMAGES.hero below. Empty = blank box. -->
@@ -217,6 +220,7 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
 <script src="/assets/history-sync.js"></script>
 <script src="/assets/autocomplete.js"></script>
 <script src="/assets/sense-core.js"></script>
+<script src="/assets/offline-audio.js"></script>
 <script>
 // ===== CONFIG =====
 const API = ''; // '' = same server. Set e.g. 'https://yourdomain.com' if hosted separately.
@@ -272,9 +276,20 @@ $('#q').value = stored('helen-query') || '';
 $('#q').addEventListener('input', () => remember('helen-query', $('#q').value));
 $('#from').addEventListener('change', () => remember('helen-from', $('#from').value));
 let selectedVoice = stored('helen-voice');
+async function cachedVoiceOptions(sel){
+  let names={};try{names=JSON.parse(stored('helen-voice-labels') || '{}') || {};}catch{}
+  const clips=await globalThis.HelenOfflineAudio?.inventory() || [];
+  const voices=[...new Set([selectedVoice,...clips.map(clip=>clip.voice)].filter(Boolean))];
+  sel.replaceChildren();
+  for(const id of voices)sel.add(new Option(typeof names[id]==='string'?names[id]:`Saved voice (${id})`,id));
+  if(!voices.length)sel.add(new Option('Chọn và lưu giọng khi có mạng',''));
+  sel.value=selectedVoice || '';return clips.length;
+}
 async function loadVoices() {
   const sel = $('#voice');
-  if(offline()) {sel.replaceChildren(new Option('Giọng đọc cần Internet',selectedVoice || ''));finishLoading($('#voice-status'),'Ngoại tuyến. Lựa chọn giọng đã được giữ.');sel.removeAttribute('aria-busy');return;}
+  if(offline()) {
+    await cachedVoiceOptions(sel);finishLoading($('#voice-status'),'Ngoại tuyến: nghe âm thanh đã lưu bằng đúng giọng đã chọn.');sel.removeAttribute('aria-busy');return;
+  }
   showLoading($('#voice-status'),'Loading voices…');sel.setAttribute('aria-busy','true');
   try {
     const r = await apiFetch(`${API}/api/voices`);
@@ -283,15 +298,24 @@ async function loadVoices() {
     sel.replaceChildren();
     const voices = [...data.voices];
     if (!voices.some(v => v.voice_id === selectedVoice)) voices.unshift({voice_id:selectedVoice, name:'Saved voice (check account access)'});
-    for (const v of voices) sel.add(new Option(`${v.dialect ? `(${v.dialect})` : v.accent ? `(${v.accent})` : '(Chưa rõ accent)'} ${v.name}${v.category === 'premade' ? ' (premade)' : ''}`, v.voice_id));
+    const labels={};
+    for (const v of voices) {
+      const label=`${v.dialect ? `(${v.dialect})` : v.accent ? `(${v.accent})` : '(Chưa rõ accent)'} ${v.name}${v.category === 'premade' ? ' (premade)' : ''}`;
+      sel.add(new Option(label,v.voice_id));
+      if(/^[A-Za-z0-9_-]{1,100}$/.test(v.voice_id))labels[v.voice_id]=label.slice(0,220);
+    }
+    remember('helen-voice-labels',JSON.stringify(labels));
     sel.value = selectedVoice; remember('helen-voice', selectedVoice);
     finishLoading($('#voice-status'),'Choose a voice available on your ElevenLabs plan.');
   } catch (e) {
-    sel.replaceChildren(new Option(selectedVoice || 'Voice service unavailable', selectedVoice || ''));
-    finishLoading($('#voice-status'),e.message);
+    const cached=await cachedVoiceOptions(sel);
+    finishLoading($('#voice-status'),cached?'Chưa tải được danh sách giọng. Bạn vẫn có thể nghe âm thanh đã lưu.':shortError(e,'Chưa tải được danh sách giọng. Hãy thử lại.'));
   } finally {sel.removeAttribute('aria-busy');}
 }
-$('#voice').addEventListener('change', () => { selectedVoice = $('#voice').value; remember('helen-voice', selectedVoice); audio?.pause(); });
+$('#voice').addEventListener('change', () => {
+  selectedVoice = $('#voice').value; remember('helen-voice', selectedVoice); speakRequest++;audio?.pause();
+  $('#audio-status').hidden=true;$('#audio-status').replaceChildren();$('#audio-status').removeAttribute('aria-busy');
+});
 loadVoices();
 if (IMAGES.hero) {
   const i=new Image(), placeholder=document.createElement('span');placeholder.className='image-loading';
@@ -351,13 +375,23 @@ async function speak(text, btn) {
   btn.disabled=true;btn.innerHTML=HAMSTER;
   $('#audio-status').hidden=false;showLoading($('#audio-status'),'Preparing audio…');
   try {
-    const r = await apiFetch(`${API}/api/tts?text=${encodeURIComponent(text)}${selectedVoice ? `&voice=${encodeURIComponent(selectedVoice)}` : ''}`);
+    const voice=selectedVoice;
+    let r=await globalThis.HelenOfflineAudio?.get(text,voice),cached=Boolean(r);
+    if(!r){
+      if(offline())throw new Error('Âm thanh này chưa được lưu cho giọng đã chọn. Kết nối mạng rồi bấm loa để lưu.');
+      r=await apiFetch(`${API}/api/tts?text=${encodeURIComponent(text)}${voice ? `&voice=${encodeURIComponent(voice)}` : ''}`);
+    }
     if (!r.ok) { const failure = await r.json().catch(() => ({})); throw new Error(failure.error || `Voice request failed (HTTP ${r.status}).`); }
+    if(!cached && globalThis.HelenOfflineAudio)void globalThis.HelenOfflineAudio.save(text,voice,r).then(saved=>{
+      if(saved && typeof CustomEvent==='function')document.dispatchEvent(new CustomEvent('helen:audio-saved'));
+    });
     if(request!==speakRequest) return;
     audio?.pause(); if (audioURL) URL.revokeObjectURL(audioURL);
     audioURL = URL.createObjectURL(await r.blob()); audio = new Audio(audioURL); await audio.play();
+    if(request===speakRequest)finishLoading($('#voice-status'),cached?'Đang nghe âm thanh đã lưu trên thiết bị.':'Đang nghe bằng giọng đã chọn.');
   } catch (e) {
-    if(request===speakRequest) finishLoading($('#voice-status'),`${e.message || 'Selected voice is unavailable.'} Your selection has been kept.`);
+    const message=/^(?:Failed to fetch|fetch failed|Load failed|NetworkError)/i.test(e.message || '')?'Chưa kết nối được giọng đọc; âm thanh này chưa được lưu cho giọng đã chọn.':e.message || 'Selected voice is unavailable.';
+    if(request===speakRequest) finishLoading($('#voice-status'),`${message} Your selection has been kept.`);
   } finally {
     btn.removeAttribute('aria-busy');btn.disabled=false;btn.innerHTML=original;
     if(request===speakRequest) {$('#audio-status').hidden=true;$('#audio-status').replaceChildren();$('#audio-status').removeAttribute('aria-busy');}
@@ -403,8 +437,8 @@ function showSuggestions(data, provisional = false) {
   $('#out').append(section);
 }
 let searchRequest = 0;
-async function searchWord({ scroll = true, recordHistory = true } = {}) {
-  autocomplete?.close();
+async function searchWord({ scroll = true, recordHistory = true, suggestions = true } = {}) {
+  if(suggestions)autocomplete?.suggest({immediate:true,submitted:true});else autocomplete?.close();
   const word = $('#q').value.trim(); if (!word) return;
   const from = $('#from').value, request = ++searchRequest;
   remember('helen-query', $('#q').value); remember('helen-from', from);
@@ -429,7 +463,9 @@ async function searchWord({ scroll = true, recordHistory = true } = {}) {
     if (!r.ok) return r.status===404 ? showSuggestions(d) : msg(d.error, true);
     d.savedOnDevice=r.headers?.get('X-Helen-Cache')==='saved';
     if (recordHistory) addHistory(d.word);
-    render(d, scroll);
+    // Keep a submitted suggestion list in view; selecting a suggestion still scrolls to its entry.
+    const suggesting=autocomplete && (!$('#search-suggestions').hidden || $('#search-suggestions-status').getAttribute('aria-busy')==='true');
+    render(d, scroll && !suggesting);
     if (d.enriching || (d.offlinePartial && !offline())) {
       apiFetch(`${API}/api/lookup?word=${encodeURIComponent(d.word)}&from=en&details=1`)
         .then(async response => { if (!response.ok) throw new Error('Details unavailable'); return response.json(); })
@@ -462,7 +498,7 @@ async function searchWord({ scroll = true, recordHistory = true } = {}) {
   finally { resolved=true; clearTimeout(spellingTimer); }
 }
 $('#form').addEventListener('submit', e => { e.preventDefault(); cancelSpeech(); searchWord(); });
-const autocomplete=globalThis.HelenAutocomplete?.create({input:$('#q'),list:$('#search-suggestions'),language:$('#from'),fetch:apiFetch,api:API,onSelect:word=>{cancelSpeech();remember('helen-query',word);searchWord();}});
+const autocomplete=globalThis.HelenAutocomplete?.create({input:$('#q'),list:$('#search-suggestions'),status:$('#search-suggestions-status'),language:$('#from'),fetch:apiFetch,api:API,localWords:()=>[...favorites,...history],loading:showLoading,onSelect:word=>{cancelSpeech();remember('helen-query',word);searchWord({suggestions:false});}});
 
 const SPEECH_LANGS={en:'en-US',vi:'vi-VN',es:'es-ES',fr:'fr-FR',de:'de-DE',it:'it-IT',pt:'pt-PT',ru:'ru-RU',ja:'ja-JP',ko:'ko-KR','zh-CN':'zh-CN','zh-TW':'zh-TW',ar:'ar-SA',hi:'hi-IN',th:'th-TH',id:'id-ID',ms:'ms-MY',tr:'tr-TR',nl:'nl-NL',pl:'pl-PL',sv:'sv-SE',el:'el-GR',he:'he-IL',uk:'uk-UA'};
 let speech=null, speechActive=false, speechCanceled=false, speechTimer=null, speechUseRecorder=false;
