@@ -10,6 +10,7 @@ const { voiceMetadata } = require('./lib/voice-labels');
 const { createTranslationService } = require('./lib/translation');
 const { createSpeechService } = require('./lib/speech-ai');
 const { createContextService, languages: contextLanguages } = require('./lib/context-ai');
+const dictionarySenses = require('./public/assets/sense-core');
 const { REVISION, words: relationWords, wiktionaryRelations, mergeRelations } = require('./lib/thesaurus');
 const { createDatabase } = require('./lib/database');
 const { supportsPos } = require('./lib/word-pos');
@@ -356,15 +357,18 @@ app.get('/api/lookup', async (req, res) => {
 
 app.get('/api/context/status',(req,res)=>res.json({configured:contexts.configured,provider:'Gemini',model:contexts.model}));
 app.post('/api/context',async(req,res)=>{
-  const {word:input,meaningIndex=0,senseIndex=0,language='vi'}=req.body;
+  const {word:input,meaningIndex=0,senseIndex=0,senseKey,language='vi'}=req.body;
   const word=typeof input==='string'?input.trim().toLowerCase():'';
   if(!word || word.length>100 || typeof language!=='string' || !Object.hasOwn(contextLanguages,language) || !Number.isInteger(meaningIndex) || !Number.isInteger(senseIndex) || meaningIndex<0 || meaningIndex>100 || senseIndex<0 || senseIndex>200) return res.status(400).json({error:'Từ, nghĩa hoặc ngôn ngữ không hợp lệ.'});
+  if(senseKey!==undefined && (typeof senseKey!=='string' || !senseKey || senseKey.length>4000))return res.status(400).json({error:'Nghĩa đã chọn không hợp lệ.'});
   if(!contexts.configured) return res.status(501).json({error:'Minh họa AI chưa được bật cho website này.'});
   try {
-    const entry=cache.get(`d|${word}`)?.[0] || await beginLookup(word).first;
-    const meaning=entry.meanings[meaningIndex], sense=meaning?.senses[senseIndex];
-    if(!sense) return res.status(400).json({error:'Không tìm thấy nghĩa đã chọn. Hãy tra lại từ.'});
-    res.json(await contexts.generate({word,pos:meaning.pos,definition:sense.definition,language}));
+    const durable=cache.has(`d|${word}`)?null:await database.get(`dictionary-v${REVISION}`,word);
+    const entry=cache.get(`d|${word}`)?.[0] || durable?.value?.[0] || await beginLookup(word).first;
+    const sense=dictionarySenses.resolve(entry,{senseKey,meaningIndex,senseIndex});
+    if(!sense) return res.status(senseKey===undefined?400:409).json({error:'Nghĩa đã chọn không còn khớp dữ liệu từ điển. Hãy tra lại từ rồi chọn nghĩa.'});
+    const alternatives=dictionarySenses.choices(entry).filter(item=>item.value!==sense.value && item.pos===sense.pos).slice(0,3).map(item=>item.definition);
+    res.json(await contexts.generate({word,pos:sense.pos,definition:sense.definition,language,dictionaryExamples:sense.examples.slice(0,2),alternatives}));
   } catch(error) {
     const status=Number(error.status);
     if(status===429) return res.status(429).json({error:'Gemini đã hết hạn mức hoặc đang giới hạn lượt gọi. Hãy thử lại sau.'});

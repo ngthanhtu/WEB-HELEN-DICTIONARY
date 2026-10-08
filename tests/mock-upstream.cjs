@@ -22,6 +22,7 @@ global.fetch = async (input, opts = {}) => {
   }
   if (url.hostname === 'api.dictionaryapi.dev') {
     const word = url.pathname.split('/').pop();
+    if(word==='bank')return Response.json([{meanings:[{partOfSpeech:'noun',definitions:[{definition:'A financial institution.',example:'The bank approved my loan.'},{definition:'Sloping land beside a river.',example:'We sat on the river bank.'}]}]}]);
     if(word === 'experimence') return new Response('',{status:404});
     if (word === 'slow') await new Promise((resolve,reject)=>{const timer=setTimeout(resolve,3800);opts.signal?.addEventListener('abort',()=>{clearTimeout(timer);reject(new DOMException('Aborted','AbortError'));},{once:true});});
     if (word === 'offline' || word === 'backup') return new Response('', {status:503});
@@ -32,6 +33,7 @@ global.fetch = async (input, opts = {}) => {
     if (url.pathname.endsWith('/backup')) return new Response('',{status:503});
     if (url.pathname.endsWith('/slow')) return new Response('',{status:503});
     if (url.pathname.endsWith('/malformed')) return new Response('invalid JSON');
+    if (url.pathname.endsWith('/bank') && url.pathname.includes('/page/definition/'))return Response.json({en:[{partOfSpeech:'noun',definitions:[{definition:'A financial institution.',examples:['The bank approved my loan.']},{definition:'Sloping land beside a river.',examples:['We sat on the river bank.']}]}]});
     if (url.pathname.includes('/page/definition/')) return Response.json({en:[{partOfSpeech:'adjective',definitions:[{definition:'Feeling pleasure.'}]}]});
     return Response.json({parse:{wikitext:{'*':''}}});
   }
@@ -53,13 +55,17 @@ global.fetch = async (input, opts = {}) => {
     }
     if(input.word==='ai-model-retired' && url.pathname.includes('gemini-flash-lite-latest:')) return Response.json({error:{code:404,message:'Retired model',status:'NOT_FOUND'}},{status:404});
     if(input.word==='ai-quota') return Response.json({error:{code:429,message:'Test quota',status:'RESOURCE_EXHAUSTED'}},{status:429});
-    const lesson={title:`Lesson ${++aiCalls}`,dialogue:[
+    const lesson={title:`Lesson ${++aiCalls}`,examples:[{text:`I feel ${input.word} today.`,translation:'Câu ví dụ thứ nhất.'},{text:`She feels ${input.word} at home.`,translation:'Câu ví dụ thứ hai.'}],dialogue:[
       {speaker:'A',text:`I feel ${input.word} today.`,translation:'Hôm nay tôi thấy vui.'},
       {speaker:'B',text:'What happened?',translation:'Có chuyện gì thế?'},
       {speaker:'A',text:'I met an old friend.',translation:'Tôi gặp một người bạn cũ.'},
       {speaker:'B',text:'That sounds lovely.',translation:'Nghe thật vui.'}],
       scenario:{text:`She is ${input.word} to see her friend.`,translation:'Cô ấy vui khi gặp bạn.'},
       usageNote:input.dictionaryDefinition,videoPrompt:'Create a short animation of two friends meeting in a park.'};
+    if(input.word==='bank' && /river|sloping land/.test(input.dictionaryDefinition)){
+      lesson.examples=[{text:'We rested on the bank beside the river.',translation:'Chúng tôi nghỉ trên bờ sông.'},{text:'Flowers grow along the bank.',translation:'Hoa mọc dọc bờ sông.'}];
+      lesson.dialogue=[{speaker:'Anna',text:'Let us sit on the bank.',translation:'Chúng ta ngồi trên bờ sông nhé.'},{speaker:'Mark',text:'The water is calm here.',translation:'Nước ở đây yên ả.'},{speaker:'Anna',text:'We can watch the birds.',translation:'Chúng ta có thể ngắm chim.'},{speaker:'Mark',text:'That sounds lovely.',translation:'Nghe hay đấy.'}];
+    }
     if(input.word==='loan') {
       lesson.title='Mượn sách ở thư viện';
       lesson.dialogue=[

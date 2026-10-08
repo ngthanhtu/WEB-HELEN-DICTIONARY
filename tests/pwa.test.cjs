@@ -27,6 +27,7 @@ test('script and stylesheet version queries bypass stale asset caches',async()=>
   const w=worker(async()=>new Response('new script')),cache=await w.caches.open('helen-test-shell');await cache.put('https://helen.test/assets/study.js?v=old',new Response('old script'));
   let response;w.events.fetch({request:w.request('/assets/study.js?v=new'),respondWith:value=>response=value});assert.equal(await (await response).text(),'new script');
   assert.ok(vm.runInContext("shell.includes('/assets/study.js?v=test')",w.context));
+  assert.ok(vm.runInContext("shell.includes('/assets/sense-core.js?v=test')",w.context));
 });
 test('saved words open offline, are isolated by source language and never cache failures',async()=>{
   let online=true,calls=0;

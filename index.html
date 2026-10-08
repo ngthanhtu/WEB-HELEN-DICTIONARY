@@ -88,6 +88,17 @@ main{max-width:900px;margin:0 auto;padding:0 var(--space-6) var(--space-7)}
 .example-say{width:40px;height:40px;font-size:15px;vertical-align:middle;margin-left:8px}
 .meaning-heading{font-size:24px;margin:24px 0 8px}.meaning-heading em{font-size:17px;font-weight:400;margin-left:8px}
 .sense-number{font-size:14px;display:inline-block;min-width:22px;color:var(--link)}
+.sense[data-practicing=true]{background:var(--translation-bg);border-radius:12px;box-shadow:inset 3px 0 var(--action);padding-left:12px;padding-right:12px}
+.sense-actions{grid-column:1/3;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--text-tertiary)}
+.sense-actions .word-link[aria-pressed=true]{background:var(--action);color:#fff}
+.sense-guide{margin:20px 0;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--surface-base)}
+.sense-guide summary{font-weight:700;cursor:pointer;min-height:44px;display:flex;align-items:center}
+.sense-guide p,.sense-evidence{font-size:13px;color:var(--text-tertiary)}
+.sense-table-wrap{overflow-x:auto}.sense-table{width:100%;border-collapse:collapse;font-size:14px}
+.sense-table th,.sense-table td{text-align:left;vertical-align:top;border-bottom:1px solid var(--border);padding:12px 8px;overflow-wrap:anywhere}
+.sense-table th:first-child{width:28%}.sense-table .word-link{margin-top:8px}
+.ai-selected-sense{margin-top:16px;padding:14px;border-left:3px solid var(--action);border-radius:0 10px 10px 0;background:var(--translation-bg);overflow-wrap:anywhere}
+.ai-selected-sense p{margin:8px 0}.ai-selected-sense ul{padding-left:20px}
 .examples{padding-left:30px;margin-bottom:0;font-weight:400}.examples li{margin:8px 0}
 .sense-relations{grid-column:1/3;display:flex;flex-wrap:wrap;gap:4px 20px;font-size:14px;padding:10px 14px;border-left:3px solid var(--accent);background:var(--translation-bg);border-radius:0 12px 12px 0}
 .word-notes{margin:16px 0;background:var(--translation-bg);padding:14px 18px;border-radius:12px;font-size:14px}.word-notes summary{cursor:pointer;font-weight:700}.word-notes p{margin:8px 0}
@@ -205,6 +216,7 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
 <script src="/assets/voice-recorder.js"></script>
 <script src="/assets/history-sync.js"></script>
 <script src="/assets/autocomplete.js"></script>
+<script src="/assets/sense-core.js"></script>
 <script>
 // ===== CONFIG =====
 const API = ''; // '' = same server. Set e.g. 'https://yourdomain.com' if hosted separately.
@@ -605,12 +617,16 @@ function restoreAILessons(includeExpired=false) {
     saved.slice(-20).forEach(item=>{
       const data=item?.data, age=now-item?.at, text=value=>typeof value==='string' && value.trim() && value.length<=3000;
       if(!Number.isFinite(age) || age<0 || (!includeExpired && age>=86400000) || !data || !text(data.word) || !text(data.pos) || !text(data.definition) || !Object.hasOwn(LANGS,data.language) || !text(data.title) || !text(data.usageNote) || !text(data.videoPrompt) || !text(data.scenario?.text) || !text(data.scenario?.translation) || !Array.isArray(data.dialogue) || data.dialogue.length<4 || data.dialogue.length>6 || !data.dialogue.every(turn=>text(turn?.speaker) && text(turn?.text) && text(turn?.translation))) return;
+      if(data.examples!==undefined && (!Array.isArray(data.examples) || data.examples.length!==2 || !data.examples.every(example=>text(example?.text) && text(example?.translation))))return;
       lessons.set(aiLessonKey(data.word,data.pos,data.definition,data.language),{data,at:item.at});
     });
   } catch {}
   return lessons;
 }
-const aiChoices=new Map(), aiLessons=restoreAILessons(), aiArchives=restoreAILessons(true), aiPanels=new Map();
+function restoreSenseChoices(){
+  try {const saved=JSON.parse(stored('helen-ai-senses') || '[]');return new Map(Array.isArray(saved)?saved.slice(-100).filter(item=>Array.isArray(item) && item.length===2 && typeof item[0]==='string' && item[0].length<=100 && typeof item[1]==='string' && item[1].length<=4000):[]);}catch{return new Map();}
+}
+const aiChoices=restoreSenseChoices(), aiLessons=restoreAILessons(), aiArchives=restoreAILessons(true), aiPanels=new Map();
 globalThis.addEventListener?.('offline',()=>{aiPanels.forEach(panel=>panel.draw());});
 globalThis.addEventListener?.('online',()=>{aiPanels.forEach(panel=>panel.draw());});
 function persistAILessons() {
@@ -621,13 +637,13 @@ async function loadAIStatus() {
   try {const response=await apiFetch(`${API}/api/context/status`);const status=await response.json();aiConfigured=response.ok && status.configured===true;} catch {aiConfigured=false;}
   aiPanels.forEach(panel=>panel.draw());
 }
-function createAISection(entry) {
-  const senses=entry.meanings.flatMap((meaning,meaningIndex)=>meaning.senses.map((sense,senseIndex)=>({meaningIndex,senseIndex,pos:meaning.pos,definition:sense.definition,value:`${meaningIndex}:${senseIndex}`})));
+function createAISection(entry,onSelection=()=>{}) {
+  const senses=HelenSenses.choices(entry);
   if(!senses.length) return null;
   const root=document.createElement('section');root.className='ai-study';
-  root.innerHTML='<h3>AI contexts <span class="ai-badge">AI</span></h3><p>Chọn nghĩa để luyện qua hội thoại, tình huống và prompt video hoạt hình.</p><div class="ai-controls"><label>Sense to practice<select class="ai-sense" aria-label="Sense for AI context"></select></label><button class="btn ai-generate" type="button">Generate context</button></div><p class="ai-status" role="status"></p><div class="ai-result"></div>';
-  const select=root.querySelector('.ai-sense'), button=root.querySelector('.ai-generate'), status=root.querySelector('.ai-status'), output=root.querySelector('.ai-result');
-  senses.forEach(sense=>select.add(new Option(`${sense.pos} — ${sense.definition}`,sense.value)));
+  root.innerHTML='<h3>AI contexts <span class="ai-badge">AI</span></h3><p>Chọn một nghĩa để luyện ví dụ và hội thoại trong đúng ngữ cảnh đó. Bấm Generate context để tạo bài.</p><div class="ai-controls"><label>Sense to practice<select class="ai-sense" aria-label="Sense for AI context"></select></label><button class="btn ai-generate" type="button">Generate context</button></div><div class="ai-selected-sense"></div><p class="ai-status" role="status"></p><div class="ai-result"></div>';
+  const select=root.querySelector('.ai-sense'), button=root.querySelector('.ai-generate'), selectedBox=root.querySelector('.ai-selected-sense'), status=root.querySelector('.ai-status'), output=root.querySelector('.ai-result');
+  senses.forEach(sense=>select.add(new Option(`${sense.label} — ${sense.definition}`,sense.value)));
   const chosen=aiChoices.get(entry.word);select.value=senses.some(sense=>sense.value===chosen)?chosen:senses[0].value;
   function key() {const sense=senses.find(item=>item.value===select.value) || senses[0];return aiLessonKey(entry.word,sense.pos,sense.definition,$('#target').value);}
   function renderLesson(lesson) {
@@ -638,6 +654,15 @@ function createAISection(entry) {
     function keepOpen(section,name,initial=false) {
       section.open=aiLessons.get(lessonKey)?.open?.[name] ?? initial;
       section.addEventListener('toggle',()=>{const state=aiLessons.get(lessonKey);if(state) {state.open ||= {};state.open[name]=section.open;}});
+    }
+    if(lesson.examples?.length){
+      const examples=document.createElement('details');examples.className='ai-detail foldout';keepOpen(examples,'examples',true);
+      examples.innerHTML='<summary>Examples in context · AI</summary>';
+      lesson.examples.forEach(example=>{
+        const line=document.createElement('div');line.className='dialogue-line';
+        line.innerHTML=`<p>${esc(example.text)} <button class="say example-say" type="button" aria-label="Hear AI example">🔊</button></p><p class="ai-translation">${esc(example.translation)}</p>`;
+        line.querySelector('button').onclick=event=>speak(example.text,event.currentTarget);examples.append(line);
+      });output.append(examples);
     }
     const dialogue=document.createElement('details');dialogue.className='ai-detail foldout';keepOpen(dialogue,'dialogue',true);dialogue.innerHTML='<summary>Short dialogue</summary>';
     lesson.dialogue.forEach((turn,index)=>{
@@ -658,6 +683,9 @@ function createAISection(entry) {
     };output.append(video);
   }
   function draw() {
+    const selected=senses.find(sense=>sense.value===select.value) || senses[0];
+    selectedBox.innerHTML=`<strong>Selected sense · ${esc(selected.label)}</strong><p>${esc(selected.definition)}</p><p class="sense-evidence">Dictionary examples · ${esc(selected.source)}</p>${selected.examples.length?`<ul>${selected.examples.map(example=>`<li>“${esc(example)}”</li>`).join('')}</ul>`:'<p class="sense-evidence">Nguồn chưa có câu ví dụ cho nghĩa này. Bạn có thể tạo ví dụ AI khi có mạng.</p>'}`;
+    onSelection(selected.value);
     let lesson=aiLessons.get(key());
     if(!lesson && offline()){lesson=aiArchives.get(key());if(lesson)aiLessons.set(key(),lesson);}
     if(lesson?.data && Date.now()-lesson.at>=86400000 && !offline()) {aiLessons.delete(key());lesson=null;}
@@ -671,7 +699,13 @@ function createAISection(entry) {
     else if(lesson?.busy) showLoading(output,'Creating your learning context…','large');
     else {output.replaceChildren();output.removeAttribute('aria-busy');}
   }
-  select.addEventListener('change',()=>{aiChoices.set(entry.word,select.value);draw();});
+  function choose(value){
+    if(!senses.some(sense=>sense.value===value))return;
+    select.value=value;aiChoices.delete(entry.word);aiChoices.set(entry.word,value);
+    while(aiChoices.size>100)aiChoices.delete(aiChoices.keys().next().value);
+    remember('helen-ai-senses',JSON.stringify([...aiChoices]));draw();
+  }
+  select.addEventListener('change',()=>choose(select.value));
   button.onclick=async()=>{
     const selected=senses.find(sense=>sense.value===select.value), language=$('#target').value, requestKey=key();
     if(!selected || aiLessons.get(requestKey)?.busy) return;
@@ -679,13 +713,14 @@ function createAISection(entry) {
     if(aiConfigured!==true) return;
     aiLessons.set(requestKey,{busy:true});draw();
     try {
-      const response=await apiFetch(`${API}/api/context`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word:entry.word,meaningIndex:selected.meaningIndex,senseIndex:selected.senseIndex,language})});
+      const response=await apiFetch(`${API}/api/context`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word:entry.word,meaningIndex:selected.meaningIndex,senseIndex:selected.senseIndex,senseKey:selected.value,language})});
       const data=await response.json();if(!response.ok) throw new Error(data.error || 'Chưa tạo được ngữ cảnh AI.');
+      if(data.word!==entry.word || data.language!==language || HelenSenses.key(data.pos,data.definition)!==selected.value)throw new Error('Bài AI không khớp nghĩa đã chọn. Hãy tra lại từ rồi thử lại.');
       aiLessons.set(requestKey,{data,at:Date.now()});persistAILessons();
     } catch(error) {aiLessons.set(requestKey,{error:error.message || 'Chưa kết nối được dịch vụ AI. Hãy thử lại sau.'});}
     aiPanels.get(entry.word)?.draw();
   };
-  aiPanels.set(entry.word,{draw});draw();return root;
+  aiPanels.set(entry.word,{draw,choose,focus:()=>select.focus?.()});draw();return root;
 }
 loadAIStatus();
 
@@ -702,6 +737,7 @@ async function updateWordTranslation() {
 }
 function render(d, scroll = true) {
   lastResult = d;
+  aiPanels.clear();
   if(typeof CustomEvent==='function' && document.dispatchEvent)document.dispatchEvent(new CustomEvent('helen:lookup',{detail:{result:d,url:`${API}/api/lookup?word=${encodeURIComponent(d.query || d.word)}&from=${encodeURIComponent(d.from || 'en')}`}}));
   const out = $('#out'); out.innerHTML = '';
   if(d.savedOnDevice) out.insertAdjacentHTML('beforeend','<span class="saved-result">Đang xem dữ liệu đã lưu trên thiết bị này.</span>');
@@ -715,6 +751,22 @@ function render(d, scroll = true) {
     const extraCard=document.createElement('details'); extraCard.className='extra-card';
     extraCard.innerHTML=`<summary><span class="extra-title">Explore more <small>Collocations · AI contexts · Related words</small></span><span class="extra-indicator ${d.enriching?'is-loading':''}" aria-hidden="true">${d.enriching?HAMSTER:'+'}</span></summary>`;
     const extraBody=document.createElement('div'); extraBody.className='extra-body'; extraCard.append(extraBody);
+    const practiceRows=[],practiceButtons=[];
+    function practice(value){
+      const panel=aiPanels.get(en.word);if(!panel)return;
+      panel.choose(value);extraCard.open=true;panel.focus();
+      extraCard.scrollIntoView?.({behavior:'smooth',block:'start'});
+    }
+    const senseChoices=HelenSenses.choices(en);
+    if(senseChoices.length>1){
+      const guide=document.createElement('details');guide.className='sense-guide foldout';
+      guide.innerHTML=`<summary>Compare senses · ${senseChoices.length} meanings</summary><p>So sánh định nghĩa và câu ví dụ của từng nghĩa. Từ đồng nghĩa dưới mỗi nghĩa chỉ áp dụng cho nghĩa đó.</p><div class="sense-table-wrap"><table class="sense-table"><caption class="sense-evidence">${esc(en.word)} · Dictionary meanings</caption><thead><tr><th scope="col">Sense</th><th scope="col">Definition &amp; example</th></tr></thead><tbody></tbody></table></div>`;
+      senseChoices.forEach(sense=>{
+        const row=document.createElement('tr');
+        row.innerHTML=`<td><strong>${esc(sense.label)}</strong><br><button class="word-link" type="button">Practice this sense</button></td><td>${esc(sense.definition)}<p class="sense-evidence">${sense.examples.length?`“${esc(sense.examples[0])}”`:'Nguồn chưa có câu ví dụ cho nghĩa này.'}</p></td>`;
+        row.querySelector('button').onclick=()=>practice(sense.value);guide.querySelector('tbody').append(row);
+      });el.append(guide);
+    }
     if(d.enriching) extraBody.insertAdjacentHTML('afterbegin',`<div class="details-loading" role="status">${loadingHTML('Loading related words and collocations…')}</div>`);
     el.querySelector('.say').onclick = ev => speak(en.word, ev.currentTarget);
     const favorite=el.querySelector('.favorite'); updateFavoriteButton(favorite,en.word);
@@ -749,6 +801,10 @@ function render(d, scroll = true) {
           <div class="syn"><strong>Từ trái nghĩa:</strong> ${s.antonyms?.length || s.indirectAntonyms?.length ? [...(s.antonyms || []).map(esc),...(s.indirectAntonyms || []).map(word=>`${esc(word)} (qua từ đồng nghĩa trong WordNet)`)].join(', ') : m.relationsPending ? 'Đang tải…' : m.relationsUnavailable ? 'Chưa tải được nguồn bổ sung. Hãy thử lại.' : 'Nguồn chưa ghi nhận đối nghĩa trực tiếp cho nghĩa này.'}</div>
           ${s.relationNote ? `<p class="muted">${esc(s.relationNote)}</p>` : ''}
         </div>`);
+        const value=HelenSenses.key(m.pos,s.definition), actions=document.createElement('div');actions.className='sense-actions';
+        actions.innerHTML=`<button class="word-link practice-sense" type="button" aria-pressed="false" aria-label="Practice ${esc(m.pos)} sense ${index+1}">Practice this sense · AI</button><span>${examples.length?`Ví dụ từ ${esc(en.source || 'nguồn từ điển')} · nghĩa ${index+1}`:'Nguồn chưa có câu ví dụ cho nghĩa này.'}</span>`;
+        const practiceButton=actions.querySelector('button');practiceButton.onclick=()=>practice(value);
+        practiceRows.push({row,value});practiceButtons.push({button:practiceButton,value});row.append(actions);
         el.append(row);
       });
       const confirmedSynonyms = new Set(m.senses.flatMap(s => s.synonyms || []));
@@ -846,7 +902,10 @@ function render(d, scroll = true) {
     extraBody.append(phrases);
     if(collocationData.pending || collocationData.unavailable || collocationData.revision!==2)void loadCombinations();
     phrases.addEventListener('toggle',()=>{if(phrases.open && collocationData.unavailable)void loadCombinations();});
-    const aiSection=createAISection(en);if(aiSection) extraBody.append(aiSection);
+    const aiSection=createAISection(en,value=>{
+      practiceRows.forEach(item=>item.row.setAttribute('data-practicing',String(item.value===value)));
+      practiceButtons.forEach(item=>item.button.setAttribute('aria-pressed',String(item.value===value)));
+    });if(aiSection) extraBody.append(aiSection);
     if (en.relatedSource) extraBody.insertAdjacentHTML('beforeend', `<p class="src">Related words and additional examples: ${esc(en.relatedSource)}. Chọn từ thay thế theo nghĩa và ngữ cảnh; từ đồng nghĩa/trái nghĩa dưới mỗi nghĩa được nguồn xác nhận; gợi ý theo từ loại nằm trong mục Từ liên quan.</p>`);
     el.append(extraCard);
     out.append(el);

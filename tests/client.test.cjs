@@ -10,7 +10,7 @@ function page(saved = {}, lookupFetch = null, browser = {}, actionFetch = null) 
     return elements.get(id);
   };
   const requests=[];
-  const context = vm.createContext({document:{documentElement:{dataset:{}},createElement:()=>{ const node=element(`#created-${created.length}`), children=new Map(); node.querySelectorAll=sel=>[node.querySelector(sel)]; node.querySelector=sel=>{if(!children.has(sel)) children.set(sel,element(`#child-${created.length}-${sel}`)); return children.get(sel);}; created.push(node); return node; },querySelector:element,querySelectorAll:()=>[]}, localStorage:{getItem:k=>saved[k],setItem:(k,v)=>saved[k]=v}, Image:class {}, Option:class {constructor(text,value){this.text=text;this.value=value;}}, URL, Audio:class {}, setTimeout, clearTimeout, fetch:async(url,options)=>{
+  const context = vm.createContext({HelenSenses:require('../public/assets/sense-core'),document:{documentElement:{dataset:{}},createElement:()=>{ const node=element(`#created-${created.length}`), children=new Map(); node.querySelectorAll=sel=>[node.querySelector(sel)]; node.querySelector=sel=>{if(!children.has(sel)) children.set(sel,element(`#child-${created.length}-${sel}`)); return children.get(sel);}; created.push(node); return node; },querySelector:element,querySelectorAll:()=>[]}, localStorage:{getItem:k=>saved[k],setItem:(k,v)=>saved[k]=v}, Image:class {}, Option:class {constructor(text,value){this.text=text;this.value=value;}}, URL, Audio:class {}, setTimeout, clearTimeout, fetch:async(url,options)=>{
     requests.push({url,options});
     if(actionFetch) {const reply=actionFetch(url,options);if(reply!==undefined) return reply;}
     if(url.includes('/api/context/status')) return {ok:true,json:async()=>({configured:false})};
@@ -228,8 +228,8 @@ test('AI contexts restore instantly after reload and never cross a different sen
   assert.equal(button.textContent,'View saved context');assert.equal(button.disabled,false);
   await button.onclick();assert.ok(!p.requests.some(request=>request.url.endsWith('/api/context')));
   p.element('#target').value='ja';p.element('#target').events.change();assert.equal(button.textContent,'Generate context');
-  p.element('#target').value='vi';select.value='0:1';select.events.change();assert.equal(button.textContent,'Generate context');
-  select.value='0:0';select.events.change();assert.equal(button.textContent,'View saved context');
+  p.element('#target').value='vi';select.value=JSON.stringify(['noun','A borrowed object.']);select.events.change();assert.equal(button.textContent,'Generate context');
+  select.value=JSON.stringify(['noun',data.definition]);select.events.change();assert.equal(button.textContent,'View saved context');
 });
 test('expired or malformed AI cache entries are ignored and failures are never persisted',()=>{
   const saved=[{at:Date.now()-86400001,data:savedLesson()},{at:Date.now(),data:{...savedLesson(),dialogue:[]}},{at:Date.now()+60000,data:savedLesson()}];
@@ -237,6 +237,52 @@ test('expired or malformed AI cache entries are ignored and failures are never p
   const p=page({'helen-ai-contexts':'invalid JSON'});
   vm.runInContext("aiLessons.set('failure',{error:'Offline'});aiLessons.set('pending',{busy:true});persistAILessons()",p.context);
   assert.deepEqual(JSON.parse(p.saved['helen-ai-contexts']),[]);
+});
+const bankEntry={word:'bank',source:'Test dictionary',meanings:[{pos:'noun',senses:[{definition:'A financial institution.',example:'The bank approved my loan.'},{definition:'Sloping land beside a river.',example:'We sat on the river bank.'}]}]};
+const bankKey=JSON.stringify(['noun','Sloping land beside a river.']);
+test('each sense keeps its own examples and direct practice opens the matching AI selection without generating',()=>{
+  const p=page();vm.runInContext(`render(${JSON.stringify({word:'bank',from:'en',entries:[bankEntry]})},false)`,p.context);
+  const rows=p.created.filter(node=>node.className==='sense'), actions=p.created.filter(node=>node.className==='sense-actions'), guide=p.created.find(node=>node.className==='sense-guide foldout');
+  assert.match(guide.innerHTML,/Compare senses · 2 meanings/);
+  assert.match(rows[0].innerHTML,/approved my loan/);assert.doesNotMatch(rows[0].innerHTML,/river bank/);
+  assert.match(rows[1].innerHTML,/river bank/);assert.doesNotMatch(rows[1].innerHTML,/approved my loan/);
+  actions[1].querySelector('button').onclick();
+  const panel=p.created.find(node=>node.className==='ai-study');
+  assert.equal(panel.querySelector('.ai-sense').value,bankKey);assert.match(panel.querySelector('.ai-selected-sense').innerHTML,/river bank/);
+  assert.equal(rows[1].getAttribute('data-practicing'),'true');assert.equal(rows[0].getAttribute('data-practicing'),'false');
+  assert.equal(p.created.find(node=>node.className==='extra-card').open,true);
+  assert.equal(p.requests.filter(request=>request.url.endsWith('/api/context')).length,0);
+});
+test('sense choice survives reordered enrichment and reload, with old words and translations preserved',()=>{
+  const saved={'helen-favorites':'["bank"]','helen-study-v1':'existing-progress'};const p=page(saved);
+  vm.runInContext(`createAISection(${JSON.stringify(bankEntry)});aiPanels.get('bank').choose(${JSON.stringify(bankKey)})`,p.context);
+  const reordered={...bankEntry,meanings:[{pos:'noun',senses:[...bankEntry.meanings[0].senses].reverse()}]};
+  const reload=page({...p.saved});vm.runInContext(`createAISection(${JSON.stringify(reordered)})`,reload.context);
+  const panel=reload.created.find(node=>node.className==='ai-study');assert.equal(panel.querySelector('.ai-sense').value,bankKey);
+  assert.match(panel.querySelector('.ai-selected-sense').innerHTML,/Selected sense · noun · 1/);
+  assert.equal(reload.saved['helen-study-v1'],'existing-progress');assert.equal(reload.saved['helen-favorites'],'["bank"]');
+});
+test('changing sense during AI generation keeps the late result under its original meaning',async()=>{
+  let finish;const waiting=new Promise(resolve=>finish=resolve);
+  const p=page({},null,{},url=>url.endsWith('/api/context')?waiting:undefined);
+  vm.runInContext(`aiConfigured=true;createAISection(${JSON.stringify(bankEntry)});aiPanels.get('bank').choose(${JSON.stringify(bankKey)})`,p.context);
+  const panel=p.created.find(node=>node.className==='ai-study'), pending=panel.querySelector('.ai-generate').onclick();
+  const request=JSON.parse(p.requests.find(request=>request.url.endsWith('/api/context')).options.body);assert.equal(request.senseKey,bankKey);assert.equal(request.senseIndex,1);
+  vm.runInContext(`aiPanels.get('bank').choose(${JSON.stringify(JSON.stringify(['noun','A financial institution.']))})`,p.context);
+  const data={...savedLesson('Sloping land beside a river.'),word:'bank',examples:[{text:'We sit on the bank.',translation:'Chúng tôi ngồi trên bờ sông.'},{text:'Trees grow on the bank.',translation:'Cây mọc trên bờ sông.'}]};
+  finish({ok:true,json:async()=>data});await pending;
+  assert.equal(panel.querySelector('.ai-generate').textContent,'Generate context');assert.match(panel.querySelector('.ai-selected-sense').innerHTML,/financial institution/);
+  vm.runInContext(`aiPanels.get('bank').choose(${JSON.stringify(bankKey)})`,p.context);assert.equal(panel.querySelector('.ai-generate').textContent,'View saved context');
+  assert.ok(p.created.some(node=>node.innerHTML.includes('Examples in context · AI')));assert.equal(JSON.parse(p.saved['helen-ai-contexts'])[0].data.definition,data.definition);
+});
+test('mismatched AI responses are rejected and corrupted new example caches do not break old saved lessons',async()=>{
+  const p=page({},null,{},url=>url.endsWith('/api/context')?{ok:true,json:async()=>savedLesson()}:undefined);
+  await new Promise(resolve=>setImmediate(resolve));
+  vm.runInContext(`aiConfigured=true;createAISection(${JSON.stringify(bankEntry)})`,p.context);
+  const panel=p.created.find(node=>node.className==='ai-study');await panel.querySelector('.ai-generate').onclick();
+  assert.match(panel.querySelector('.ai-status').textContent,/không khớp nghĩa/);assert.equal(p.saved['helen-ai-contexts'],undefined);
+  const old=savedLesson(),bad={...old,examples:[{text:'Bad'}]};const cached=page({'helen-ai-contexts':JSON.stringify([{at:Date.now(),data:old},{at:Date.now(),data:bad}])});
+  assert.equal(vm.runInContext('aiLessons.size',cached.context),1);
 });
 test('audio loading is animated while pending and cleaned up after an error without changing voice',async()=>{
   let complete;

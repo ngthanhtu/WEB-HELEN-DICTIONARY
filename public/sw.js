@@ -4,7 +4,7 @@ const SHELL=`${VERSION}-shell`, FILES=`${VERSION}-files`, WORDS='helen-words-v1'
 const TTL=24*60*60*1000, MAX_WORDS=100, MAX_FILES=40;
 const SAVED_WAIT=2400, NETWORK_WAIT=6500;
 const LEXICAL_REVISION=2;
-const shell=['/','/manifest.webmanifest','/assets/pwa.css','/assets/pwa.js','/assets/study.css','/assets/study-core.js','/assets/study.js','/assets/voice-recorder.js','/assets/history-sync.js','/assets/autocomplete.js','/assets/appearance.json','/assets/hamster.css','/assets/pet-pointer.css','/assets/pet-pointer.js','/assets/icons/icon-180.png','/assets/icons/icon-192.png','/assets/icons/icon-512.png',
+const shell=['/','/manifest.webmanifest','/assets/pwa.css','/assets/pwa.js','/assets/study.css','/assets/study-core.js','/assets/study.js','/assets/sense-core.js','/assets/voice-recorder.js','/assets/history-sync.js','/assets/autocomplete.js','/assets/appearance.json','/assets/hamster.css','/assets/pet-pointer.css','/assets/pet-pointer.js','/assets/icons/icon-180.png','/assets/icons/icon-192.png','/assets/icons/icon-512.png',
   '/assets/mobile/background.webp','/assets/mobile/lookup.webp','/assets/mobile/hero.webp','/assets/mobile/dog-idle.webp','/assets/mobile/dog-pressed.webp'].map(url=>/\.(css|js)$/.test(url)?`${url}?v=${BUILD}`:url);
 self.addEventListener('install',event=>{event.waitUntil(caches.open(SHELL).then(cache=>cache.addAll(shell)));});
 self.addEventListener('activate',event=>{event.waitUntil((async()=>{
