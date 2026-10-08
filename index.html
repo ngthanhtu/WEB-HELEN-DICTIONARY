@@ -210,7 +210,7 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
   <div class="study-actions"><button id="start-review" class="word-link" type="button">Review due words</button><button id="start-quiz" class="word-link" type="button">Quick quiz</button><button id="quiz-sound" class="word-link" type="button" aria-pressed="true">🔊 Quiz sound: on</button><button id="prepare-study" class="word-link" type="button" hidden>Prepare saved words</button><button id="cancel-prepare" class="word-link" type="button" hidden>Cancel preparation</button><button id="end-study" class="word-link" type="button" hidden>End session</button></div>
   <p id="study-status" role="status"></p>
   <div id="study-stage" class="study-stage" tabindex="-1" hidden></div>
-  <p class="muted">Review lên lịch ôn từ yêu thích theo mức nhớ. Quiz luyện nghĩa và câu ví dụ; không đổi lịch ôn. Tiến độ và âm thanh đã lưu dùng được ngoại tuyến; giọng đọc mới cần mạng.</p>
+  <p class="muted">Review lên lịch ôn từ yêu thích theo mức nhớ. Quiz luyện nghĩa và câu ví dụ; không đổi lịch ôn. Tiến độ, bản dịch và âm thanh đã lưu dùng được ngoại tuyến; bản dịch và giọng đọc mới cần mạng.</p>
 </details>
 <main id="out" aria-live="polite"></main>
 <footer>Helen Dictionary</footer>
@@ -222,6 +222,7 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
 <script src="/assets/sense-core.js"></script>
 <script src="/assets/offline-audio.js"></script>
 <script src="/assets/quiz-sounds.js"></script>
+<script src="/assets/quiz-translation.js"></script>
 <script>
 // ===== CONFIG =====
 const API = ''; // '' = same server. Set e.g. 'https://yourdomain.com' if hosted separately.

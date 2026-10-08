@@ -6,8 +6,8 @@
   function soundLabel(){if(!soundButton)return;soundButton.textContent=sounds?.available?(sounds.enabled?'🔊 Quiz sound: on':'🔇 Quiz sound: off'):'Quiz sound unavailable';soundButton.setAttribute('aria-pressed',String(Boolean(sounds?.enabled && sounds.available)));soundButton.disabled=!sounds?.available;}
   if(soundButton)soundButton.onclick=()=>{sounds?.setEnabled(!sounds.enabled);soundLabel();};soundLabel();
   const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  let cards=core.read(storage),session=null,preparing=false,controller=null,cancelled=false,volatile=false,quizOutHidden=null;
-  function endSession(){sounds?.stop();session=null;delete host.dataset.session;const out=document.querySelector('#out');if(quizOutHidden!==null && out)out.hidden=quizOutHidden;quizOutHidden=null;}
+  let cards=core.read(storage),session=null,preparing=false,controller=null,cancelled=false,volatile=false,quizOutHidden=null,translationRequest=0;
+  function endSession(){translationRequest++;sounds?.stop();session=null;delete host.dataset.session;const out=document.querySelector('#out');if(quizOutHidden!==null && out)out.hidden=quizOutHidden;quizOutHidden=null;}
   function favorites(){try{const values=JSON.parse(storage.getItem('helen-favorites')||'[]');return Array.isArray(values)?[...new Set(values.filter(v=>typeof v==='string').map(core.answer))].slice(0,100):[];}catch{return [];}}
   const active=()=>{const selected=new Set(favorites());return cards.filter(item=>selected.has(item.word));};
   function save(){volatile=!core.write(storage,cards);if(volatile)$('#study-status').textContent='Bộ nhớ thiết bị đầy. Tiến độ chỉ giữ trong phiên này; hãy giải phóng dung lượng.';}
@@ -32,7 +32,19 @@
   }
   function setStatus(message){if(!volatile)$('#study-status').textContent=message;}
   const focus=()=>$('#study-stage').querySelector('button,input')?.focus({preventScroll:true});
+  async function translateFeedback(question,panel=$('#quiz-translation')){
+    if(!panel || !window.HelenQuizTranslation || typeof window.tr!=='function')return;
+    const request=++translationRequest,target=document.querySelector('#target'),to=target?.value || 'vi';
+    const language=target?.selectedOptions?.[0]?.textContent || 'Tiếng Việt';
+    if(window.showLoading)window.showLoading(panel,'Translating question…');else panel.textContent='Đang dịch câu hỏi…';
+    const rows=await window.HelenQuizTranslation.translate(question,to,window.tr);
+    if(request!==translationRequest || !panel.isConnected)return;
+    panel.removeAttribute('aria-busy');
+    panel.innerHTML=`<h4>Bản dịch · ${esc(language)}</h4>${rows.map(row=>`<p class="${row.error?'quiz-translation-error':'quiz-translated-line'}"><b>${esc(row.label)}:</b> ${esc(row.translation || row.error)}</p>`).join('')}${rows.some(row=>row.error)?'<button class="word-link" id="retry-quiz-translation" type="button">Retry translation</button>':''}`;
+    const retry=panel.querySelector('#retry-quiz-translation');if(retry)retry.onclick=()=>translateFeedback(question,panel);
+  }
   function showCard(){
+    translationRequest++;
     if(!session)return;
     const item=session.items[session.index];if(!item){finish();return;}
     $('#study-stage').hidden=false;
@@ -59,7 +71,8 @@
         $('#study-stage').querySelectorAll('button,input').forEach(node=>node.disabled=true);
         $('#study-stage').querySelectorAll('[data-choice]').forEach(node=>{if(node.dataset.choice===q.word)node.dataset.result='correct';else if(node.dataset.choice===value)node.dataset.result='incorrect';});
         const feedback=$('#quiz-feedback');feedback.className=correct?'quiz-feedback correct':'quiz-feedback incorrect';
-        feedback.innerHTML=`<strong>${correct?'✓ Đúng rồi!':'↻ Chưa đúng. Đáp án:'} ${esc(q.word)}</strong><p class="quiz-explanation"><b>${esc(q.word)}</b> (${esc(q.pos)}): ${esc(q.definition || q.prompt)}</p>${q.original?`<p class="study-example">Trong ngữ cảnh: “${esc(q.original)}”</p>`:''}${!correct?'<p class="quiz-review-hint">Nhớ lại nghĩa và cách dùng trong câu. Từ này đã được thêm vào <b>Review mistakes</b> cuối lượt quiz để bạn ôn lại.</p>':''}<small class="muted">${esc(q.source)}</small><div class="quiz-feedback-actions"><button class="word-link" id="next-question" type="button">${session.index+1===session.items.length?'See results':'Next question'}</button></div>`;
+        feedback.innerHTML=`<strong>${correct?'✓ Đúng rồi!':'↻ Chưa đúng. Đáp án:'} ${esc(q.word)}</strong><p class="quiz-explanation"><b>${esc(q.word)}</b> (${esc(q.pos)}): ${esc(q.definition || q.prompt)}</p>${q.original?`<p class="study-example">Trong ngữ cảnh: “${esc(q.original)}”</p>`:''}<section class="quiz-translation" id="quiz-translation" aria-label="Question translation" role="status"></section>${!correct?'<p class="quiz-review-hint">Nhớ lại nghĩa và cách dùng trong câu. Từ này đã được thêm vào <b>Review mistakes</b> cuối lượt quiz để bạn ôn lại.</p>':''}<small class="muted">${esc(q.source)}</small><div class="quiz-feedback-actions"><button class="word-link" id="next-question" type="button">${session.index+1===session.items.length?'See results':'Next question'}</button></div>`;
+        void translateFeedback(q);
         $('#next-question').onclick=()=>{session.index++;session.answered=false;showCard();};$('#next-question').focus({preventScroll:true});
       };
       if(q.type==='choice')$('.quiz-options').querySelectorAll('button').forEach(button=>button.onclick=()=>respond(button.dataset.choice));
@@ -115,5 +128,6 @@
   window.addEventListener('storage',event=>{if([core.KEY,'helen-favorites'].includes(event.key)){cards=core.read(storage);endSession();$('#study-stage').hidden=true;$('#end-study').hidden=true;refresh();setStatus('Đã cập nhật dữ liệu từ tab khác.');}});
   window.addEventListener('pageshow',refresh);window.addEventListener('online',refresh);window.addEventListener('offline',refresh);
   host.addEventListener('toggle',refresh);setInterval(()=>{if(!document.hidden && host.open)refresh();},30000);
+  document.querySelector('#target')?.addEventListener('change',()=>{if(session?.mode==='quiz' && session.answered)void translateFeedback(session.questions[session.index]);});
   refresh();if(typeof lastResult!=='undefined')capture(lastResult);
 })();
