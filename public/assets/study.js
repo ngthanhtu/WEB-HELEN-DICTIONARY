@@ -2,9 +2,12 @@
   'use strict';
   const core=window.HelenStudyCore,host=document.querySelector('#study');if(!core || !host)return;
   const $=selector=>host.querySelector(selector),storage=window.localStorage;
+  const sounds=window.HelenQuizSounds?.create({storage}),soundButton=$('#quiz-sound');
+  function soundLabel(){if(!soundButton)return;soundButton.textContent=sounds?.available?(sounds.enabled?'🔊 Quiz sound: on':'🔇 Quiz sound: off'):'Quiz sound unavailable';soundButton.setAttribute('aria-pressed',String(Boolean(sounds?.enabled && sounds.available)));soundButton.disabled=!sounds?.available;}
+  if(soundButton)soundButton.onclick=()=>{sounds?.setEnabled(!sounds.enabled);soundLabel();};soundLabel();
   const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let cards=core.read(storage),session=null,preparing=false,controller=null,cancelled=false,volatile=false,quizOutHidden=null;
-  function endSession(){session=null;delete host.dataset.session;const out=document.querySelector('#out');if(quizOutHidden!==null && out)out.hidden=quizOutHidden;quizOutHidden=null;}
+  function endSession(){sounds?.stop();session=null;delete host.dataset.session;const out=document.querySelector('#out');if(quizOutHidden!==null && out)out.hidden=quizOutHidden;quizOutHidden=null;}
   function favorites(){try{const values=JSON.parse(storage.getItem('helen-favorites')||'[]');return Array.isArray(values)?[...new Set(values.filter(v=>typeof v==='string').map(core.answer))].slice(0,100):[];}catch{return [];}}
   const active=()=>{const selected=new Set(favorites());return cards.filter(item=>selected.has(item.word));};
   function save(){volatile=!core.write(storage,cards);if(volatile)$('#study-status').textContent='Bộ nhớ thiết bị đầy. Tiến độ chỉ giữ trong phiên này; hãy giải phóng dung lượng.';}
@@ -51,10 +54,12 @@
       const respond=value=>{
         if(session?.answered)return;session.answered=true;
         const correct=(q.type==='type'?q.accepted || [q.word]:[q.word]).some(word=>core.answer(value)===core.answer(word));session.correct+=Number(correct);
+        sounds?.play(correct);
         if(!correct)session.mistakes.push(q.word);
         $('#study-stage').querySelectorAll('button,input').forEach(node=>node.disabled=true);
+        $('#study-stage').querySelectorAll('[data-choice]').forEach(node=>{if(node.dataset.choice===q.word)node.dataset.result='correct';else if(node.dataset.choice===value)node.dataset.result='incorrect';});
         const feedback=$('#quiz-feedback');feedback.className=correct?'quiz-feedback correct':'quiz-feedback incorrect';
-        feedback.innerHTML=`<strong>${correct?'Đúng rồi!':'Đáp án:'} ${esc(q.word)}</strong>${q.original?`<p>${esc(q.original)}</p>`:''}<p>${esc(q.source)}</p><button class="word-link" id="next-question" type="button">${session.index+1===session.items.length?'See results':'Next question'}</button>`;
+        feedback.innerHTML=`<strong>${correct?'✓ Đúng rồi!':'↻ Chưa đúng. Đáp án:'} ${esc(q.word)}</strong><p class="quiz-explanation"><b>${esc(q.word)}</b> (${esc(q.pos)}): ${esc(q.definition || q.prompt)}</p>${q.original?`<p class="study-example">Trong ngữ cảnh: “${esc(q.original)}”</p>`:''}${!correct?'<p class="quiz-review-hint">Nhớ lại nghĩa và cách dùng trong câu. Từ này đã được thêm vào <b>Review mistakes</b> cuối lượt quiz để bạn ôn lại.</p>':''}<small class="muted">${esc(q.source)}</small><div class="quiz-feedback-actions"><button class="word-link" id="next-question" type="button">${session.index+1===session.items.length?'See results':'Next question'}</button></div>`;
         $('#next-question').onclick=()=>{session.index++;session.answered=false;showCard();};$('#next-question').focus({preventScroll:true});
       };
       if(q.type==='choice')$('.quiz-options').querySelectorAll('button').forEach(button=>button.onclick=()=>respond(button.dataset.choice));
@@ -64,7 +69,7 @@
   }
   function finish(){
     const done=session;endSession();$('#end-study').hidden=true;
-    $('#study-stage').innerHTML=done.mode==='review'?'<h3>Review complete</h3><p>Lịch ôn đã cập nhật. Từ chưa nhớ sẽ đến hạn sau 10 phút.</p>':`<h3>Quiz complete · ${done.correct}/${done.items.length}</h3><p>Quiz để luyện thêm; lịch ôn giữ theo đánh giá trong Review.</p>${done.mistakes.length?`<p>Từ nên xem lại: ${done.mistakes.map(esc).join(', ')}.</p><button class="word-link" id="review-mistakes" type="button">Review these words</button>`:'<p>Bạn trả lời đúng tất cả câu trong lượt này.</p>'}`;
+    $('#study-stage').innerHTML=done.mode==='review'?'<h3>Review complete</h3><p>Lịch ôn đã cập nhật. Từ chưa nhớ sẽ đến hạn sau 10 phút.</p>':`<h3>Quiz complete · ${done.correct}/${done.items.length}</h3><p>Quiz để luyện thêm; lịch ôn giữ theo đánh giá trong Review.</p>${done.mistakes.length?`<p>Từ nên xem lại: ${done.mistakes.map(esc).join(', ')}.</p><button class="word-link" id="review-mistakes" type="button">Review mistakes</button>`:'<p>Bạn trả lời đúng tất cả câu trong lượt này.</p>'}`;
     if($('#review-mistakes'))$('#review-mistakes').onclick=()=>start('review',done.mistakes);
     refresh();
   }

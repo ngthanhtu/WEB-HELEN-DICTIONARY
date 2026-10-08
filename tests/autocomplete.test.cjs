@@ -44,7 +44,8 @@ test('a transient suggestion failure retries automatically and a later empty que
   const local=page(async()=>Response.json({suggestions:[]}),()=>['experiment']);local.input.value='exp';local.input.emit('input');await wait(180);assert.equal(local.list.hidden,false);local.completion.close();
 });
 test('keyboard selection, Escape, IME composition and changing language do not select stale words',async()=>{
-  const p=page(async()=>Response.json({suggestions:['name','name after']}));p.input.value='name';p.input.emit('compositionstart');p.input.emit('input');await wait(180);assert.equal(p.list.hidden,true);
+  const p=page(async()=>Response.json({suggestions:['name','name after']}));p.input.value='name';p.input.emit('compositionstart');p.input.emit('input',{isComposing:true});await wait(180);assert.equal(p.list.hidden,false);
+  p.input.emit('keydown',{key:'Enter',isComposing:true,preventDefault(){throw Error('must not interrupt composition');}});assert.equal(p.completion.selected,undefined);
   p.input.emit('compositionend');await wait(180);const event=key=>({key,preventDefault(){}});
   p.input.emit('keydown',event('ArrowDown'));assert.equal(p.input.attributes['aria-activedescendant'],'search-suggestion-0');p.input.emit('keydown',event('Enter'));assert.equal(p.completion.selected,'name');
   p.input.emit('focus');assert.equal(p.list.hidden,false);p.input.emit('keydown',event('Escape'));assert.equal(p.list.hidden,true);
@@ -56,4 +57,26 @@ test('outside taps are delivered to the speaker before closing suggestions can m
   p.doc.emit('pointerdown',{target:speaker});assert.equal(p.list.hidden,false);
   speaker.onclick();p.doc.emit('click',{target:speaker});assert.equal(played,true);assert.equal(p.list.hidden,true);
   p.completion.close();
+});
+test('forward typing on a composing keyboard opens suggestions without space, backspace, blur or refocus',async()=>{
+  let calls=0;const p=page(async url=>{calls++;assert.match(url,/word=exper/);return Response.json({suggestions:['experiment','experience']});});
+  p.input.emit('compositionstart');
+  for(const value of ['e','ex','exp','expe','exper']){p.input.value=value;p.input.emit('input',{isComposing:true});await wait(30);}
+  await wait(200);assert.equal(p.list.hidden,false);assert.equal(p.list.children[0].textContent,'experiment');assert.equal(calls,1);
+  p.input.emit('compositionend');p.input.emit('input');await wait(180);assert.equal(calls,1);p.completion.close();
+});
+test('matching suggestions remain visible during forward typing and duplicate composition events keep the current request',async()=>{
+  const pending=[];let calls=0;const p=page(()=>{calls++;return new Promise(resolve=>pending.push(resolve));});
+  p.input.value='na';p.input.emit('input');await wait(180);pending[0](Response.json({suggestions:['name','name after','nature']}));await wait(10);
+  p.input.value='name';p.input.emit('input');assert.deepEqual(p.list.children.map(row=>row.textContent),['name','name after']);
+  await wait(180);p.input.emit('compositionend');p.input.emit('input');await wait(180);assert.equal(calls,2);
+  pending[1](Response.json({suggestions:['name','name after','name day']}));await wait(10);assert.equal(p.list.children.length,3);
+  p.input.value='name a';p.input.emit('input');assert.deepEqual(p.list.children.map(row=>row.textContent),['name after']);p.completion.close();
+});
+test('clicking a suggestion while composing commits the draft before searching the chosen word',async()=>{
+  const p=page(async()=>Response.json({suggestions:['name after']}));p.input.value='name';p.input.emit('compositionstart');p.input.emit('input');await wait(180);
+  p.input.blur=()=>{p.input.value='name';p.input.emit('compositionend');p.input.emit('blur');};
+  p.list.children[0].emit('click');assert.equal(p.input.value,'name after');assert.equal(p.completion.selected,'name after');assert.equal(p.list.hidden,true);
+  p.input.emit('compositionend'); // A late keyboard commit must not reopen it.
+  await wait(180);assert.equal(p.list.hidden,true);p.completion.close();
 });

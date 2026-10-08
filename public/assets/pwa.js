@@ -30,18 +30,20 @@
     showDialog(help);
   });
   document.querySelector('#close-install').addEventListener('click',()=>closeDialog(help));
-  if(!('serviceWorker' in navigator)) {
-    status.hidden=false;status.textContent='Trình duyệt này chưa hỗ trợ lưu từ ngoại tuyến. Hãy mở bằng Chrome hoặc Safari.';return;
-  }
   const library=document.createElement('details');library.className='offline-library';
-  library.innerHTML='<summary>Saved offline <span id="offline-count">(0)</span></summary><p id="offline-summary" role="status">Đang kiểm tra dữ liệu trên thiết bị…</p><div class="offline-word-list"></div><button class="word-link" id="download-offline-pack" type="button" disabled>Download offline pack</button><section class="offline-audio" aria-label="Offline pronunciation"><h3>Offline pronunciation</h3><p id="offline-audio-summary" role="status">Âm thanh đã nghe được lưu tự động trên thiết bị.</p><div class="offline-actions"><button class="btn" id="download-favorite-audio" type="button">Save favorite audio</button><button class="word-link" id="cancel-favorite-audio" type="button" hidden>Stop</button><button class="word-link" id="clear-offline-audio" type="button">Clear audio</button></div><p id="offline-audio-progress" role="status"></p><p class="offline-note">Lưu giọng của tối đa 10 từ yêu thích mỗi lượt, dùng hạn mức ElevenLabs. Chỉ tải giọng đang chọn; từ và câu đã nghe mở lại không cần mạng. Tối đa 100 âm thanh / 20 MiB. Xoá âm thanh không xoá từ hoặc lịch ôn.</p></section><p class="offline-note">Lưu tối đa 100 mục tra. Bấm mắt hoặc tạo AI khi có mạng để lưu thêm bản dịch và bài học. Từ mới và micro cần Internet.</p>';
+  library.innerHTML='<summary>Saved offline <span id="offline-count">(0)</span></summary><p id="offline-summary" role="status">Đang kiểm tra dữ liệu trên thiết bị…</p><div class="offline-word-list"></div><button class="word-link" id="download-offline-pack" type="button" disabled>Download offline pack</button><p class="offline-note">Lưu tối đa 100 mục tra. Bấm mắt hoặc tạo AI khi có mạng để lưu thêm bản dịch và bài học. Từ mới và micro cần Internet.</p>';
   document.querySelector('.app-tools').insertAdjacentElement('afterend',library);
+  // Keep the primary audio action visible beside the learning tools, even when
+  // Saved offline is collapsed or service-worker installation has not finished.
+  const audioPanel=document.createElement('section');audioPanel.id='offline-pronunciation';audioPanel.className='offline-audio';audioPanel.setAttribute('aria-label','Offline pronunciation');
+  audioPanel.innerHTML='<div class="offline-audio-heading"><span class="offline-audio-icon" aria-hidden="true">🔊</span><div><h3>Offline pronunciation</h3><p id="offline-audio-summary" role="status">Âm thanh đã nghe được lưu tự động trên thiết bị.</p></div></div><div class="offline-actions"><button class="btn" id="download-favorite-audio" type="button">↓ Save favorite audio</button><button class="word-link" id="cancel-favorite-audio" type="button" hidden>Stop</button><button class="word-link" id="clear-offline-audio" type="button">Clear audio</button></div><p id="offline-audio-progress" role="status"></p><details class="offline-audio-help"><summary>How it works</summary><p class="offline-note">Lưu giọng của tối đa 10 từ yêu thích mỗi lượt, dùng hạn mức ElevenLabs. Chỉ tải giọng đang chọn; từ và câu đã nghe mở lại không cần mạng. Tối đa 100 âm thanh / 20 MiB. Xoá âm thanh không xoá từ hoặc lịch ôn.</p></details>';
+  (document.querySelector('.learning-tools') || library).insertAdjacentElement('afterend',audioPanel);
   const packButton=library.querySelector('#download-offline-pack'), summary=library.querySelector('#offline-summary'), list=library.querySelector('.offline-word-list');
   const packDialog=document.createElement('dialog');packDialog.className='offline-dialog';
   packDialog.innerHTML='<h2>Offline pack</h2><p>Tải bộ từ tiếng Anh thông dụng và nghĩa tiếng Việt về thiết bị này? Chỉ tải khi bạn xác nhận; không gọi dịch vụ AI hay giọng đọc.</p><p>Các câu định nghĩa chỉ có bản dịch nếu bạn đã bấm mắt khi có mạng.</p><div class="offline-actions"><button class="btn" id="confirm-offline-pack" type="button">Download</button><button class="word-link" id="cancel-offline-pack" type="button">Cancel</button></div>';
   document.body.append(packDialog);
-  const audioStore=window.HelenOfflineAudio,audioButton=library.querySelector('#download-favorite-audio'),audioSummary=library.querySelector('#offline-audio-summary'),audioProgress=library.querySelector('#offline-audio-progress'),audioStop=library.querySelector('#cancel-favorite-audio'),audioClear=library.querySelector('#clear-offline-audio');
-  let audioController=null,audioVoice='';
+  const audioStore=window.HelenOfflineAudio,audioButton=audioPanel.querySelector('#download-favorite-audio'),audioSummary=audioPanel.querySelector('#offline-audio-summary'),audioProgress=audioPanel.querySelector('#offline-audio-progress'),audioStop=audioPanel.querySelector('#cancel-favorite-audio'),audioClear=audioPanel.querySelector('#clear-offline-audio');
+  let audioController=null,audioVoice='',audioWords=[];
   const audioDialog=document.createElement('dialog');audioDialog.className='offline-dialog';
   audioDialog.innerHTML='<h2>Save favorite audio</h2><p id="offline-audio-confirm-copy"></p><p>Dùng hạn mức ElevenLabs. Không đổi giọng tự động. Mỗi lượt tải tối đa 10 từ; bạn có thể dừng bất cứ lúc nào.</p><div class="offline-actions"><button class="btn" id="confirm-favorite-audio" type="button">Download</button><button class="word-link" id="cancel-audio-dialog" type="button">Cancel</button></div>';
   document.body.append(audioDialog);
@@ -50,17 +52,28 @@
   async function refreshAudio(){
     const clips=await audioStore?.inventory() || [],bytes=clips.reduce((sum,clip)=>sum+clip.bytes,0);
     audioSummary.textContent=audioStore?.available?`${clips.length} âm thanh · ${(bytes/1024/1024).toFixed(1)} MiB · ${clips.filter(clip=>clip.voice===chosenVoice()).length} cho giọng đang chọn.`:'Trình duyệt chưa hỗ trợ lưu âm thanh ngoại tuyến.';
-    audioButton.disabled=Boolean(audioController) || !audioStore?.available || !navigator.onLine || !chosenVoice() || !favoriteWords().length;
+    // Explain missing prerequisites on tap instead of leaving a dead disabled
+    // button. Only an active download prevents another batch.
+    audioButton.disabled=Boolean(audioController);
     audioClear.disabled=Boolean(audioController) || !clips.length;
   }
   document.querySelector('#voice').addEventListener('change',refreshAudio);
+  document.addEventListener('helen:voices',refreshAudio);
   document.addEventListener('helen:favorites',refreshAudio);
-  document.addEventListener('helen:audio-saved',()=>{if(library.open)refreshAudio();});
+  document.addEventListener('helen:audio-saved',refreshAudio);
+  window.addEventListener('pageshow',refreshAudio);
+  window.addEventListener('storage',event=>{if(['helen-favorites','helen-voice'].includes(event.key))refreshAudio();});
+  refreshAudio();
   audioDialog.querySelector('#cancel-audio-dialog').onclick=()=>closeDialog(audioDialog);
   audioButton.onclick=async()=>{
-    audioVoice=chosenVoice();const planned=await audioStore.plan(favoriteWords(),audioVoice);
-    if(!planned.remaining){audioProgress.textContent='Đã lưu giọng đọc của tất cả từ yêu thích cho giọng này.';return;}
+    if(audioController)return;
+    if(!audioStore?.available){audioProgress.textContent='Trình duyệt chưa hỗ trợ lưu âm thanh. Hãy dùng Safari hoặc Chrome qua HTTPS.';return;}
+    if(!navigator.onLine){audioProgress.textContent='Cần có mạng để tải âm thanh mới. Những âm thanh đã lưu vẫn nghe được.';return;}
+    if(!favoriteWords().length){audioProgress.textContent='Bấm ☆ cạnh một từ để lưu vào Từ yêu thích, rồi chọn Save favorite audio.';return;}
+    audioVoice=chosenVoice();if(!audioVoice){audioProgress.textContent='Chọn một giọng trong ô Voice phía trên, rồi thử lại.';return;}
     const label=document.querySelector('#voice').selectedOptions?.[0]?.textContent || audioVoice;
+    audioWords=[...favoriteWords()];const planned=await audioStore.plan(audioWords,audioVoice);
+    if(!planned.remaining){audioProgress.textContent='Đã lưu giọng đọc của tất cả từ yêu thích cho giọng này.';return;}
     audioDialog.querySelector('#offline-audio-confirm-copy').textContent=`Tải ${planned.words.length} từ bằng ${label} (${planned.words.join(', ')}). ${planned.cached} từ đã có âm thanh; ${planned.remaining} từ còn cần tải.`;
     showDialog(audioDialog);
   };
@@ -78,7 +91,7 @@
     if(audioController)return;
     closeDialog(audioDialog);audioController=new AbortController();audioStop.hidden=false;audioButton.disabled=true;audioClear.disabled=true;
     try{
-      const outcome=await audioStore.download({words:favoriteWords(),voice:audioVoice,signal:audioController.signal,online:()=>navigator.onLine,
+      const outcome=await audioStore.download({words:audioWords,voice:audioVoice,signal:audioController.signal,online:()=>navigator.onLine,
         fetchAudio:(text,voice,signal)=>apiFetch(`/api/tts?${new URLSearchParams({text,voice})}`,{signal}),
         onProgress:progress=>{if(!progress.done)showLoading(audioProgress,`Saving ${progress.saved+1}/${progress.total}: ${progress.text}`);}
       });
@@ -91,7 +104,7 @@
   packDialog.querySelector('#cancel-offline-pack').addEventListener('click',()=>closeDialog(packDialog));
   function workerMessage(data) {
     return new Promise((resolve,reject)=>{
-      const worker=navigator.serviceWorker.controller || registration?.active;
+      const worker=navigator.serviceWorker?.controller || registration?.active;
       if(!worker || typeof MessageChannel==='undefined') {reject(new Error('Ngoại tuyến chưa sẵn sàng. Tải lại trang một lần.'));return;}
       const channel=new MessageChannel(), timer=setTimeout(()=>{channel.port1.close();reject(new Error('Chưa lưu được dữ liệu. Hãy thử lại.'));},3000);
       channel.port1.onmessage=event=>{clearTimeout(timer);channel.port1.close();resolve(event.data);};
@@ -148,6 +161,9 @@
     } catch(error) {summary.textContent=controller.signal.aborted?'Kết nối chậm. Hãy thử tải bộ từ lại.':error.message;}
     finally {clearTimeout(timer);packButton.disabled=false;summary.removeAttribute('aria-busy');}
   });
+  if(!('serviceWorker' in navigator)) {
+    status.hidden=false;status.textContent='Trình duyệt này chưa hỗ trợ lưu từ ngoại tuyến. Hãy mở bằng Chrome hoặc Safari.';packButton.disabled=true;summary.textContent='Lưu từ ngoại tuyến chưa sẵn sàng.';return;
+  }
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(reloading)location.reload();else {captureCurrent();refreshLibrary();}});
   update.addEventListener('click',()=>{if(registration?.waiting){reloading=true;registration.waiting.postMessage({type:'ACTIVATE_UPDATE'});}});
   navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).then(value=>{

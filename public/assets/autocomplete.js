@@ -20,6 +20,8 @@
     }
     function select(index) {
       const word=items[index];if(!word)return;
+      // Commit a composing keyboard before replacing its draft with the option.
+      if(composing){input.blur?.();composing=false;}
       input.value=word;close();onSelect(word);
     }
     function render(values) {
@@ -34,12 +36,21 @@
       list.hidden=!items.length;input.setAttribute('aria-expanded',String(Boolean(items.length)));
     }
     function schedule({immediate=false,submitted:keepOpen=false}={}) {
-      close();if(composing || language.value!=='en')return;
-      const word=input.value.trim().toLowerCase();if(word.length<2 || word.length>48)return;
+      const word=input.value.trim().toLowerCase();
+      if(language.value!=='en' || word.length<2 || word.length>48){close();return;}
+      // Some mobile/Telex keyboards keep composing until space or backspace.
+      // Their input text is already useful for suggestions; only Enter selection
+      // must wait for compositionend. Duplicate input/compositionend events must
+      // not restart the same request.
+      if(pending===word){submitted=keepOpen || submitted;clearTimeout(blurTimer);return;}
+      const previous=items;
+      clearTimeout(timer);clearTimeout(blurTimer);controller?.abort();version++;pending='';active=-1;submitted=keepOpen;message('');
       const current=version;submitted=keepOpen;
       if(cache.has(word)){render(cache.get(word));return;}
-      const known=[...localWords(),...[...cache.values()].flat()].filter(value=>typeof value==='string' && value.toLowerCase().startsWith(word));
-      if(known.length)render(known);
+      const known=[...previous,...localWords(),...[...cache.values()].flat()].filter(value=>typeof value==='string' && value.toLowerCase().startsWith(word));
+      // Keep matching options visible during forward typing instead of flashing
+      // an empty list on every character while the next response is pending.
+      render(known);
       pending=word;message('Loading suggestions…',true);
       async function run(attempt=0){
         const ownController=new AbortController();controller=ownController;
@@ -63,8 +74,8 @@
     }
     input.addEventListener('input',()=>schedule());
     input.addEventListener('focus',()=>{clearTimeout(blurTimer);if(pending!==input.value.trim().toLowerCase())schedule();});
-    input.addEventListener('compositionstart',()=>{composing=true;close();});
-    input.addEventListener('compositionend',()=>{composing=false;schedule();});
+    input.addEventListener('compositionstart',()=>{composing=true;});
+    input.addEventListener('compositionend',()=>{if(composing){composing=false;schedule();}});
     input.addEventListener('blur',()=>{blurTimer=setTimeout(()=>{if(!submitted && input.ownerDocument.activeElement!==input)close();},150);});
     // Close after the target receives its click. Closing on pointerdown moves
     // the page before pointerup and can swallow taps on speakers/study buttons.

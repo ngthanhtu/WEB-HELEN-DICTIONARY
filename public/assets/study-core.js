@@ -66,7 +66,7 @@
     const shuffle=values=>{const list=[...new Set(values)];for(let i=list.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[list[i],list[j]]=[list[j],list[i]];}return list;};
     const choices=shuffle(distractors).slice(0,3);
     const accepted=[item.word,...(!example?deck.filter(other=>other.senses.some(s=>s.pos===sense.pos && (sense.synonyms.includes(other.word) || answer(s.definition)===answer(sense.definition)))).map(other=>other.word):[])];
-    return {type:choices.length>=2?'choice':'type',word:item.word,pos:sense.pos,prompt:sense.definition,context:example?cloze(item.word,example):null,original:example || null,source:sense.source,accepted:[...new Set(accepted)],choices:choices.length>=2?shuffle([item.word,...choices]):[]};
+    return {type:choices.length>=2?'choice':'type',word:item.word,pos:sense.pos,prompt:sense.definition,definition:sense.definition,context:example?cloze(item.word,example):null,original:example || null,source:sense.source,accepted:[...new Set(accepted)],choices:choices.length>=2?shuffle([item.word,...choices]):[]};
   }
   function read(storage){
     try {const value=JSON.parse(storage.getItem(KEY)||'{}');if(value.version!==1 || !Array.isArray(value.cards))return [];
