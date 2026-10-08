@@ -272,8 +272,9 @@ test('intermediate has an accurate instant Vietnamese gloss and definition failu
     const response=await translate('fallback-definition chemical process',to);assert.equal(response.status,200);
     assert.deepEqual((await response.json()).translations,[`${to}:fallback-definition chemical process`]);
   }
-  const transient=await translate('fallback-definition-transient','vi');assert.equal(transient.status,503);
-  assert.equal((await translate('fallback-definition-transient','vi')).status,200);
+  const transient=await translate('fallback-definition-transient','vi');assert.equal(transient.status,200);
+  assert.deepEqual((await transient.json()).translations,['vi:fallback-definition-transient']);
+  assert.deepEqual((await (await translate('fallback-definition-transient','vi')).json()).translations,['vi:fallback-definition-transient']);
   const quota=await translate('quota-every-provider','vi');assert.equal(quota.status,429);
   const failure=await quota.json();assert.equal(failure.code,'TRANSLATION_QUOTA');assert.match(failure.error,/hạn mức/);
 });

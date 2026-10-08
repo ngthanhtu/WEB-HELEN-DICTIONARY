@@ -94,6 +94,28 @@ test('parallel translation retries share one request; target languages and dicti
   assert.equal(aiCalls, 3);
 });
 
+test('a temporary Gemini 503 is retried once inside the same translation request and then cached',async()=>{
+  let calls=0;
+  const service=createTranslationService({apiKey:'test-only',fetchImpl:async(url,request)=>{
+    if(String(url).includes('mymemory'))return quota();
+    calls++;return calls===1?Response.json({error:{code:503,status:'UNAVAILABLE',message:'Temporarily unavailable'}},{status:503}):gemini(request);
+  }});
+  assert.equal(await service.translate('a complete new sentence','en','vi'),'vi:a complete new sentence');
+  assert.equal(await service.translate('a complete new sentence','en','vi'),'vi:a complete new sentence');
+  assert.equal(calls,2);assert.equal(service.status().aiError,null);
+});
+test('persistent upstream errors stop after two attempts; short deadlines and access failures do not retry',async()=>{
+  for(const [status,timeoutMs,expected] of [[503,6500,2],[503,200,1],[403,6500,1],[429,6500,1],[400,6500,1]]){
+    let calls=0;
+    const service=createTranslationService({apiKey:'test-only',timeoutMs,fetchImpl:async(url)=>{
+      if(String(url).includes('mymemory'))return quota();
+      calls++;return Response.json({error:{code:status,status:'FAILED',message:'Provider failed'}},{status});
+    }});
+    await assert.rejects(service.translate('a complete new sentence','en','vi'));
+    assert.equal(calls,expected);
+  }
+});
+
 test('translation keeps its local deadline separate from the Google server deadline',async()=>{
   const service=createTranslationService({apiKey:'test-only',timeoutMs:150,fetchImpl:async(url,request)=>{
     if(String(url).includes('mymemory'))return quota();
