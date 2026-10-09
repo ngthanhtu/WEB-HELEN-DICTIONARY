@@ -20,8 +20,18 @@ Frontend: HTML/CSS thuần (Tối ưu hóa UI/UX, hỗ trợ Dark/Light mode), P
 Tích hợp API (3rd Party Services):
 ElevenLabs API: Text-to-Speech (giọng đọc tự nhiên, hỗ trợ đa accent).
 Google Gemini AI: Xử lý NLP, dịch thuật ngữ cảnh, sinh hội thoại và nhận diện giọng nói (Voice-to-Text).
-Dictionary APIs: Merriam-Webster Learner's Dictionary, Wiktionary REST API, Datamuse, Princeton WordNet 3.1.
+Dictionary APIs: Merriam-Webster Learner's Dictionary, Wiktionary REST API, Datamuse, Princeton WordNet 3.0.
 Deployment: Render (Web Service), cấu hình tự động (CI/CD cơ bản).
+
+## Học mỗi ngày, sao lưu và bảo vệ quota
+
+**Study → Daily goal:** chọn 5/10/20 lượt; câu quiz và thẻ tự đánh giá cập nhật tiến độ/streak theo ngày trên máy. Quiz giữ nguyên lịch SRS. **Word of the day** dùng bộ WordNet đã có, không gọi AI. Badge số từ đến hạn chỉ bật khi trình duyệt hỗ trợ.
+
+**My words → Backup & export:** JSON để gộp dữ liệu qua máy khác, giữ lịch ôn mới hơn; CSV và Anki TSV để xuất học tập, một card Anki cho mỗi từ. Không xuất key, device token hay micro/audio. Kho từ hỗ trợ 500 từ yêu thích và 100 bộ từ, giữ nguyên các key lưu trữ và giới hạn cache/audio.
+
+Production kiểm tra quyền đọc đúng nội dung và reserve quota tại TiDB trước khi gọi ElevenLabs/Gemini; database chưa sẵn sàng thì dừng lời gọi mới, không làm mất dữ liệu ngoại tuyến. Có giới hạn theo thiết bị và tổng website, không cần thêm biến env để bật mặc định. Chi tiết hạn mức, giấy phép đã đối chiếu và SQL kiểm tra nằm trong [API-USAGE.md](API-USAGE.md). Gói ElevenLabs Free chỉ dùng phi thương mại và cần attribution. Gemini có điều kiện về độ tuổi và khu vực người dùng; app miễn phí không tự giải quyết các điều kiện đó.
+
+**Preferences → Help improve Helen** mặc định tắt: khi bật chỉ gửi tên sự kiện/ngày/UUID, không gửi từ đã tra trong bảng thống kê. DNT/GPC không gửi. [Sources, licenses & privacy](public/assets/sources.html) giải thích riêng dữ liệu học, lịch sử và việc gửi nội dung tới các provider.
 
 ## Chạy ứng dụng
 
@@ -80,11 +90,11 @@ Gói miễn phí có thể ngủ khi ít hoạt động và mất thời gian kh
 
 Tệp `env` đã bỏ khỏi danh sách theo dõi Git nhưng giữ trên máy hiện tại để chạy local. Việc bỏ theo dõi không xóa key trong lịch sử Git; thay key đã lộ trước khi triển khai công khai. Dùng `.env.example` làm mẫu trên máy mới.
 
-Datamuse (`api.datamuse.com`, không cần key) bổ sung quan hệ đồng nghĩa/trái nghĩa, lọc theo từ loại. Hai nhãn luôn hiển thị; nếu nguồn không có dữ liệu phù hợp hoặc không truy cập được thì báo rõ thay vì tạo từ không có cơ sở.
+Datamuse (`api.datamuse.com`, hiện chưa cần key; xem thông báo thay đổi 2027 trong API-USAGE.md) bổ sung quan hệ đồng nghĩa/trái nghĩa, lọc theo từ loại. Hai nhãn luôn hiển thị; nếu nguồn không có dữ liệu phù hợp hoặc không truy cập được thì báo rõ thay vì tạo từ không có cơ sở.
 
 Tra cứu trả định nghĩa từ nguồn hợp lệ đầu tiên thay vì đợi mọi nguồn. IPA và từ liên quan bổ sung bằng yêu cầu `details=1` chạy nền; kết quả đầy đủ được cache và các yêu cầu trùng dùng chung tác vụ. Điều này giảm thời gian chờ nguồn phụ, nhưng không loại bỏ thời gian khởi động khi Render Free ngủ.
 
-Từ điển dùng thêm Princeton WordNet 3.1 cài cùng server để tra nhanh và giữ synonym/antonym theo từng synset (nghĩa). Quan hệ trái nghĩa đọc đúng liên kết lexical của chính từ được tra. Giao diện đánh số từng nghĩa, liệt kê ví dụ và đặt quan hệ ngay dưới nghĩa đó; dữ liệu Datamuse theo từ loại được tách vào Từ liên quan. Không suy diễn rằng hai từ cùng từ loại là đồng nghĩa. `Experimentation` gần nghĩa với `experiment` ở nghĩa hoạt động thử nghiệm; `try out` tương ứng một nghĩa của động từ; `experiment` không có trái nghĩa trực tiếp trong nguồn này. Phần trình bày tham khảo bố cục trong ảnh Oxford, không sao chép nội dung Oxford hoặc gán nhãn Oxford cho nguồn khác.
+Từ điển dùng thêm Princeton WordNet 3.0 cài cùng server để tra nhanh và giữ synonym/antonym theo từng synset (nghĩa). Quan hệ trái nghĩa đọc đúng liên kết lexical của chính từ được tra. Giao diện đánh số từng nghĩa, liệt kê ví dụ và đặt quan hệ ngay dưới nghĩa đó; dữ liệu Datamuse theo từ loại được tách vào Từ liên quan. Không suy diễn rằng hai từ cùng từ loại là đồng nghĩa. `Experimentation` gần nghĩa với `experiment` ở nghĩa hoạt động thử nghiệm; `try out` tương ứng một nghĩa của động từ; `experiment` không có trái nghĩa trực tiếp trong nguồn này. Phần trình bày tham khảo bố cục trong ảnh Oxford, không sao chép nội dung Oxford hoặc gán nhãn Oxford cho nguồn khác.
 
 ## Gợi ý chính tả, collocations và bộ từ cá nhân
 
@@ -94,7 +104,7 @@ Khi không có kết quả khớp chính xác, ứng dụng hiển thị các t�
 
 Mục Voice thêm `(Eng)` cho accent Anh và `(Ame)` cho accent Mỹ dựa vào `labels.accent` từ ElevenLabs. Giọng có accent khác hiển thị accent đó; thiếu metadata hiển thị “Chưa rõ accent”. Tên giọng không được dùng để suy đoán accent. ID đang chọn và khả năng lưu lựa chọn giữ nguyên.
 
-Bấm **☆ Lưu từ** cạnh đầu mục để thêm vào **Từ yêu thích**, bấm **★ Đã lưu** để bỏ lưu. **Lịch sử tra cứu** ghi tối đa 40 từ tra thành công gần nhất, không lưu lỗi chính tả. Bấm một từ đã lưu để tra lại; nút **Xóa lịch sử** chỉ xóa lịch sử. Có thể lưu tối đa 100 từ yêu thích. Cả hai giữ bản localStorage để dùng ngoại tuyến. Khi MySQL đã kết nối, lịch sử còn được lưu trong database theo trình duyệt/app này. Chưa có đăng nhập để đồng bộ giữa thiết bị; xóa dữ liệu website mất mã nhận diện lịch sử cũ. Khôi phục kết quả sau khi tải trang không tự ghi lại lịch sử đã xóa.
+Bấm **☆ Lưu từ** cạnh đầu mục để thêm vào **Từ yêu thích**, bấm **★ Đã lưu** để bỏ lưu. **Lịch sử tra cứu** ghi tối đa 40 từ tra thành công gần nhất, không lưu lỗi chính tả. Bấm một từ đã lưu để tra lại; nút **Xóa lịch sử** chỉ xóa lịch sử. Có thể lưu tối đa 500 từ yêu thích. Cả hai giữ bản localStorage để dùng ngoại tuyến. Khi MySQL đã kết nối, lịch sử còn được lưu trong database theo trình duyệt/app này. Chưa có đăng nhập để đồng bộ giữa thiết bị; xóa dữ liệu website mất mã nhận diện lịch sử cũ. Khôi phục kết quả sau khi tải trang không tự ghi lại lịch sử đã xóa.
 
 Kiểm tra sau triển khai: tra `experimence` → bấm `experiment` → kiểm tra 5 nghĩa, loa định nghĩa, collocations → lưu từ → tải lại → mở Từ yêu thích/Lịch sử → đổi Dark/Light và kiểm tra nhãn Voice.
 
@@ -221,7 +231,7 @@ Sau khi trả lời đúng hoặc sai, quiz tự dịch toàn bộ định nghĩ
 
 Nguồn Gemini trả lỗi tạm thời 500/502/503/504 được thử lại một lần sau 150 ms nếu còn đủ thời gian, vẫn trong giới hạn dịch 6,5 giây. Không tự thử lại lỗi key, quyền truy cập, quota hoặc nội dung không hợp lệ. `/healthz` có `translation.primaryError` và `translation.aiError` gồm mã trạng thái/lý do đã lọc; không chứa API key, câu người dùng hoặc thông báo thô của nhà cung cấp. `configured: true` chỉ xác nhận có cấu hình key, không bảo đảm nguồn dịch đang hoạt động hay còn quota.
 
-Nghĩa, ví dụ và tiến độ lưu riêng trên thiết bị trong `helen-study-v1`, tối đa 100 từ. Dữ liệu này chưa đồng bộ giữa thiết bị. Mở thẻ và chấm đáp án quiz thực hiện trên thiết bị, dùng được ngoại tuyến sau khi app đã cập nhật và từ đã chuẩn bị. Dịch câu hỏi chưa lưu và giọng đọc mới cần mạng; âm thanh đã lưu phát lại theo đúng giọng. Chuẩn bị từ cũ ưu tiên bản tra đã lưu; phần thiếu dùng WordNet cục bộ của server, tối đa 12 từ/lượt, dừng chờ sau 4,5 giây. Từ ngoài WordNet được bổ sung bằng cách mở lại từ trong từ điển khi có mạng. Nếu bộ nhớ thiết bị đầy, app báo tiến độ chỉ giữ trong phiên hiện tại.
+Nghĩa, ví dụ và tiến độ lưu riêng trên thiết bị trong `helen-study-v1`, tối đa 500 từ. Dữ liệu này chưa đồng bộ giữa thiết bị. Mở thẻ và chấm đáp án quiz thực hiện trên thiết bị, dùng được ngoại tuyến sau khi app đã cập nhật và từ đã chuẩn bị. Dịch câu hỏi chưa lưu và giọng đọc mới cần mạng; âm thanh đã lưu phát lại theo đúng giọng. Chuẩn bị từ cũ ưu tiên bản tra đã lưu; phần thiếu dùng WordNet cục bộ của server, tối đa 12 từ/lượt, dừng chờ sau 4,5 giây. Từ ngoài WordNet được bổ sung bằng cách mở lại từ trong từ điển khi có mạng. Nếu bộ nhớ thiết bị đầy, app báo tiến độ chỉ giữ trong phiên hiện tại.
 
 `npm run audit:study` rà soát khả năng tạo thẻ/câu hỏi của mọi bản ghi WordNet đã cài. Đây là kiểm tra cấu trúc và điều kiện tạo câu hỏi, không phải xác nhận mọi bản dịch hay mọi đáp án ngữ nghĩa trên thế giới đều chính xác.
 
@@ -229,7 +239,7 @@ Nghĩa, ví dụ và tiến độ lưu riêng trên thiết bị trong `helen-st
 
 **Matching pairs:** Mỗi lượt có 3–6 cặp từ/định nghĩa, cột nghĩa được trộn riêng. Chọn từ hoặc nghĩa trước đều được, không cần kéo thả; Enter/Space hoạt động trên các nút. Loại định nghĩa trùng và những cặp đồng nghĩa được nguồn xác nhận. Lựa chọn có trạng thái `aria-pressed`, ghép đúng có dấu ✓ và khóa cặp, sai hiện nghĩa đúng rồi cho ghép lại. Điểm cuối phiên tính theo số cặp đúng ngay lần đầu; accuracy trong Progress tính mọi lần thử. Tất cả kiểu quiz giữ lịch ôn. **Mark for review** là thao tác chủ động đặt từ đến hạn ngay; đánh giá trong Review tiếp tục dùng lịch cách quãng cũ.
 
-**Word sets:** Tạo tối đa 20 bộ từ, tên 1–50 ký tự và không trùng tên khác khi bỏ qua hoa/thường. Một từ yêu thích có thể thuộc nhiều bộ; có thể lưu bộ trống. Editor cho lọc từ, chọn checkbox và sửa tên; từ đã tick không mất khi bị ẩn bởi bộ lọc. Xóa bộ cần xác nhận và chỉ xóa nhóm, giữ nguyên từ, âm thanh và lịch ôn. **Add searched word to a set** lưu từ vừa tra và mở editor, cho chọn bộ có sẵn hoặc tạo bộ mới. Bộ mẫu Everyday English, Learning & Discovery, Money & Work dùng dữ liệu WordNet đã có trong offline pack; sửa danh sách trong `public/assets/study-starters.json`. Thêm bộ mẫu không gọi AI hay ElevenLabs, giữ giới hạn 100 từ yêu thích và gộp vào bộ cùng tên khi thêm lại.
+**Word sets:** Tạo tối đa 100 bộ từ, tên 1–50 ký tự và không trùng tên khác khi bỏ qua hoa/thường. Một từ yêu thích có thể thuộc nhiều bộ; có thể lưu bộ trống. Editor cho lọc từ, chọn checkbox và sửa tên; từ đã tick không mất khi bị ẩn bởi bộ lọc. Xóa bộ cần xác nhận và chỉ xóa nhóm, giữ nguyên từ, âm thanh và lịch ôn. **Add searched word to a set** lưu từ vừa tra và mở editor, cho chọn bộ có sẵn hoặc tạo bộ mới. Bộ mẫu Everyday English, Learning & Discovery, Money & Work dùng dữ liệu WordNet đã có trong offline pack; sửa danh sách trong `public/assets/study-starters.json`. Thêm bộ mẫu không gọi AI hay ElevenLabs, giữ giới hạn 500 từ yêu thích và gộp vào bộ cùng tên khi thêm lại.
 
 **Your progress:** Kết quả đúng/sai được lưu ngay sau mỗi câu, kể cả khi dừng giữa phiên. Phiên chỉ được ghi vào Recent sessions khi hoàn thành. Có số lượt trả lời, accuracy, số từ từng Review, số đến hạn, Words to revisit và 5 phiên gần nhất. Chỉ giữ 500 lượt trả lời và 100 phiên gần nhất; đây là kết quả luyện tập, không phải chứng nhận thành thạo. Từ hay sai không tự thay đổi lịch ôn. Bộ từ, dấu cần ôn, kết quả được lưu riêng trong `helen-learning-library-v1`; không đổi dữ liệu trong `helen-study-v1`, favorites, selected sense hay cache âm thanh. Chưa đồng bộ bộ từ/tiến độ giữa các máy. Bộ nhớ đầy có cảnh báo; dữ liệu khi đó chỉ giữ trong phiên. Thay đổi từ tab khác cập nhật kho từ và dừng lượt học cũ để tránh ghi đè.
 

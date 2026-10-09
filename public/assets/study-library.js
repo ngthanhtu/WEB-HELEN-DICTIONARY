@@ -1,9 +1,9 @@
 (function(root){
   'use strict';
-  const KEY='helen-learning-library-v1',MAX_DECKS=20;
+  const KEY='helen-learning-library-v1',MAX_DECKS=100;
   const clean=value=>typeof value==='string'?value.trim().replace(/\s+/g,' '):'';
   const word=value=>clean(value).toLowerCase().replace(/[’‘]/g,"'");
-  const words=values=>[...new Set((Array.isArray(values)?values:[]).map(word).filter(v=>v && v.length<=100))].slice(0,100);
+  const words=values=>[...new Set((Array.isArray(values)?values:[]).map(word).filter(v=>v && v.length<=100))].slice(0,500);
   const number=value=>Number.isFinite(value) && value>=0?Math.min(Math.floor(value),1000000):0;
   function empty(){return {version:1,decks:[],attempts:[],sessions:[],difficult:[]};}
   function sanitize(value){
@@ -24,7 +24,7 @@
     name=clean(name);if(!name || name.length>50)throw Error('Tên bộ từ cần từ 1 đến 50 ký tự.');
     if(state.decks.some(deck=>deck.id!==id && deck.name.toLowerCase()===name.toLowerCase()))throw Error('Tên bộ từ đã có. Hãy chọn tên khác.');
     const existing=state.decks.find(deck=>deck.id===id);
-    if(!existing && state.decks.length>=MAX_DECKS)throw Error('Đã có 20 bộ từ. Xóa một bộ trước khi thêm.');
+    if(!existing && state.decks.length>=MAX_DECKS)throw Error('Đã có 100 bộ từ. Xóa một bộ trước khi thêm.');
     if(!/^[\w-]{1,80}$/.test(id || ''))throw Error('Bộ từ không hợp lệ.');
     const deck={id,name,words:words(selected)};
     return {...state,decks:existing?state.decks.map(item=>item.id===id?deck:item):[...state.decks,deck]};

@@ -9,7 +9,7 @@
   const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let cards=core.read(storage),session=null,preparing=false,controller=null,cancelled=false,volatile=false,quizOutHidden=null,translationRequest=0;
   function endSession(){translationRequest++;sounds?.stop();session=null;delete host.dataset.session;const out=document.querySelector('#out');if(quizOutHidden!==null && out)out.hidden=quizOutHidden;quizOutHidden=null;}
-  function favorites(){try{const values=JSON.parse(storage.getItem('helen-favorites')||'[]');return Array.isArray(values)?[...new Set(values.filter(v=>typeof v==='string').map(core.answer))].slice(0,100):[];}catch{return [];}}
+  function favorites(){try{const values=JSON.parse(storage.getItem('helen-favorites')||'[]');return Array.isArray(values)?[...new Set(values.filter(v=>typeof v==='string').map(core.answer))].slice(0,500):[];}catch{return [];}}
   const active=()=>{const selected=new Set(favorites());return cards.filter(item=>selected.has(item.word));};
   function scoped(){const deck=learning.decks.find(item=>item.id===$('#study-scope').value);return active().filter(item=>!deck || deck.words.includes(item.word));}
   function saveLibrary(){if(!library.write(storage,learning)){volatile=true;$('#study-status').textContent='Bộ nhớ đầy. Thay đổi bộ từ và kết quả chỉ giữ trong phiên này.';}}
@@ -18,9 +18,10 @@
     if(!favorites().includes(core.answer(result?.word)))return false;
     const old=cards.find(item=>item.word===core.answer(result.word)),value=core.card(result,old);
     if(!value)return false;
-    const selected=new Set(favorites());cards=[value,...cards.filter(item=>item.word!==value.word && selected.has(item.word))].slice(0,100);save();refresh();return true;
+    const selected=new Set(favorites());cards=[value,...cards.filter(item=>item.word!==value.word && selected.has(item.word))].slice(0,500);save();refresh();return true;
   }
   function refresh(){
+    document.dispatchEvent(new CustomEvent('helen:study-updated'));
     renderDecks();
     const list=scoped(),due=core.due(list),missing=favorites().filter(word=>!active().some(item=>item.word===word));
     const mode=$('#quiz-mode').value;
@@ -82,17 +83,18 @@
         panel.querySelectorAll('[data-rating]').forEach(button=>button.onclick=()=>{
           if(session?.answered)return;session.answered=true;
           const latest=cards.find(value=>value.word===item.word);if(latest){cards=cards.map(value=>value.word===item.word?core.grade(value,button.dataset.rating):value);save();}
+          document.dispatchEvent(new CustomEvent('helen:learning-activity'));
           session.index++;session.answered=false;showCard();refresh();
         });panel.querySelector('button')?.focus({preventScroll:true});
       };
-      $('.study-audio').onclick=event=>window.speak?.(item.word,event.currentTarget);
+      $('.study-audio').onclick=event=>window.speak?.(item.word,event.currentTarget,{word:item.word});
     }else{
       const q=session.questions[session.index];
       $('#study-stage').innerHTML=`<p class="study-eyebrow">Quiz · ${session.index+1}/${session.items.length}</p><p>${q.type==='cloze'?'Điền từ đã lưu vào chỗ trống.':'Từ đã lưu nào phù hợp với nghĩa này?'}</p><span class="study-pos">${esc(q.pos)}</span><h3 class="study-prompt">${esc(q.prompt)}</h3>${q.type==='cloze'?`<p class="muted">${esc(q.definition)}</p>`:q.context?`<p class="quiz-context">${esc(q.context)}</p>`:''}${q.type==='choice'?`<div class="quiz-options">${q.choices.map(word=>`<button class="word-link" data-choice="${esc(word)}" type="button">${esc(word)}</button>`).join('')}</div>`:'<form id="quiz-form"><label for="quiz-answer">Your answer</label><input id="quiz-answer" autocomplete="off" autocapitalize="none" spellcheck="false" required maxlength="100"><button class="word-link" type="submit">Check answer</button></form>'}<div id="quiz-feedback" role="status"></div>`;
       const respond=value=>{
         if(session?.answered)return;session.answered=true;
         const correct=(q.type==='type'?q.accepted || [q.word]:[q.word]).some(word=>core.answer(value)===core.answer(word));session.correct+=Number(correct);
-        sounds?.play(correct);
+        sounds?.play(correct);document.dispatchEvent(new CustomEvent('helen:learning-activity'));
         if(!correct)session.mistakes.push(q.word);
         learning=library.attempt(learning,{word:q.word,correct,mode:session.style});saveLibrary();renderProgress();
         $('#study-stage').querySelectorAll('button,input').forEach(node=>node.disabled=true);
@@ -112,7 +114,7 @@
     const tools=document.createElement('div');tools.className='feedback-tools';
     tools.innerHTML=`<button class="say" type="button" data-hear="word" aria-label="Hear ${esc(q.word)}">🔊</button>${q.original?'<button class="word-link" type="button" data-hear="sentence">Hear example</button>':''}<button class="word-link" type="button" data-open-word>View dictionary</button><button class="word-link" type="button" data-difficult>Mark for review</button>`;
     panel.append(tools);
-    tools.querySelectorAll('[data-hear]').forEach(button=>button.onclick=()=>window.speak?.(button.dataset.hear==='word'?q.word:q.original,button));
+    tools.querySelectorAll('[data-hear]').forEach(button=>button.onclick=()=>window.speak?.(button.dataset.hear==='word'?q.word:q.original,button,{word:q.word}));
     tools.querySelector('[data-open-word]').onclick=()=>{endSession();$('#study-stage').hidden=true;$('#end-study').hidden=true;refresh();window.HelenDictionary?.lookup(q.word);};
     tools.querySelector('[data-difficult]').onclick=event=>{
       learning={...learning,difficult:library.words([...learning.difficult,q.word])};saveLibrary();
@@ -132,7 +134,7 @@
       $('#study-stage').querySelectorAll('[data-match-meaning]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.matchMeaning===session.selectedMeaning)));
       if(!session.selectedWord || !session.selectedMeaning)return;
       const q=session.questions.find(item=>item.word===session.selectedWord),correct=session.selectedWord===session.selectedMeaning;
-      learning=library.attempt(learning,{word:q.word,correct,mode:'matching'});saveLibrary();renderProgress();sounds?.play(correct);
+      learning=library.attempt(learning,{word:q.word,correct,mode:'matching'});saveLibrary();renderProgress();sounds?.play(correct);document.dispatchEvent(new CustomEvent('helen:learning-activity'));
       if(correct){
         session.matched.add(q.word);if(!session.mistakes.includes(q.word))session.correct++;
         $('#study-stage').querySelectorAll('[data-match-word],[data-match-meaning]').forEach(button=>{if(button.dataset.matchWord===q.word || button.dataset.matchMeaning===q.word){button.disabled=true;button.dataset.result='correct';button.setAttribute('aria-pressed','false');button.insertAdjacentHTML('beforeend','<span aria-label="Matched"> ✓</span>');}});
@@ -150,7 +152,7 @@
     $('#study-stage').querySelectorAll('[data-match-meaning]').forEach(button=>button.onclick=()=>select('selectedMeaning',button.dataset.matchMeaning));focus();
   }
   function finish(){
-    const done=session;learning=library.completed(learning,{mode:done.mode==='review'?'review':done.style,total:done.items.length,correct:done.correct});saveLibrary();endSession();$('#end-study').hidden=true;
+    const done=session;learning=library.completed(learning,{mode:done.mode==='review'?'review':done.style,total:done.items.length,correct:done.correct});saveLibrary();document.dispatchEvent(new CustomEvent('helen:session-completed',{detail:{mode:done.mode,total:done.items.length,correct:done.correct}}));endSession();$('#end-study').hidden=true;
     $('#study-stage').innerHTML=done.mode==='review'?'<h3>Review complete</h3><p>Lịch ôn đã cập nhật. Từ chưa nhớ sẽ đến hạn sau 10 phút.</p>':`<h3>${done.mode==='matching'?'Matching':'Quiz'} complete · ${done.correct}/${done.items.length}</h3><p>${done.mode==='matching'?'Điểm tính theo cặp đúng ngay lần đầu. ':''}Quiz để luyện thêm; lịch ôn giữ theo đánh giá trong Review.</p>${done.mistakes.length?`<p>Từ nên xem lại: ${done.mistakes.map(esc).join(', ')}.</p><button class="word-link" id="review-mistakes" type="button">Review mistakes</button>`:'<p>Bạn trả lời đúng tất cả câu trong lượt này.</p>'}`;
     if($('#review-mistakes'))$('#review-mistakes').onclick=()=>start('review',done.mistakes);
     refresh();
@@ -182,6 +184,7 @@
         try{
           const response=await fetch('/api/study/prepare',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({words:remaining.slice(offset,offset+12)}),signal:controller.signal});
           const data=await response.json();if(!response.ok || !Array.isArray(data.results))throw Error('unavailable');
+          window.HelenPronunciation?.register(data);
           for(const result of data.results)capture(result);
           failures+=data.missing?.length || 0;
           setStatus(`Đã chuẩn bị ${active().length}/${favorites().length} từ. Có thể học ngay các từ đã sẵn sàng.`);
@@ -250,5 +253,7 @@
   window.addEventListener('pageshow',refresh);window.addEventListener('online',refresh);window.addEventListener('offline',refresh);
   host.addEventListener('toggle',refresh);setInterval(()=>{if(!document.hidden && host.open)refresh();},30000);
   document.querySelector('#target')?.addEventListener('change',()=>{if(session?.answered && session.feedbackQuestion)void translateFeedback(session.feedbackQuestion);});
+  window.HelenStudy={capture};
+  document.addEventListener('helen:restore',()=>{cards=core.read(storage);learning=library.read(storage);endSession();$('#study-stage').hidden=true;$('#end-study').hidden=true;refresh();});
   refresh();if(typeof lastResult!=='undefined')capture(lastResult);
 })();

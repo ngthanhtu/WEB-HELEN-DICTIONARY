@@ -96,3 +96,14 @@ This release adds `helen-learning-library-v1` alongside `helen-study-v1`; it mus
 - [ ] Verify immediate attempt persistence, completion totals and unchanged quiz review schedule.
 - [ ] Verify reload, cross-tab changes, offline starter sets, selected-voice audio and stale translation replies.
 - [ ] Record desktop/mobile screenshots and local interaction timing; distinguish simulation from real iPhone testing.
+
+
+## Daily learning, backups and privacy controls
+
+- Daily goal/streak must use the existing semantic tokens, show progress without color alone, and announce storage errors clearly. Goal changes must preserve the goal of a day already started. These controls should stay local and immediate; they must not wait for AI.
+- Word of the day must use local licensed pack data. Its Explore/Save buttons must be keyboard and touch operable with visible focus and 44px targets. A failed pack load must leave the rest of Dictionary usable.
+- Backup buttons must expose default, hover, focus-visible, active, disabled/busy and error feedback. JSON import must validate size/schema before confirming a merge; it must retain the newer review schedule, and storage failure must roll back the changes. Exports must exclude credentials and escape spreadsheet/HTML content.
+- Analytics must default off and respect DNT/GPC. The label must describe the actual events and data sent; it must not imply that history/provider requests are anonymous. Opt-out must clear pending events and stop sending.
+- On mobile Preferences must be anchored within the page width and scroll inside the available viewport. The selected sense button must meet AA contrast in both themes. Reduced-motion and existing offline/reload behavior must remain intact.
+
+Acceptance: answer five questions → daily counter 5/5 and one-day streak → reload preserves it; restore the same JSON twice → no duplicate sets or schedule rollback; offline reload → Study and goal remain usable; opt-out → no metrics calls; at 320px Preferences and answer/next controls stay visible; automated WCAG AA checks pass in landing, Study, Preferences and dark theme.

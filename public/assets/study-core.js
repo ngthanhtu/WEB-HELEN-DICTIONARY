@@ -82,10 +82,10 @@
   }
   function read(storage){
     try {const value=JSON.parse(storage.getItem(KEY)||'{}');if(value.version!==1 || !Array.isArray(value.cards))return [];
-      const seen=new Set();return value.cards.slice(0,100).flatMap(item=>{const prepared=card({word:item?.word,entries:[{source:'',meanings:Array.isArray(item?.senses)?item.senses.map(s=>({pos:s?.pos,senses:[{...s,relationSource:s?.source}]})):[]}]},item);if(!prepared || seen.has(prepared.word))return [];seen.add(prepared.word);return [prepared];});
+      const seen=new Set();return value.cards.slice(0,500).flatMap(item=>{const prepared=card({word:item?.word,entries:[{source:'',meanings:Array.isArray(item?.senses)?item.senses.map(s=>({pos:s?.pos,senses:[{...s,relationSource:s?.source}]})):[]}]},item);if(!prepared || seen.has(prepared.word))return [];seen.add(prepared.word);return [prepared];});
     }catch{return [];}
   }
-  function write(storage,cards){try{storage.setItem(KEY,JSON.stringify({version:1,cards:cards.slice(0,100)}));return true;}catch{return false;}}
+  function write(storage,cards){try{storage.setItem(KEY,JSON.stringify({version:1,cards:cards.slice(0,500)}));return true;}catch{return false;}}
   root.HelenStudyCore={DAY,KEY,answer,cloze,senses,card,grade,due,question,quizSense,quizCards,quizPlan,matchingPlan,read,write};
   if(typeof module!=='undefined')module.exports=root.HelenStudyCore;
 })(typeof window==='undefined'?globalThis:window);

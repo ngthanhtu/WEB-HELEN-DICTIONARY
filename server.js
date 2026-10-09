@@ -25,6 +25,8 @@ if (process.env.NODE_ENV === 'production') {
   const limit = count => rateLimit({windowMs:60_000, limit:count, standardHeaders:'draft-8', legacyHeaders:false,
     message:{error:'Bạn thao tác quá nhanh. Hãy đợi một phút rồi thử lại.'}});
   app.use('/api/tts', limit(12));
+  app.use('/api/pronunciation', limit(30));
+  app.post('/api/metrics',limit(30));
   app.use('/api/lookup', limit(30));
   app.use('/api/spelling', limit(30));
   app.use('/api/suggestions', limit(120));
@@ -36,14 +38,21 @@ const PORT = process.env.PORT || 3000;
 const KEY = process.env.ELEVENLABS_API_KEY;
 const VOICE = process.env.ELEVENLABS_VOICE_ID || 'EXAVITQu4vr4xnSDxMaL'; // Sarah (premade); users can explicitly select another voice
 const database = createDatabase();
+const {createPronunciationPolicy,createUsagePolicy}=require('./lib/usage-policy');
+const pronunciation=createPronunciationPolicy(KEY);
+const usage=createUsagePolicy({database});
+const beforeGenerate=()=>usage.reserve('ai',1);
 const collocationService=require('./lib/collocation-service').createCollocationService({get,store:database});
 const persistDictionary = require('./lib/persist-dictionary').createDictionaryPersistence(database, REVISION);
-const contexts=createContextService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,store:database});
-const translations=createTranslationService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,store:database});
-const speech=createSpeechService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL});
+const contexts=createContextService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,store:database,beforeGenerate});
+const translations=createTranslationService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,store:database,beforeGenerate});
+const speech=createSpeechService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,beforeGenerate});
 const cache = new Map(); // successful results only
+const audioPending=new Map();
 const memo = async (k, fn) => {
   if (cache.has(k)) return cache.get(k);
+  if(audioPending.has(k))return audioPending.get(k);
+  const task=(async()=>{
   const key = require('node:crypto').createHash('sha256').update(KEY || '').digest('hex') + k;
   const old = await database.get('tts-v1',key);
   if (old?.value?.audio && typeof old.value.audio === 'string') {
@@ -54,6 +63,8 @@ const memo = async (k, fn) => {
   // Cache successful short pronunciations; recordings and credentials are never persisted.
   if (value.length <= 300000) void database.set('tts-v1',key,{audio:value.toString('base64')});
   return value;
+  })();audioPending.set(k,task);
+  try{return await task;}finally{audioPending.delete(k);}
 };
 
 // Short microphone clips are larger than normal dictionary JSON requests.
@@ -66,6 +77,18 @@ app.use((error,req,res,next)=>{
   next(error);
 });
 app.use(require('compression')());
+app.use((req,res,next)=>{
+  if(['/api/lookup','/api/study/prepare','/api/context','/api/collocations'].includes(req.path)){
+    const json=res.json.bind(res);res.json=data=>json(res.statusCode<400 && data && KEY?pronunciation.attach(data):data);
+  }next();
+});
+app.post('/api/metrics',async(req,res)=>{
+  res.set('Cache-Control','no-store');
+  if(req.get('Sec-Fetch-Site')==='cross-site' || (req.headers.origin && req.headers.origin!==`${req.protocol}://${req.get('host')}`))return res.status(403).json({error:'Yêu cầu không hợp lệ.'});
+  const events=req.body.events,names=new Set(['lookup','favorite','quiz_completed','return_day2','return_day7']);
+  if(!Array.isArray(events) || !events.length || events.length>20 || !events.every(event=>event && /^[a-f0-9-]{36}$/.test(event.id || '') && names.has(event.name) && /^\d{4}-\d{2}-\d{2}$/.test(event.day || '') && Number.isFinite(Date.parse(event.day)) && Date.parse(event.day)<=Date.now()+86400000 && Date.parse(event.day)>=Date.now()-7*86400000 && Object.keys(event).every(key=>['id','name','day'].includes(key))))return res.status(400).json({error:'Dữ liệu thống kê không hợp lệ.'});
+  try{await database.metrics(events);res.json({saved:true});}catch{res.status(503).json({error:'Thống kê chưa sẵn sàng.'});}
+});
 app.get('/healthz', (req, res) => res.json({ status: 'ok', version: process.env.RENDER_GIT_COMMIT?.slice(0, 7) || 'local', voiceConfigured: Boolean(KEY), aiConfigured:contexts.configured,speechConfigured:speech.configured,translation:translations.status(),database:database.status() }));
 app.get('/api/history/status',(req,res) => res.json(database.status()));
 function deviceToken(req,res,next) {
@@ -176,6 +199,7 @@ const mwText = s => String(s || '').replace(/\{[^}]*\}/g, '').replace(/\s+/g, ' 
 const findVis = o => { if (Array.isArray(o)) { if (o[0] === 'vis' && o[1] && o[1][0]) return o[1][0].t; for (const x of o) { const v = findVis(x); if (v) return v; } } else if (o && typeof o === 'object') { for (const k in o) { const v = findVis(o[k]); if (v) return v; } } return ''; };
 async function mwDefs(word) {
   if (!MW_KEY) return null;
+  try{await usage.reserve('mw',1);}catch{return null;}
   const r = await get(`https://www.dictionaryapi.com/api/v3/references/learners/json/${encodeURIComponent(word)}?key=${MW_KEY}`, {}, 3500);
   if (!r || !r.ok) return null;
   let j; try { j = await r.json(); } catch { return null; }
@@ -198,7 +222,7 @@ async function relatedDictionary(word, timeout = 5000) {
     const unique = values => relationWords(values.map(clean),word);
     return data.flatMap(entry => (entry.meanings || []).map(m => ({
       pos: String(m.partOfSpeech || '').toLowerCase(),
-      senses: (m.definitions || []).filter(d => d.definition).map(d => ({definition:clean(d.definition), example:clean(d.example),examples:d.example?[clean(d.example)]:[],synonyms:unique(d.synonyms||[]),antonyms:unique(d.antonyms||[]),relationSource:'Free Dictionary API'})),
+      senses: (m.definitions || []).filter(d => d.definition).map(d => ({definition:clean(d.definition), example:clean(d.example),examples:d.example?[clean(d.example)]:[],synonyms:unique(d.synonyms||[]),antonyms:unique(d.antonyms||[]),relationSource:'Free Dictionary API',...(entry.license?{license:entry.license}:{}),...(Array.isArray(entry.sourceUrls)?{sourceUrls:entry.sourceUrls}:{} )})),
       synonyms: unique(m.synonyms || []),
       antonyms: unique(m.antonyms || []),
       usageExamples: unique((m.definitions || []).map(d => d.example))
@@ -371,6 +395,7 @@ app.post('/api/context',async(req,res)=>{
     res.json(await contexts.generate({word,pos:sense.pos,definition:sense.definition,language,dictionaryExamples:sense.examples.slice(0,2),alternatives}));
   } catch(error) {
     const status=Number(error.status);
+    if(error.code==='USAGE_LIMIT' || error.code==='USAGE_UNAVAILABLE')return res.status(error.status).json({error:error.message,code:error.code});
     if(status===429) return res.status(429).json({error:'Gemini đã hết hạn mức hoặc đang giới hạn lượt gọi. Hãy thử lại sau.'});
     if(status===401 || status===403) return res.status(503).json({error:'Gemini chưa được cấp quyền hoạt động. Quản trị viên cần kiểm tra API key.'});
     if(status===404) return res.status(502).json({error:'Chưa truy cập được từ hoặc model AI đang cấu hình.'});
@@ -404,14 +429,31 @@ app.get('/api/voices', async (req, res) => {
   res.json({ in_use: VOICE, voices: j.voices.map(voiceMetadata) });
 });
 
+app.post('/api/pronunciation',async(req,res)=>{
+  const text=typeof req.body.text==='string'?req.body.text.trim():'',word=typeof req.body.word==='string'?req.body.word.trim().toLowerCase():'';
+  if(!text || text.length>2000 || !word || word.length>100)return res.status(400).json({error:'Hãy tra từ trước khi nghe.'});
+  const durable=cache.has(`d|${word}`)?null:await database.get(`dictionary-v${REVISION}`,word);
+  const meanings=studyMeanings(word);
+  const entries=cache.get(`d|${word}`) || durable?.value || (meanings.length?[{word,meanings}]:[]);
+  let allowed=pronunciation.texts({entries}).includes(text);
+  const context=req.body.context;
+  if(!allowed && context && typeof context.pos==='string' && context.pos.length<=80 && typeof context.definition==='string' && context.definition.length<=2000 && typeof context.language==='string' && Object.hasOwn(contextLanguages,context.language)){
+    const lesson=await contexts.cached({word,pos:context.pos,definition:context.definition,language:context.language});if(lesson)allowed=pronunciation.texts(lesson).includes(text);
+  }
+  if(!allowed)return res.status(403).json({error:'Hãy tra lại từ để nghe câu này.',code:'PRONUNCIATION_REQUIRED'});
+  res.set('Cache-Control','no-store').json({text,word,proof:pronunciation.issue(text)});
+});
 app.get('/api/tts', async (req, res) => {
   const text = String(req.query.text || '').trim();
   const voice = String(req.query.voice || VOICE);
   if (!/^[A-Za-z0-9_-]{1,100}$/.test(voice)) return res.status(400).json({ error: 'Invalid voice ID.' });
   if (!text || text.length > 2000) return res.status(400).json({ error: 'Use between 1 and 2000 characters for speech.' });
   if (!KEY) return res.status(501).json({ error: 'Set ELEVENLABS_API_KEY to enable pronunciation.' });
+  const production=process.env.NODE_ENV==='production',device=req.get('X-Helen-Device');
+  if(production && (!pronunciation.verify(text,req.query.proof) || !/^[a-f0-9]{64}$/.test(device || '') || req.get('Sec-Fetch-Site')==='cross-site' || req.headers.origin && req.headers.origin!==`${req.protocol}://${req.get('host')}`))return res.status(403).json({error:'Hãy tra lại từ trước khi nghe.',code:'PRONUNCIATION_REQUIRED'});
   try {
     const buf = await memo(`v|${voice}|${text}`, async () => { // cache key includes the voice
+      await usage.reserve('tts',text.length,device);
       const r = await get(`https://api.elevenlabs.io/v1/text-to-speech/${voice}`, {
         method: 'POST',
         headers: { 'xi-api-key': KEY, 'Content-Type': 'application/json', Accept: 'audio/mpeg' },
@@ -426,7 +468,7 @@ app.get('/api/tts', async (req, res) => {
       return Buffer.from(await r.arrayBuffer());
     });
     res.set('Content-Type', 'audio/mpeg').set('Cache-Control', 'no-store').send(buf);
-  } catch (e) { res.status(502).json({ error: e.message || 'Voice service is unavailable.', upstream_status: e.upstreamStatus }); }
+  } catch (e) { res.status(e.status || 502).json({ error: e.message || 'Voice service is unavailable.',code:e.code, upstream_status: e.upstreamStatus }); }
 });
 
 const server = app.listen(PORT, () => {

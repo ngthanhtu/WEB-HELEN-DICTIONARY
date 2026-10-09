@@ -92,7 +92,7 @@
     closeDialog(audioDialog);audioController=new AbortController();audioStop.hidden=false;audioButton.disabled=true;audioClear.disabled=true;
     try{
       const outcome=await audioStore.download({words:audioWords,voice:audioVoice,signal:audioController.signal,online:()=>navigator.onLine,
-        fetchAudio:(text,voice,signal)=>apiFetch(`/api/tts?${new URLSearchParams({text,voice})}`,{signal}),
+        fetchAudio:(text,voice,signal)=>window.HelenPronunciation.request(text,voice,{word:text,signal}),
         onProgress:progress=>{if(!progress.done)showLoading(audioProgress,`Saving ${progress.saved+1}/${progress.total}: ${progress.text}`);}
       });
       audioProgress.textContent=`Đã lưu ${outcome.saved}/${outcome.total} âm thanh.${outcome.cancelled?' Đã dừng.':''}${outcome.message?` ${outcome.message}`:''}`;

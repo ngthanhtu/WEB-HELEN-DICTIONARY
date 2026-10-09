@@ -52,6 +52,28 @@ test('missing or invalid databases fail open for cache and use safe actionable h
     await db.close();
   }
 });
+test('durable usage reservations lock every bucket and refuse overspending without partial debits',async()=>{
+  const totals=new Map();let lock=Promise.resolve();
+  const db=createDatabase({MYSQL_HOST:'127.0.0.1',MYSQL_USER:'test',MYSQL_DATABASE:'test',MYSQL_SSL:'false'},{createPool:()=>({end:async()=>{},getConnection:async()=>{
+    let unlock,previous,snapshot;
+    return {async beginTransaction(){previous=lock;lock=new Promise(resolve=>unlock=resolve);await previous;snapshot=new Map(totals);},async commit(){unlock();},async rollback(){totals.clear();for(const [key,value] of snapshot)totals.set(key,value);unlock();},release(){},destroy(){unlock?.();},async execute(sql,params){
+      if(sql.startsWith('INSERT IGNORE INTO helen_usage_budget')){const key=`${params[0]}:${params[1]}`;if(!totals.has(key))totals.set(key,0);}
+      if(sql.startsWith('SELECT units'))return [[{units:totals.get(`${params[0]}:${params[1]}`)}]];
+      if(sql.startsWith('UPDATE helen_usage_budget')){const key=`${params[1]}:${params[2]}`;totals.set(key,totals.get(key)+params[0]);}return [{}];
+    }};
+  }})});
+  try{assert.equal(await db.initialize(),true);const rules=[{bucket:'day',key:'a'.repeat(64),units:2,limit:6,expiresAt:Date.now()+1000},{bucket:'month',key:'b'.repeat(64),units:2,limit:8,expiresAt:Date.now()+1000}];
+    const accepted=await Promise.all(Array.from({length:8},()=>db.reserveUsage(rules)));assert.equal(accepted.filter(Boolean).length,3);assert.deepEqual([...totals.values()],[6,6]);
+  }finally{await db.close();}
+});
+test('durable metrics deduplicate offline retries and store aggregate counts without device identifiers',async()=>{
+  const ids=new Set(),counts=new Map(),sqlValues=[];
+  const db=createDatabase({MYSQL_HOST:'127.0.0.1',MYSQL_USER:'test',MYSQL_DATABASE:'test',MYSQL_SSL:'false'},{createPool:()=>({end:async()=>{},getConnection:async()=>({beginTransaction:async()=>{},commit:async()=>{},rollback:async()=>{},release(){},destroy(){},execute:async(sql,params=[])=>{
+    sqlValues.push(params);if(sql.startsWith('INSERT IGNORE INTO helen_metric_events')){const seen=ids.has(params[0]);ids.add(params[0]);return [{affectedRows:Number(!seen)}];}
+    if(sql.startsWith('INSERT INTO helen_metrics_daily')){const key=params.join(':');counts.set(key,(counts.get(key)||0)+1);}return [[]];
+  }})})});
+  try{await db.initialize();const events=[{id:crypto.randomUUID(),day:'2026-10-09',name:'lookup'}];await db.metrics(events);await db.metrics(events);assert.deepEqual([...counts.values()],[1]);assert.ok(sqlValues.every(params=>!params.includes('device-token')));}finally{await db.close();}
+});
 test('real MySQL survives new connections, separates cache namespaces, refreshes stale results and makes history retries idempotent',{skip:process.env.HELEN_MYSQL_TEST!=='1'},async() => {
   const first=createDatabase(), second=createDatabase();
   const key=crypto.randomUUID(),token=crypto.randomBytes(32).toString('hex'), other=crypto.randomBytes(32).toString('hex');

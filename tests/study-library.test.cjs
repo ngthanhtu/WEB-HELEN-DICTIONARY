@@ -5,7 +5,7 @@ test('sets group words independently, reject duplicate names and leave existing 
   assert.deepEqual(state.decks[0],{id:'a',name:'IELTS Reading',words:['loan','name after']});assert.ok(state.decks.every(d=>d.words.includes('loan')));
   assert.throws(()=>lib.setDeck(state,{id:'c',name:'ielts reading'}),/đã có/);assert.throws(()=>lib.setDeck(state,{id:'c',name:'x'.repeat(51)}),/50/);
   const empty=lib.setDeck(state,{id:'a',name:'Reading',selected:[]});assert.equal(empty.decks.length,2);assert.deepEqual(empty.decks[0].words,[]);
-  for(let i=2;i<20;i++)state=lib.setDeck(state,{id:`set${i}`,name:`Set ${i}`});assert.throws(()=>lib.setDeck(state,{id:'last',name:'One more'}),/20/);
+  for(let i=2;i<100;i++)state=lib.setDeck(state,{id:`set${i}`,name:`Set ${i}`});assert.throws(()=>lib.setDeck(state,{id:'last',name:'One more'}),/100/);
 });
 test('reload preserves completed and partial-session attempts while malformed records and oversized data are bounded',()=>{
   const values={'helen-favorites':'["loan"]',[core.KEY]:'old-review-progress'},storage={getItem:k=>values[k],setItem:(k,v)=>values[k]=v};

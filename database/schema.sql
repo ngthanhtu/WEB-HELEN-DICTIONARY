@@ -33,3 +33,24 @@ CREATE TABLE IF NOT EXISTS helen_history_events (
   created_at DATETIME(3) NOT NULL,
   PRIMARY KEY (device_hash, event_id)
 );
+-- Shared budgets survive restarts and are reserved atomically before provider calls.
+CREATE TABLE IF NOT EXISTS helen_usage_budget (
+  bucket VARCHAR(24) CHARACTER SET ascii NOT NULL,
+  key_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  units BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  expires_at DATETIME(3) NOT NULL,
+  PRIMARY KEY (bucket,key_hash),
+  INDEX expired_budget (expires_at)
+);
+CREATE TABLE IF NOT EXISTS helen_metrics_daily (
+  event_day DATE NOT NULL,
+  event_name VARCHAR(24) CHARACTER SET ascii NOT NULL,
+  event_count BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  PRIMARY KEY (event_day,event_name)
+);
+CREATE TABLE IF NOT EXISTS helen_metric_events (
+  event_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  created_at DATETIME(3) NOT NULL,
+  PRIMARY KEY (event_id),
+  INDEX expired_metric (created_at)
+);

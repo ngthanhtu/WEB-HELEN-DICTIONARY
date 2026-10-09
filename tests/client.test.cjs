@@ -10,9 +10,10 @@ function page(saved = {}, lookupFetch = null, browser = {}, actionFetch = null) 
     return elements.get(id);
   };
   const requests=[];
-  const context = vm.createContext({HelenSenses:require('../public/assets/sense-core'),document:{documentElement:{dataset:{}},createElement:()=>{ const node=element(`#created-${created.length}`), children=new Map(); node.querySelectorAll=sel=>[node.querySelector(sel)]; node.querySelector=sel=>{if(!children.has(sel)) children.set(sel,element(`#child-${created.length}-${sel}`)); return children.get(sel);}; created.push(node); return node; },querySelector:element,querySelectorAll:()=>[]}, localStorage:{getItem:k=>saved[k],setItem:(k,v)=>saved[k]=v}, Image:class {}, Option:class {constructor(text,value){this.text=text;this.value=value;}}, URL, Audio:class {}, setTimeout, clearTimeout, fetch:async(url,options)=>{
+  const context = vm.createContext({crypto:require('node:crypto').webcrypto,TextEncoder,TextDecoder,HelenSenses:require('../public/assets/sense-core'),document:{documentElement:{dataset:{}},createElement:()=>{ const node=element(`#created-${created.length}`), children=new Map(); node.querySelectorAll=sel=>[node.querySelector(sel)]; node.querySelector=sel=>{if(!children.has(sel)) children.set(sel,element(`#child-${created.length}-${sel}`)); return children.get(sel);}; created.push(node); return node; },querySelector:element,querySelectorAll:()=>[]}, localStorage:{getItem:k=>saved[k],setItem:(k,v)=>saved[k]=v}, Image:class {}, Option:class {constructor(text,value){this.text=text;this.value=value;}}, URL, Audio:class {}, setTimeout, clearTimeout, fetch:async(url,options)=>{
     requests.push({url,options});
     if(actionFetch) {const reply=actionFetch(url,options);if(reply!==undefined) return reply;}
+    if(url.includes('/api/pronunciation')){const body=JSON.parse(options.body);return {ok:true,json:async()=>({...body,proof:`${Math.floor(Date.now()/1000)+3600}.fixture.fixture`})};}
     if(url.includes('/api/context/status')) return {ok:true,json:async()=>({configured:false})};
     if(url.includes('/api/voices')) return {ok:true,json:async()=>({in_use:'Rachel',voices:[{name:'Rachel',voice_id:'Rachel',category:'premade',dialect:'Ame'},{name:'Sarah',voice_id:'Sarah',category:'premade',dialect:'Eng'}]})};
     if(url.includes('/api/spelling')) return {ok:true,json:async()=>({word:new URL(url,'http://test').searchParams.get('word'),suggestions:['experience','experiment']})};
@@ -20,6 +21,9 @@ function page(saved = {}, lookupFetch = null, browser = {}, actionFetch = null) 
     if(url.includes('/api/tts')) return {ok:false};
     const body=JSON.parse(options.body); return {ok:true,json:async()=>({translations:[`${body.to}:hello`]})};
   },...browser});
+  context.URLSearchParams=URLSearchParams;
+  vm.runInContext('window=globalThis',context);
+  vm.runInContext(fs.readFileSync(require.resolve('../public/assets/pronunciation.js'),'utf8'),context);
   vm.runInContext(script,context);
   return {context,element,requests,saved,created};
 }
