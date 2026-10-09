@@ -36,6 +36,8 @@ Sarah là giọng premade mặc định khi chưa cấu hình ELEVENLABS_VOICE_I
 
 Server nhận `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID`, `PORT` và tùy chọn `MW_LEARNERS_KEY` từ môi trường. `npm start` và `node server.js` tự đọc `.env` hoặc tệp `env` cùng thư mục server; biến được cung cấp cho tiến trình có ưu tiên cao nhất, sau đó `.env`, rồi `env`. Không đưa API key thật lên GitHub. Nếu tệp `env` đã chứa key thật, thu hồi/tạo lại key và chuyển cấu hình sang nơi lưu secrets của nền tảng triển khai.
 
+Key ElevenLabs từng nằm trong lịch sử Git công khai: xóa file ở commit mới không vô hiệu hóa key hoặc xóa blob cũ. Làm ngay các bước thu hồi/thay key tại [SECURITY.md](SECURITY.md). `npm run security:check` kiểm tra các file đang theo dõi; `npm run security:history` kiểm tra lịch sử. GitHub chạy cả hai kiểm tra, và hook chống commit bí mật có thể bật bằng `git config core.hooksPath .githooks`.
+
 Chọn ngôn ngữ nhập trong thanh tìm kiếm và ngôn ngữ đích tại **Meanings in**. Từ điển vẫn tra cứu định nghĩa tiếng Anh; bản dịch của từ hiển thị theo ngôn ngữ đích. Bấm mắt để xem bản dịch nghĩa. Đổi ngôn ngữ đích cập nhật bản dịch của từ, đóng các nghĩa cũ và dịch nghĩa theo ngôn ngữ mới khi bấm mắt.
 
 Trong môi trường cloud có proxy, thêm `NODE_USE_ENV_PROXY=1` vào lệnh khởi động. Cho phép HTTPS tới `api.elevenlabs.io`, `api.mymemory.translated.net`, `en.wiktionary.org`; thêm `www.dictionaryapi.com` nếu sử dụng Merriam-Webster và `generativelanguage.googleapis.com` nếu dùng Gemini.

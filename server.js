@@ -106,8 +106,8 @@ for (const image of ['Helennn.jpg', 'pexels-mart-production-7550534.jpg']) {
     res.sendFile(path.join(__dirname, image), error => {
       if (!error) return;
       if (error.code === 'ENOENT') {
-        // Supports users who downloaded only the HTML/JS files. Pin the image version.
-        return res.redirect(302, `https://raw.githubusercontent.com/ngthanhtu/WEB-HELEN-DICTIONARY/bb47b87/${encodeURIComponent(image)}`);
+        // Use main so the fallback survives removal of compromised Git history.
+        return res.redirect(302, `https://raw.githubusercontent.com/ngthanhtu/WEB-HELEN-DICTIONARY/main/${encodeURIComponent(image)}`);
       }
       next(error);
     });

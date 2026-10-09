@@ -144,7 +144,7 @@ test('serves both uploaded background images with image content types',async()=>
   }
 });
 
-test('redirects missing local backgrounds to pinned GitHub images', async () => {
+test('redirects missing local backgrounds to the current branch after history cleanup', async () => {
   const fs = require('node:fs');
   const tmp = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'helen-no-images-'));
   fs.copyFileSync(path.join(__dirname, '..', 'server.js'), path.join(tmp, 'server.js'));
@@ -161,7 +161,7 @@ test('redirects missing local backgrounds to pinned GitHub images', async () => 
     for (const name of ['Helennn.jpg','pexels-mart-production-7550534.jpg']) {
       const r=await fetch(`http://127.0.0.1:3201/${name}`, {redirect:'manual'});
       assert.equal(r.status,302);
-      assert.equal(r.headers.get('location'),`https://raw.githubusercontent.com/ngthanhtu/WEB-HELEN-DICTIONARY/bb47b87/${name}`);
+      assert.equal(r.headers.get('location'),`https://raw.githubusercontent.com/ngthanhtu/WEB-HELEN-DICTIONARY/main/${name}`);
     }
   } finally { child.kill(); fs.rmSync(tmp,{recursive:true,force:true}); }
 });
