@@ -7,8 +7,8 @@
   function soundLabel(){if(!soundButton)return;soundButton.textContent=sounds?.available?(sounds.enabled?'🔊 Quiz sound: on':'🔇 Quiz sound: off'):'Quiz sound unavailable';soundButton.setAttribute('aria-pressed',String(Boolean(sounds?.enabled && sounds.available)));soundButton.disabled=!sounds?.available;}
   if(soundButton)soundButton.onclick=()=>{sounds?.setEnabled(!sounds.enabled);soundLabel();};soundLabel();
   const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  let cards=core.read(storage),session=null,preparing=false,controller=null,cancelled=false,volatile=false,quizOutHidden=null,translationRequest=0;
-  function endSession(){translationRequest++;sounds?.stop();session=null;delete host.dataset.session;const out=document.querySelector('#out');if(quizOutHidden!==null && out)out.hidden=quizOutHidden;quizOutHidden=null;}
+  let cards=core.read(storage),session=null,preparing=false,controller=null,cancelled=false,volatile=false,translationRequest=0;
+  function endSession(){translationRequest++;sounds?.stop();session=null;delete host.dataset.session;}
   function favorites(){try{const values=JSON.parse(storage.getItem('helen-favorites')||'[]');return Array.isArray(values)?[...new Set(values.filter(v=>typeof v==='string').map(core.answer))].slice(0,500):[];}catch{return [];}}
   const active=()=>{const selected=new Set(favorites());return cards.filter(item=>selected.has(item.word));};
   function scoped(){const deck=learning.decks.find(item=>item.id===$('#study-scope').value);return active().filter(item=>!deck || deck.words.includes(item.word));}
@@ -166,7 +166,6 @@
     let items=mode==='review'?(words?list.filter(item=>words.includes(item.word)):core.due(list)):questions.map(q=>list.find(item=>item.word===q.word));
     items=items.slice(0,mode==='quiz'?10:20);if(!items.length)return;
     session={mode:matching?'matching':mode,style,items,index:0,correct:0,mistakes:[],answered:false,questions,matched:new Set(),selectedWord:null,selectedMeaning:null};host.dataset.session=session.mode;
-    const out=document.querySelector('#out');if(mode==='quiz' && out){quizOutHidden=out.hidden;out.hidden=true;}
     $('#end-study').hidden=false;refresh();showCard();setStatus('');
   }
   async function prepare(){
@@ -251,7 +250,7 @@
   document.addEventListener('helen:favorites',event=>{if(event.detail?.result)capture(event.detail.result);if(session && session.items.some(item=>!favorites().includes(item.word))){endSession();$('#study-stage').hidden=true;$('#end-study').hidden=true;setStatus('Danh sách từ đã thay đổi. Bắt đầu lại với các từ đang lưu.');}refresh();});
   window.addEventListener('storage',event=>{if([core.KEY,library.KEY,'helen-favorites'].includes(event.key)){cards=core.read(storage);learning=library.read(storage);endSession();if(editor.open)closeEditor();$('#study-stage').hidden=true;$('#end-study').hidden=true;refresh();setStatus('Đã cập nhật dữ liệu từ tab khác.');}});
   window.addEventListener('pageshow',refresh);window.addEventListener('online',refresh);window.addEventListener('offline',refresh);
-  host.addEventListener('toggle',refresh);setInterval(()=>{if(!document.hidden && host.open)refresh();},30000);
+  document.addEventListener('helen:page-change',event=>{if(event.detail.page==='study')refresh();});setInterval(()=>{if(!document.hidden && (!window.HelenPages || window.HelenPages.current()==='study'))refresh();},30000);
   document.querySelector('#target')?.addEventListener('change',()=>{if(session?.answered && session.feedbackQuestion)void translateFeedback(session.feedbackQuestion);});
   window.HelenStudy={capture};
   document.addEventListener('helen:restore',()=>{cards=core.read(storage);learning=library.read(storage);endSession();$('#study-stage').hidden=true;$('#end-study').hidden=true;refresh();});

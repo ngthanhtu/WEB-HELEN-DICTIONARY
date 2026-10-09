@@ -114,9 +114,15 @@ app.post('/api/speech',async(req,res)=>{
   catch(error) {res.status(error.status || 503).json({error:error.message || 'Chưa nhận diện được. Hãy thử lại hoặc gõ từ.',code:error.code || 'SPEECH_SERVICE'});}
 });
 const buildVersion=process.env.RENDER_GIT_COMMIT?.replace(/[^a-zA-Z0-9]/g,'').slice(0,12) || 'mobile-v1';
-app.get('/', (req, res) => {
+const appPages={'/':'dictionary','/study':'study','/words':'words','/history':'history','/offline':'offline'};
+const pageTitles={dictionary:'Dictionary',study:'Study',words:'My words',history:'History',offline:'Offline'};
+app.get(Object.keys(appPages), (req, res) => {
+  const page=appPages[req.path.toLowerCase().replace(/\/$/,'') || '/'];
   const html=require('fs').readFileSync(path.join(__dirname,'index.html'),'utf8');
-  res.set({'Cache-Control':'no-cache','X-Helen-Build':buildVersion}).type('html').send(html.replace(/(\/assets\/[^"\s]+\.(?:css|js))(?=")/g,`$1?v=${buildVersion}`));
+  res.set({'Cache-Control':'no-cache','X-Helen-Build':buildVersion}).type('html').send(html
+    .replace('data-page="dictionary"',`data-page="${page}"`)
+    .replace('<title>Helen Dictionary</title>',`<title>${pageTitles[page]} · Helen Dictionary</title>`)
+    .replace(/(\/assets\/[^"\s]+\.(?:css|js))(?=")/g,`$1?v=${buildVersion}`));
 });
 app.get('/manifest.webmanifest',(req,res)=>res.type('application/manifest+json').sendFile(path.join(__dirname,'public','manifest.webmanifest')));
 app.get('/sw.js',(req,res)=>{

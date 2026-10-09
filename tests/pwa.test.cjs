@@ -23,6 +23,17 @@ test('a slow reload uses the installed page promptly without caching server erro
   let response,background;w.events.fetch({request:{...w.request('/'),mode:'navigate'},waitUntil:promise=>background=promise,respondWith:promise=>response=promise});
   assert.equal(await (await response).text(),'installed page');assert.ok(w.deadlines.includes(2200));finish(new Response('server error',{status:503}));await background;assert.equal(await (await cache.match('/')).text(),'installed page');
 });
+test('every app destination opens the installed shell offline but API and unknown URLs remain untouched',async()=>{
+  const w=worker(async()=>{throw Error('offline');}),cache=await w.caches.open('helen-test-shell');await cache.put('/',new Response('complete app shell'));
+  for(const path of ['/study','/study/','/words','/history','/offline']){
+    let response;w.events.fetch({request:{...w.request(path),mode:'navigate'},waitUntil(){},respondWith:value=>response=value});
+    assert.equal(await (await response).text(),'complete app shell',path);
+  }
+  for(const path of ['/api/history','/healthz','/unknown']){
+    let intercepted=false;w.events.fetch({request:{...w.request(path),mode:'navigate'},respondWith:()=>intercepted=true});assert.equal(intercepted,false,path);
+  }
+  assert.ok(vm.runInContext("shell.includes('/assets/navigation.js?v=test') && shell.includes('/assets/pages.css?v=test')",w.context));
+});
 test('script and stylesheet version queries bypass stale asset caches',async()=>{
   const w=worker(async()=>new Response('new script')),cache=await w.caches.open('helen-test-shell');await cache.put('https://helen.test/assets/study.js?v=old',new Response('old script'));
   let response;w.events.fetch({request:w.request('/assets/study.js?v=new'),respondWith:value=>response=value});assert.equal(await (await response).text(),'new script');

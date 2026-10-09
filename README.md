@@ -1,6 +1,16 @@
 # WEB-HELEN-DICTIONARY
 
-Giao diện tổ chức theo **Dictionary → My words → Study**, với **Preferences** chứa Meanings in, Voice, theme và cursor. Quy tắc giao diện và tiêu chí tiếp cận nằm trong [design.md](design.md), quy trình bảo trì trong [skill.md](skill.md). Màu/khoảng cách/bo góc dùng semantic tokens trong `public/assets/workspace.css`; giữ ảnh, giọng đã chọn và các tính năng từ điển hiện có.
+Giao diện chia thành các trang riêng, với **Preferences** chứa Meanings in, Voice, theme và cursor. Quy tắc giao diện và tiêu chí tiếp cận nằm trong [design.md](design.md), quy trình bảo trì trong [skill.md](skill.md). Màu/khoảng cách/bo góc dùng semantic tokens trong `public/assets/workspace.css`; giữ ảnh, giọng đã chọn và các tính năng từ điển hiện có.
+
+| Trang | Đường dẫn | Nội dung |
+| --- | --- | --- |
+| Dictionary | `/` | Tìm từ, nghĩa, phát âm và ngữ cảnh của từ đang tra |
+| Study | `/study` | Review, quiz, bộ từ, tiến độ, mục tiêu ngày và Word of the day |
+| My words | `/words` | Từ yêu thích, sao lưu và xuất JSON/CSV/Anki |
+| History | `/history` | Lịch sử tra cứu và trạng thái đồng bộ |
+| Offline | `/offline` | Cài app, từ ngoại tuyến và Save favorite audio |
+
+Các URL hỗ trợ mở trực tiếp và refresh. Điều hướng nội bộ không tải lại ứng dụng, nên giữ nguyên kết quả từ và phiên quiz đang làm; Back/Forward cập nhật trang, tiêu đề và mục điều hướng đang chọn. Link cũ `#lookup`, `#study`, `#library` được chuyển sang trang tương ứng. Chỉ trang Dictionary tự khôi phục từ vừa tra; mở Study không khởi động một lookup không cần thiết. PWA dùng chung shell cho cả năm đường dẫn khi mất mạng, giữ nguyên dữ liệu và cache đã có. Refresh vẫn giữ tiến độ đã ghi nhận; câu quiz đang làm chỉ giữ khi chuyển trang trong cùng phiên.
 
 Helen Dictionary là một hệ thống từ điển cá nhân hóa tích hợp AI, được thiết kế tập trung vào trải nghiệm người dùng (UX) và khả năng lưu trữ ngoại tuyến (PWA). Dự án kết hợp các API ngôn ngữ (Merriam-Webster, Wiktionary), công nghệ sinh giọng nói tự nhiên (ElevenLabs) và trí tuệ nhân tạo (Gemini) để tạo ra một không gian học từ vựng trực quan, sinh động.
 

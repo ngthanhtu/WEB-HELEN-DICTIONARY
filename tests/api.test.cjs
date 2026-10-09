@@ -12,6 +12,16 @@ async function translate(text, to) {
   await ready;
   return fetch(`${base}/api/translate`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({texts:[text], from:'en', to}) });
 }
+test('app destinations support direct links and refreshes with the correct page and versioned assets',async()=>{
+  await ready;
+  for(const [path,page,title] of [['/','dictionary','Dictionary'],['/study','study','Study'],['/words','words','My words'],['/history','history','History'],['/offline','offline','Offline'],['/study/','study','Study'],['/Study','study','Study']]){
+    const response=await fetch(`${base}${path}`),html=await response.text();assert.equal(response.status,200,path);
+    assert.match(html,new RegExp(`data-page="${page}"`));assert.ok(html.includes(`<title>${title} · Helen Dictionary</title>`));
+    assert.match(html,/\/assets\/navigation.js\?v=/);assert.match(html,/\/assets\/pages.css\?v=/);assert.equal(response.headers.get('cache-control'),'no-cache');
+  }
+  const health=await fetch(`${base}/healthz`);assert.ok(health.headers.get('content-type').includes('application/json'));
+  assert.equal((await fetch(`${base}/not-a-page`)).status,404);
+});
 test('typeahead API returns prefix words and phrasal verbs without looking up definitions',async()=>{
   await ready;
   const response=await fetch(`${base}/api/suggestions?word=name`);

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-page="dictionary">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -36,7 +36,7 @@
 #voice-status{flex-basis:100%;font-size:14px}
 *{box-sizing:border-box}
 body{margin:0;font:400 16px/1.5 var(--font);color:var(--text-primary);background-color:var(--surface-base);background-image:linear-gradient(var(--page-wash),var(--page-wash)),var(--page-image);background-position:center;background-size:cover;background-repeat:no-repeat;background-attachment:fixed;min-height:100vh}
-main{background:var(--page-panel);border-radius:var(--radius-md)}
+#out{background:var(--page-panel);border-radius:var(--radius-md)}
 a,button,select,input{font:inherit}
 :focus-visible{outline:3px solid var(--link);outline-offset:2px}
 .bar{background:var(--bar-bg);color:var(--text-inverse);display:flex;align-items:center;justify-content:space-between;padding:var(--space-4) var(--space-6);gap:var(--space-5);flex-wrap:wrap}
@@ -65,7 +65,7 @@ a,button,select,input{font:inherit}
 .btn:hover{background:var(--surface-muted)}.btn:active{transform:scale(.97)}.btn:disabled{opacity:.5;cursor:not-allowed}
 .img-slot{aspect-ratio:4/3;border-radius:var(--radius-md);background:var(--surface-base);border:2px dashed var(--text-primary);overflow:hidden}
 .img-slot img{width:100%;height:100%;object-fit:cover;display:block}
-main{max-width:900px;margin:0 auto;padding:0 var(--space-6) var(--space-7)}
+#out{max-width:900px;margin:0 auto;padding:0 var(--space-6) var(--space-7)}
 .status{padding:var(--space-5);border-radius:var(--radius-sm);background:var(--surface-muted);color:var(--text-green);margin:var(--space-5) 0}
 .status.error{background:var(--error-bg);color:var(--error-text);border:2px solid var(--error-text)}
 .status.provisional{background:var(--translation-bg);color:var(--text-primary);border-left:4px solid var(--action)}
@@ -160,12 +160,14 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
 <link rel="stylesheet" href="/assets/study.css">
 <link rel="stylesheet" href="/assets/workspace.css">
 <link rel="stylesheet" href="/assets/daily-learning.css">
+<link rel="stylesheet" href="/assets/pages.css">
+<script src="/assets/navigation.js"></script>
 </head>
 <body>
-<a class="skip-link" href="#lookup">Skip to search</a>
+<a class="skip-link" href="#page-dictionary">Skip to content</a>
 <header class="bar">
-  <div class="brand"><i aria-hidden="true"></i>Helen Dictionary<button id="pet-mascot" class="pet-mascot" type="button" aria-label="Change dog picture" hidden><img alt="" draggable="false"></button></div>
-  <nav class="main-nav" aria-label="Main navigation"><a href="#lookup">Dictionary</a><a href="#study">Study</a><a href="#library">My words</a></nav>
+  <div class="brand"><i aria-hidden="true"></i><a href="/" data-page-link>Helen Dictionary</a><button id="pet-mascot" class="pet-mascot" type="button" aria-label="Change dog picture" hidden><img alt="" draggable="false"></button></div>
+  <nav class="main-nav" aria-label="Main navigation"><a href="/" data-page-link aria-label="Dictionary search"><span class="nav-full">Dictionary</span><span class="nav-short">Search</span></a><a href="/study" data-page-link>Study</a><a href="/words" data-page-link>My words</a><a href="/history" data-page-link>History</a><a href="/offline" data-page-link>Offline</a></nav>
   <details class="preferences"><summary>Preferences <span aria-hidden="true">⚙</span></summary><div class="preferences-body">
   <label>Meanings in
     <select id="target" aria-label="Translate meanings into"></select>
@@ -185,10 +187,12 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
   <label class="metrics-opt-in"><input id="metrics-opt-in" type="checkbox"><span>Help improve Helen<small>Cho phép đếm lượt tra, lưu và học. Không gửi từ đã tra, danh tính hay bản ghi âm trong thống kê. Có thể tắt bất kỳ lúc nào.</small></span></label>
   </div></details>
 </header>
-<div class="app-tools"><button id="install-app" class="word-link" type="button">＋ Install app</button><span id="connection-status" role="status" hidden></span><button id="app-update" class="word-link" type="button" hidden>Update app</button></div>
+<div class="app-tools" id="app-status-tools"><button id="install-app" class="word-link" type="button">＋ Install app</button><span id="connection-status" role="status" hidden></span><button id="app-update" class="word-link" type="button" hidden>Update app</button></div>
 <dialog id="install-help"><h2>Install Helen Dictionary</h2><p id="install-steps"></p><p>Giọng đọc, dịch mới và tạo AI cần Internet. Từ và bài AI đã lưu có thể xem lại khi mất mạng.</p><button id="close-install" class="btn" type="button">Close</button></dialog>
 <div id="audio-status" role="status" hidden></div>
 
+<main id="app-content" class="app-content">
+<section id="page-dictionary" class="app-page" data-app-page="dictionary" aria-label="Dictionary">
 <section class="hero" id="lookup" aria-label="Dictionary search">
   <div class="lookup-panel">
     <span class="section-kicker">YOUR PERSONAL DICTIONARY</span>
@@ -208,15 +212,12 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
   <div class="img-slot" id="slot-hero"></div>
 </section>
 
-<nav class="learning-journey" aria-label="Learning journey"><a href="#lookup"><span>01</span><strong>Discover</strong><small>Nghĩa · IPA · Phát âm</small></a><a href="#library"><span>02</span><strong>Keep</strong><small>Kho từ của bạn</small></a><a href="#study"><span>03</span><strong>Practice</strong><small>Quiz · Ghép cặp · Ôn tập</small></a></nav>
-<section id="word-of-day" class="word-of-day" aria-label="Word of the day" hidden><div><span class="section-kicker">WORD OF THE DAY · A LITTLE EVERY DAY</span><h2 id="daily-word"></h2><p id="daily-gloss"></p><small>Princeton WordNet · Gợi ý nhẹ từ bộ từ ngoại tuyến</small></div><div class="word-actions"><button id="daily-explore" class="word-link" type="button">Explore word</button><button id="daily-save" class="word-link" type="button">☆ Save word</button></div><p id="daily-word-status" role="status"></p></section>
-<section class="learning-tools" id="library" aria-label="Từ đã lưu và lịch sử">
-  <details><summary>Từ yêu thích <span id="favorites-count">0</span></summary><p>Bấm ☆ cạnh từ để lưu. Dữ liệu lưu riêng trong trình duyệt này.</p><div class="word-list" id="favorites-list"></div></details>
-  <details><summary>Lịch sử tra cứu <span id="history-count">0</span></summary><p>40 từ tra thành công gần nhất. Khi database được kết nối, lịch sử được đồng bộ cho thiết bị này.</p><p id="history-sync-status" class="muted" role="status"></p><button class="word-link" id="clear-history" type="button">Xóa lịch sử</button><div class="word-list" id="history-list"></div></details>
-  <details class="backup-panel"><summary>Backup & export <span aria-hidden="true">↗</span></summary><p>Lưu một bản để chuyển máy hoặc tránh mất dữ liệu. JSON giữ từ, bộ từ, lịch ôn và tiến độ. CSV và Anki TSV dùng để học ở ứng dụng khác.</p><div class="backup-actions"><button id="backup-json" class="word-link" type="button">Download backup</button><button id="backup-import" class="word-link" type="button">Restore backup</button><button id="backup-csv" class="word-link" type="button">Export CSV</button><button id="backup-anki" class="word-link" type="button">Export Anki TSV</button></div><input id="backup-file" type="file" accept=".json,application/json" hidden><p id="backup-status" role="status"></p><small>Anki: Import file → chọn TSV, cho phép HTML, cột 1 = Front, cột 2 = Back. Âm thanh và bản ghi micro không nằm trong bản sao lưu.</small></details>
+<div id="out" aria-live="polite"></div>
 </section>
-<details id="study" class="study-panel">
-  <summary><span class="study-heading"><span class="study-icon" aria-hidden="true">✦</span><span>Study · Review & Quiz<small>Turn saved words into lasting memories</small></span></span><span class="study-summary-end"><span id="study-count"></span><span class="study-open-label"><span class="study-closed-copy">Start learning <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></span><span class="study-open-copy">Collapse <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 14l6-6 6 6"/></svg></span></span></span></summary>
+<section id="page-study" class="app-page" data-app-page="study" aria-label="Study">
+<header class="page-intro"><span class="section-kicker">A LITTLE EVERY DAY</span><h1 tabindex="-1">Your learning space.</h1><p>Ôn từ đến hạn, chọn một kiểu luyện tập và theo dõi tiến bộ của bạn.</p></header>
+<section id="study" class="study-panel" aria-label="Review and quiz">
+  <div class="study-page-heading"><h2>Review & Quiz</h2><span id="study-count"></span></div>
   <p id="study-progress"></p><p id="study-next" class="muted"></p>
   <section id="daily-learning" class="daily-learning" aria-labelledby="daily-title"><div><span class="section-kicker">BUILD YOUR DAILY HABIT</span><h3 id="daily-title">A little practice, every day</h3><strong id="daily-count">0/5 lượt luyện</strong><progress id="daily-meter" value="0" max="5" aria-label="Daily learning progress"></progress><span id="daily-streak">0 ngày liên tiếp</span></div><label for="daily-goal">Daily goal<select id="daily-goal"><option value="5">5 lượt</option><option value="10">10 lượt</option><option value="20">20 lượt</option></select></label><p id="daily-note"></p></section>
   <div class="study-dashboard" aria-label="Study overview">
@@ -232,8 +233,28 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
   <p id="study-status" role="status"></p>
   <div id="study-stage" class="study-stage" tabindex="-1" hidden></div>
   <p class="muted">Review lên lịch ôn từ yêu thích theo mức nhớ. Quiz luyện nghĩa và câu ví dụ; không đổi lịch ôn. Tiến độ, bản dịch và âm thanh đã lưu dùng được ngoại tuyến; bản dịch và giọng đọc mới cần mạng.</p>
-</details>
-<main id="out" aria-live="polite"></main>
+</section>
+<section id="word-of-day" class="word-of-day" aria-label="Word of the day" hidden><div><span class="section-kicker">WORD OF THE DAY · A LITTLE EVERY DAY</span><h2 id="daily-word"></h2><p id="daily-gloss"></p><small>Princeton WordNet · Gợi ý nhẹ từ bộ từ ngoại tuyến</small></div><div class="word-actions"><button id="daily-explore" class="word-link" type="button">Explore word</button><button id="daily-save" class="word-link" type="button">☆ Save word</button></div><p id="daily-word-status" role="status"></p></section>
+</section>
+<section id="page-words" class="app-page" data-app-page="words" aria-label="My words">
+<header class="page-intro"><span class="section-kicker">KEEP WHAT MATTERS</span><h1 tabindex="-1">A collection of your own.</h1><p>Từ đã lưu và bản sao lưu ở một nơi. Bộ từ và bài luyện nằm trong Study.</p></header>
+<section class="learning-tools" id="library" aria-label="Saved words and backups">
+  <details open><summary>Từ yêu thích <span id="favorites-count">0</span></summary><p>Bấm ☆ cạnh từ để lưu. Dữ liệu lưu riêng trong trình duyệt này.</p><div class="word-list" id="favorites-list"></div></details>
+  <details class="backup-panel"><summary>Backup & export <span aria-hidden="true">↗</span></summary><p>Lưu một bản để chuyển máy hoặc tránh mất dữ liệu. JSON giữ từ, bộ từ, lịch ôn và tiến độ. CSV và Anki TSV dùng để học ở ứng dụng khác.</p><div class="backup-actions"><button id="backup-json" class="word-link" type="button">Download backup</button><button id="backup-import" class="word-link" type="button">Restore backup</button><button id="backup-csv" class="word-link" type="button">Export CSV</button><button id="backup-anki" class="word-link" type="button">Export Anki TSV</button></div><input id="backup-file" type="file" accept=".json,application/json" hidden><p id="backup-status" role="status"></p><small>Anki: Import file → chọn TSV, cho phép HTML, cột 1 = Front, cột 2 = Back. Âm thanh và bản ghi micro không nằm trong bản sao lưu.</small></details>
+</section>
+<p class="page-next"><a href="/study" data-page-link>Practice your saved words →</a></p>
+</section>
+<section id="page-history" class="app-page" data-app-page="history" aria-label="History">
+<header class="page-intro"><span class="section-kicker">PICK UP WHERE YOU LEFT OFF</span><h1 tabindex="-1">Your recent discoveries.</h1><p>Xem lại từ đã tra hoặc mở lại một từ để tiếp tục khám phá.</p></header>
+<section class="learning-tools history-tools" aria-label="Lookup history">
+  <details open><summary>Lịch sử tra cứu <span id="history-count">0</span></summary><p>40 từ tra thành công gần nhất. Khi database được kết nối, lịch sử được đồng bộ cho thiết bị này.</p><p id="history-sync-status" class="muted" role="status"></p><button class="word-link" id="clear-history" type="button">Xóa lịch sử</button><div class="word-list" id="history-list"></div></details>
+</section>
+</section>
+<section id="page-offline" class="app-page" data-app-page="offline" aria-label="Offline">
+<header class="page-intro"><span class="section-kicker">TAKE HELEN WITH YOU</span><h1 tabindex="-1">Learn beyond the connection.</h1><p>Cài app, lưu từ và tải giọng đọc để dùng khi mất mạng.</p></header>
+<div id="offline-content"></div>
+</section>
+</main>
 <footer>Helen Dictionary · Free to learn<br><a href="/assets/sources.html">Sources, licenses & privacy</a> · AI voice: <a href="https://elevenlabs.io/">elevenlabs.io</a></footer>
 <dialog id="deck-editor" class="deck-dialog" aria-labelledby="deck-editor-title"><form id="deck-form"><h2 id="deck-editor-title">New word set</h2><label for="deck-existing">Choose a word set</label><select id="deck-existing"><option value="">Create a new set</option></select><label for="deck-name">Word set name</label><input id="deck-name" maxlength="50" required autocomplete="off" placeholder="e.g. IELTS Reading"><label for="deck-filter">Find a saved word</label><input id="deck-filter" type="search" placeholder="Filter your words" autocomplete="off"><fieldset><legend>Select saved words</legend><div id="deck-word-options"></div></fieldset><p id="deck-editor-error" role="alert"></p><div class="dialog-actions"><button class="btn" type="submit">Save word set</button><button id="cancel-deck-editor" class="word-link" type="button">Cancel</button></div></form></dialog>
 <div class="pet-cursor" id="pet-cursor" aria-hidden="true" hidden><span class="pet-pointer"><span class="pet-hotspot"></span><img alt="" draggable="false"></span></div>
@@ -476,11 +497,13 @@ function showSuggestions(data, provisional = false) {
   } else section.insertAdjacentHTML('beforeend','<p>Chưa có gợi ý phù hợp. Hãy kiểm tra chính tả hoặc ngôn ngữ nhập.</p>');
   $('#out').append(section);
 }
-let searchRequest = 0;
+let searchRequest = 0, searchPending=false;
 async function searchWord({ scroll = true, recordHistory = true, suggestions = true } = {}) {
+  globalThis.HelenPages?.go('/', {focus:globalThis.HelenPages.current()!=='dictionary', scroll:false, restore:false});
   if(suggestions)autocomplete?.suggest({immediate:true,submitted:true});else autocomplete?.close();
   const word = $('#q').value.trim(); if (!word) return;
   const from = $('#from').value, request = ++searchRequest;
+  searchPending=true;
   remember('helen-query', $('#q').value); remember('helen-from', from);
   lastResult = null; ++targetRequest;
   msg('Searching…',false,'',true);
@@ -536,7 +559,7 @@ async function searchWord({ scroll = true, recordHistory = true, suggestions = t
         });
     }
   } catch(error) { if (request === searchRequest) msg(shortError(error), true); }
-  finally { resolved=true; clearTimeout(spellingTimer); }
+  finally { resolved=true; clearTimeout(spellingTimer); if(request===searchRequest)searchPending=false; }
 }
 $('#form').addEventListener('submit', e => { e.preventDefault(); cancelSpeech(); searchWord(); });
 const autocomplete=globalThis.HelenAutocomplete?.create({input:$('#q'),list:$('#search-suggestions'),status:$('#search-suggestions-status'),language:$('#from'),fetch:apiFetch,api:API,localWords:()=>[...favorites,...history],loading:showLoading,onSelect:word=>{cancelSpeech();remember('helen-query',word);searchWord({suggestions:false});}});
@@ -993,7 +1016,7 @@ function render(d, scroll = true) {
     const sources=[...new Set(d.entries.map(entry=>entry.source).filter(Boolean))].join(', '),wiki=d.entries.some(entry=>/Wiktionary/i.test(`${entry.source} ${entry.relatedSource || ''}`));
     out.insertAdjacentHTML('beforeend', `<p class="src">Source: ${esc(sources)}${wiki?` · <a href="https://en.wiktionary.org/wiki/${encodeURIComponent(d.word)}" target="_blank" rel="noopener">Wiktionary contributors & history</a> · <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>`:''} · <a href="/assets/sources.html">Sources & licenses</a></p>`);
   }
-  if (scroll) out.querySelector('h2')?.scrollIntoView({behavior:'smooth', block:'center'});
+  if (scroll && (!globalThis.HelenPages || globalThis.HelenPages.current()==='dictionary')) out.querySelector('h2')?.scrollIntoView({behavior:'smooth', block:'center'});
 }
 // Changing the target language closes open translations so they refresh on next tap.
 $('#target').addEventListener('change', () => {
@@ -1003,8 +1026,10 @@ $('#target').addEventListener('change', () => {
   updateWordTranslation();
   aiPanels.forEach(panel=>panel.draw());
 });
-// Re-run the saved lookup so results remain current after a reload.
-if ($('#q').value.trim()) searchWord({ scroll: false, recordHistory: false });
+// Restore the saved lookup only when Dictionary is visible.
+function restoreDictionary(){if(!lastResult && !searchPending && $('#q').value.trim())searchWord({scroll:false,recordHistory:false});}
+if(!globalThis.HelenPages || globalThis.HelenPages.current()==='dictionary')restoreDictionary();
+document.addEventListener?.('helen:page-change',event=>{if(event.detail.page==='dictionary' && event.detail.restore!==false)restoreDictionary();});
 </script>
 <script src="/assets/study-core.js"></script>
 <script src="/assets/study-library.js"></script>

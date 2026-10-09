@@ -1,0 +1,30 @@
+/* Destinations must be visually isolated, including before scripts initialize. */
+.app-page{display:none}
+html[data-page=dictionary] [data-app-page=dictionary],html[data-page=study] [data-app-page=study],html[data-page=words] [data-app-page=words],html[data-page=history] [data-app-page=history],html[data-page=offline] [data-app-page=offline]{display:block}
+#app-content{max-width:none;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;min-height:65dvh}
+.brand>a{color:var(--text-inverse);text-decoration:none}
+.main-nav a[aria-current=page]{background:var(--accent);color:var(--surface-strong);font-weight:700}
+.main-nav a[aria-current=page]:hover{background:var(--accent);color:var(--surface-strong)}
+.main-nav a:active{transform:translateY(1px)}
+.nav-short{display:none}
+.page-intro{max-width:var(--content-width);margin:var(--space-6) auto var(--space-5);padding:0 var(--space-4);box-sizing:border-box}
+.page-intro h1{font-size:clamp(2rem,4vw,3rem);line-height:1.2;letter-spacing:-.035em;margin:0 0 var(--space-3);overflow-wrap:anywhere}
+.page-intro p{margin:0;color:var(--text-tertiary);max-width:65ch}
+.app-page .learning-tools{margin:var(--space-5) auto;display:grid;grid-template-columns:1fr;box-sizing:border-box}
+.app-page .learning-tools>details{min-width:0;padding:var(--space-5);border-radius:var(--radius-md)}
+.app-page .learning-tools summary{font-size:1.1rem}
+.page-next{max-width:var(--content-width);box-sizing:border-box;margin:var(--space-5) auto;padding:0 var(--space-4)}
+.page-next a{display:inline-flex;align-items:center;min-height:44px;font-weight:600;text-underline-offset:5px}
+.study-page-heading{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);flex-wrap:wrap}
+.study-page-heading h2{margin:0;font-size:var(--font-title)}
+.study-page-heading>span{color:var(--text-tertiary);font-size:var(--font-small)}
+#page-study .word-of-day{margin-top:var(--space-5)}
+#page-offline .app-tools{padding:var(--space-4) 0;margin:0;max-width:none}
+#offline-content{max-width:var(--content-width);box-sizing:border-box;margin:0 auto;padding:0 var(--space-4)}
+#offline-content>.offline-library{box-sizing:border-box;max-width:none;margin:var(--space-4) 0;padding:var(--space-5);border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface-base);font-size:var(--font-base)}
+#offline-content>.offline-library summary{min-height:44px;font-weight:700;cursor:pointer}
+#offline-content>.offline-audio{max-width:none;margin:var(--space-4) 0;padding:var(--space-5)}
+#app-status-tools:not(:has(#connection-status:not([hidden]),#app-update:not([hidden]))){display:none}
+#page-offline .app-tools{display:flex}
+@media(max-width:1050px){.bar{flex-wrap:wrap}.brand{flex:1}.main-nav{order:3;width:100%;margin-left:0;justify-content:center;flex-wrap:wrap}}
+@media(max-width:760px){.page-intro{margin:var(--space-5) auto}.main-nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--space-1)}.main-nav a{justify-content:center;padding:var(--space-2) var(--space-1);font-size:var(--font-small);min-width:0;text-align:center;line-height:1.3}.nav-full{display:none}.nav-short{display:inline}.app-page .learning-tools>details,#offline-content>.offline-library,#offline-content>.offline-audio{padding:var(--space-4)}.preferences{margin-left:auto}.brand{font-size:1.05rem;flex:1 1 auto;white-space:normal}}

@@ -27,6 +27,14 @@ function page(saved = {}, lookupFetch = null, browser = {}, actionFetch = null) 
   vm.runInContext(script,context);
   return {context,element,requests,saved,created};
 }
+test('returning to Dictionary while a restored lookup is pending does not start duplicate requests',async()=>{
+  let finish;const p=page({'helen-query':'loan'},()=>new Promise(resolve=>finish=resolve));
+  vm.runInContext('restoreDictionary(); restoreDictionary();',p.context);
+  assert.equal(p.requests.filter(request=>request.url.includes('/api/lookup')).length,1);
+  finish({ok:true,json:async()=>({query:'loan',word:'loan',from:'en',entries:[{word:'loan',meanings:[],source:'test'}]})});
+  await new Promise(resolve=>setTimeout(resolve,0));assert.equal(vm.runInContext('searchPending',p.context),false);
+  vm.runInContext('restoreDictionary()',p.context);assert.equal(p.requests.filter(request=>request.url.includes('/api/lookup')).length,1);
+});
 test('selected voice survives a reload and TTS failure',async()=>{
   const p=page(); await vm.runInContext('loadVoices()',p.context);
   p.element('#voice').value='Sarah'; p.element('#voice').events.change();

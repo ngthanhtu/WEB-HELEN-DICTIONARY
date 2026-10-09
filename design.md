@@ -27,7 +27,7 @@ Body text must be at least 16px; supporting text should be 14px. The reference's
 
 ### Layout and navigation
 
-The header must provide Dictionary, Study and My words anchors. Voice, meaning language, theme and dog controls must remain in the Preferences disclosure. Navigation must open the target disclosure and move keyboard focus to its first meaningful control. No fixed toolbar may cover answers or the next-question action. Desktop panels should share `--content-width`; mobile panels must keep `--space-4` side gutters. The saved-audio action must stay visible outside a closed offline-library disclosure.
+The header must provide five separate destinations: Dictionary (`/`), Study (`/study`), My words (`/words`), History (`/history`) and Offline (`/offline`). Only one page must be visible and reachable by keyboard at a time. Voice, meaning language, theme and dog controls must remain in the shared Preferences disclosure. Navigation must mark the current link with `aria-current=page`, update the title and move focus to the destination heading. It must support direct URLs, refresh, Back/Forward and legacy anchors. Internal page changes must retain the current word and unfinished quiz without a new network request. Only Dictionary must restore a saved lookup. No fixed toolbar may cover answers or the next-question action. Desktop panels should share `--content-width`; mobile panels must keep `--space-4` side gutters. Install, offline pack and the visible Save favorite audio action must live on Offline. The service worker must support offline navigation to all five app routes without capturing API, health or unknown URLs.
 
 ### Search and word results
 
@@ -41,9 +41,9 @@ Answers must show a textual correct/incorrect state, the correct word, definitio
 
 ### Word sets
 
-Set cards must display name, saved-word count, prepared-word count and Practice/Edit/Delete actions. A set must be a grouping of existing favorites: a word can belong to several sets. The editor must use a native modal dialog, labeled fields and checkbox selection. Filtering must only hide options, preserving checked selections. Empty sets must be allowed. Names must be unique ignoring case, with 1–50 characters; storage must cap at 20 sets. Deleting a set must ask for confirmation and must retain its words and schedule.
+Set cards must display name, saved-word count, prepared-word count and Practice/Edit/Delete actions. A set must be a grouping of existing favorites: a word can belong to several sets. The editor must use a native modal dialog, labeled fields and checkbox selection. Filtering must only hide options, preserving checked selections. Empty sets must be allowed. Names must be unique ignoring case, with 1–50 characters; storage must cap at 100 sets. Deleting a set must ask for confirmation and must retain its words and schedule.
 
-Starter sets should be small and editable through `study-starters.json`. Adding one must be initiated by the user, merge existing membership and respect the 100-favorite limit. Source definitions must come from the licensed offline pack; no AI/API generation is needed.
+Starter sets should be small and editable through `study-starters.json`. Adding one must be initiated by the user, merge existing membership and respect the 500-favorite limit. Source definitions must come from the licensed offline pack; no AI/API generation is needed.
 
 ### Progress
 

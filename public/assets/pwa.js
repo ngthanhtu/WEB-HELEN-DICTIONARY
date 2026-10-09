@@ -32,12 +32,17 @@
   document.querySelector('#close-install').addEventListener('click',()=>closeDialog(help));
   const library=document.createElement('details');library.className='offline-library';
   library.innerHTML='<summary>Saved offline <span id="offline-count">(0)</span></summary><p id="offline-summary" role="status">Đang kiểm tra dữ liệu trên thiết bị…</p><div class="offline-word-list"></div><button class="word-link" id="download-offline-pack" type="button" disabled>Download offline pack</button><p class="offline-note">Lưu tối đa 100 mục tra. Bấm mắt hoặc tạo AI khi có mạng để lưu thêm bản dịch và bài học. Từ mới và micro cần Internet.</p>';
-  document.querySelector('.app-tools').insertAdjacentElement('afterend',library);
+  const offlinePage=document.querySelector('#offline-content');
+  (offlinePage || document.querySelector('.app-tools').parentElement).append(library);
+  library.open=Boolean(offlinePage);
+  if(offlinePage){
+    const tools=document.createElement('div');tools.className='app-tools';tools.append(install);offlinePage.prepend(tools);
+  }
   // Keep the primary audio action visible beside the learning tools, even when
   // Saved offline is collapsed or service-worker installation has not finished.
   const audioPanel=document.createElement('section');audioPanel.id='offline-pronunciation';audioPanel.className='offline-audio';audioPanel.setAttribute('aria-label','Offline pronunciation');
   audioPanel.innerHTML='<div class="offline-audio-heading"><span class="offline-audio-icon" aria-hidden="true">🔊</span><div><h3>Offline pronunciation</h3><p id="offline-audio-summary" role="status">Âm thanh đã nghe được lưu tự động trên thiết bị.</p></div></div><div class="offline-actions"><button class="btn" id="download-favorite-audio" type="button">↓ Save favorite audio</button><button class="word-link" id="cancel-favorite-audio" type="button" hidden>Stop</button><button class="word-link" id="clear-offline-audio" type="button">Clear audio</button></div><p id="offline-audio-progress" role="status"></p><details class="offline-audio-help"><summary>How it works</summary><p class="offline-note">Lưu giọng của tối đa 10 từ yêu thích mỗi lượt, dùng hạn mức ElevenLabs. Chỉ tải giọng đang chọn; từ và câu đã nghe mở lại không cần mạng. Tối đa 100 âm thanh / 20 MiB. Xoá âm thanh không xoá từ hoặc lịch ôn.</p></details>';
-  (document.querySelector('.learning-tools') || library).insertAdjacentElement('afterend',audioPanel);
+  library.insertAdjacentElement('afterend',audioPanel);
   const packButton=library.querySelector('#download-offline-pack'), summary=library.querySelector('#offline-summary'), list=library.querySelector('.offline-word-list');
   const packDialog=document.createElement('dialog');packDialog.className='offline-dialog';
   packDialog.innerHTML='<h2>Offline pack</h2><p>Tải bộ từ tiếng Anh thông dụng và nghĩa tiếng Việt về thiết bị này? Chỉ tải khi bạn xác nhận; không gọi dịch vụ AI hay giọng đọc.</p><p>Các câu định nghĩa chỉ có bản dịch nếu bạn đã bấm mắt khi có mạng.</p><div class="offline-actions"><button class="btn" id="confirm-offline-pack" type="button">Download</button><button class="word-link" id="cancel-offline-pack" type="button">Cancel</button></div>';
