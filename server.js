@@ -399,7 +399,7 @@ app.post('/api/translate', async (req, res) => {
 app.get('/api/voices', async (req, res) => {
   if (!KEY) return res.status(501).json({ error: 'Voice chưa được cấu hình. Quản trị viên cần thêm ELEVENLABS_API_KEY trong Environment của dịch vụ Render rồi deploy lại.' });
   const r = await get('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': KEY } }, 6500);
-  if (!r || !r.ok) return res.status(502).json({ error: 'Could not load voices.', status: r && r.status, detail: r ? (await r.text()).slice(0, 300) : 'no response' });
+  if (!r || !r.ok) return res.status(502).json({ error: 'Could not load voices. Check key permissions and quota.', status: r ? r.status : null });
   const j = await r.json();
   res.json({ in_use: VOICE, voices: j.voices.map(voiceMetadata) });
 });
@@ -418,7 +418,7 @@ app.get('/api/tts', async (req, res) => {
         body: JSON.stringify({ text, model_id: 'eleven_multilingual_v2' })
       }, 15000);
       if (!r || !r.ok) {
-        console.error(`TTS failed: voice=${voice} status=${r ? r.status : 'no response'} ${r ? (await r.text()).slice(0, 300) : ''}`);
+        console.error(`TTS failed: voice=${voice} status=${r ? r.status : 'no response'}`);
         const error = new Error(r ? `ElevenLabs rejected the selected voice (HTTP ${r.status}). Check key permissions, voice access and quota.` : 'Cannot connect to ElevenLabs.');
         error.upstreamStatus = r?.status;
         throw error;

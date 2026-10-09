@@ -4,6 +4,7 @@ const fs=require('node:fs');
 const os=require('node:os');
 const path=require('node:path');
 const {spawnSync}=require('node:child_process');
+const {spawn}=require('node:child_process');
 const {findings,scan}=require('../scripts/check-secrets.cjs');
 const fakeKey=['sk_', 'a'.repeat(48)].join(''); // Deliberately generated; never a real credential.
 function fixture(t) {
@@ -34,4 +35,17 @@ test('history scanning detects deleted secrets and its CLI never prints their va
   assert.deepEqual(scan(repo.root).findings,[]);assert.ok(scan(repo.root,'history').findings.length);
   const result=spawnSync(process.execPath,[path.join(__dirname,'../scripts/check-secrets.cjs'),'--history'],{cwd:repo.root,encoding:'utf8'});
   assert.equal(result.status,1);assert.ok(!`${result.stdout}${result.stderr}`.includes(fakeKey));assert.match(result.stderr,/credential values are hidden/);
+});
+test('voice errors never expose reflected credentials in HTTP responses or server logs',async t=>{
+  const repo=fixture(t), preload=path.join(repo.root,'upstream.cjs');
+  fs.writeFileSync(preload,"global.fetch=async()=>Response.json({detail:'PRIVATE_VOICE_DETAILS',credential:process.env.ELEVENLABS_API_KEY},{status:403});");
+  const server=spawn(process.execPath,['--require',preload,'server.js'],{cwd:path.join(__dirname,'..'),env:{...process.env,PORT:'3207',DATABASE_URL:'',MYSQL_HOST:'',GEMINI_API_KEY:'',ELEVENLABS_API_KEY:'test-only'},stdio:['ignore','pipe','pipe']});
+  t.after(()=>server.kill());let logs='';server.stderr.on('data',data=>{logs+=data;});
+  await new Promise((resolve,reject)=>{server.stdout.once('data',resolve);server.once('error',reject);server.once('exit',code=>reject(new Error(`fixture server exited ${code}`)));});
+  for (const endpoint of ['/api/voices','/api/tts?text=hello']) {
+    const response=await fetch(`http://127.0.0.1:3207${endpoint}`);assert.equal(response.status,502);
+    const body=await response.text();assert.doesNotMatch(body,/test-only|PRIVATE_VOICE_DETAILS/);
+  }
+  await new Promise(resolve=>setTimeout(resolve,25));
+  assert.match(logs,/TTS failed:.*status=403/);assert.doesNotMatch(logs,/test-only|PRIVATE_VOICE_DETAILS/);
 });

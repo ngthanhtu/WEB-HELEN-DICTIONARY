@@ -2,6 +2,8 @@
 
 API keys must be stored in Render's **Environment** settings or an ignored local `.env` file. `.env.example` must contain empty values or explicit placeholders. Never put a real key in HTML, public assets, GitHub issues, logs, screenshots or chat.
 
+ElevenLabs errors must not echo raw upstream response bodies to the browser or logs, because a provider error can reflect request credentials. Only the upstream status and a short safe message are exposed.
+
 The public history contained an ElevenLabs API key in the legacy `env` file. Removing that file in a later commit did not remove the earlier blob. Treat the exposed key as compromised even if it has never been used by someone else.
 
 ## Immediate key replacement
