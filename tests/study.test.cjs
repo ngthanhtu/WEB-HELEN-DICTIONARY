@@ -69,3 +69,16 @@ test('definition questions include a masked source example and typed answers rec
   const brother=card('brother','a male sibling',{synonyms:['blood brother']}),synonym=card('blood brother','a male sibling');
   const typed=study.question(brother,[brother,synonym],0);assert.equal(typed.type,'type');assert.deepEqual(typed.accepted,['brother','blood brother']);
 });
+test('explicit quiz styles keep source context, skip missing cloze data and normalize phrases',()=>{
+  const deck=[card('loan','borrowed money',{example:'The bank approved a loan.'}),card('tree','a woody plant',{example:'They planted a tree.'}),card('brother','a male sibling',{example:'My brother is here.'}),card('stone','a hard mineral')];
+  assert.ok(study.quizPlan(deck,'',()=>.4,'type').every(q=>q.type==='type'));
+  assert.ok(study.quizPlan(deck,'',()=>.4,'choice').every(q=>q.type==='choice'));
+  const cloze=study.quizPlan(deck,'',()=>.4,'cloze');assert.equal(cloze.length,3);assert.ok(cloze.every(q=>q.type==='cloze' && q.original && q.prompt.includes('____')));assert.ok(!cloze.some(q=>q.word==='stone'));
+  assert.equal(study.answer('  NAME   AFTER  '),'name after');assert.equal(study.answer('Somebody’s'),'somebody\'s');
+});
+test('matching requires three distinct pairs and excludes duplicate definitions and source-confirmed synonyms',()=>{
+  const brother=card('brother','a male sibling',{synonyms:['blood brother']}),duplicate=card('sibling','a male sibling'),synonym=card('blood brother','a relative in a family',{synonyms:['brother']}),loan=card('loan','borrowed money'),tree=card('tree','a woody plant');
+  assert.deepEqual(study.matchingPlan([brother,duplicate,synonym]),[]);
+  const plan=study.matchingPlan([brother,duplicate,synonym,loan,tree],()=>.99);assert.equal(plan.length,3);assert.deepEqual(plan.map(q=>q.word).sort(),['brother','loan','tree']);assert.equal(new Set(plan.map(q=>q.definition)).size,3);
+  assert.equal(study.matchingPlan(Array.from({length:20},(_,i)=>card(`item${i}`,`Different meaning ${i}`))).length,6);
+});

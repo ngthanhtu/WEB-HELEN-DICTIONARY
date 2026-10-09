@@ -111,6 +111,10 @@
       try {worker.postMessage(data,[channel.port2]);}catch(error){clearTimeout(timer);channel.port1.close();reject(error);}
     });
   }
+  window.HelenPWA={saveWords:async entries=>{
+    const outcome=await workerMessage({type:'SAVE_OFFLINE_PACK',pack:{version:1,entries}});
+    await refreshLibrary();return outcome;
+  }};
   function localCount(key,field) {
     try {const values=JSON.parse(localStorage.getItem(key) || '[]');return Array.isArray(values)?values.filter(value=>value && (field?value[field]:value.data)).length:0;}catch{return 0;}
   }

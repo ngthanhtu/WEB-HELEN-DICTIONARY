@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "decks": [
+    {"name": "Everyday English", "description": "Con người và sinh hoạt hằng ngày", "words": ["friend", "home", "food", "water", "day", "time"]},
+    {"name": "Learning & Discovery", "description": "Học tập và khám phá", "words": ["book", "school", "learn", "language", "experiment", "world"]},
+    {"name": "Money & Work", "description": "Tiền bạc và công việc", "words": ["work", "bank", "loan", "borrow", "name", "good"]}
+  ]
+}

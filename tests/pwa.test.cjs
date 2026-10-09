@@ -31,6 +31,7 @@ test('script and stylesheet version queries bypass stale asset caches',async()=>
   assert.ok(vm.runInContext("shell.includes('/assets/offline-audio.js?v=test')",w.context));
   assert.ok(vm.runInContext("shell.includes('/assets/quiz-sounds.js?v=test')",w.context));
   assert.ok(vm.runInContext("shell.includes('/assets/quiz-translation.js?v=test')",w.context));
+  for(const asset of ['/assets/workspace.css?v=test','/assets/workspace.js?v=test','/assets/study-library.js?v=test','/assets/study-starters.json','/assets/offline-basics.json'])assert.ok(vm.runInContext(`shell.includes(${JSON.stringify(asset)})`,w.context));
 });
 test('saved words open offline, are isolated by source language and never cache failures',async()=>{
   let online=true,calls=0;

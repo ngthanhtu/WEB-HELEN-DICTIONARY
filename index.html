@@ -158,10 +158,14 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
 </style>
 <link rel="stylesheet" href="/assets/pwa.css">
 <link rel="stylesheet" href="/assets/study.css">
+<link rel="stylesheet" href="/assets/workspace.css">
 </head>
 <body>
+<a class="skip-link" href="#lookup">Skip to search</a>
 <header class="bar">
   <div class="brand"><i aria-hidden="true"></i>Helen Dictionary<button id="pet-mascot" class="pet-mascot" type="button" aria-label="Change dog picture" hidden><img alt="" draggable="false"></button></div>
+  <nav class="main-nav" aria-label="Main navigation"><a href="#lookup">Dictionary</a><a href="#study">Study</a><a href="#library">My words</a></nav>
+  <details class="preferences"><summary>Preferences <span aria-hidden="true">⚙</span></summary><div class="preferences-body">
   <label>Meanings in
     <select id="target" aria-label="Translate meanings into"></select>
   </label>
@@ -176,15 +180,17 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
   <label class="pet-control" id="pet-control" hidden><input id="pet-toggle" type="checkbox" role="switch" aria-label="Dog cursor or mascot"><span id="pet-label">Dog cursor</span></label>
   </div>
   <span id="voice-status" role="status"></span>
+  </div></details>
 </header>
 <div class="app-tools"><button id="install-app" class="word-link" type="button">＋ Install app</button><span id="connection-status" role="status" hidden></span><button id="app-update" class="word-link" type="button" hidden>Update app</button></div>
 <dialog id="install-help"><h2>Install Helen Dictionary</h2><p id="install-steps"></p><p>Giọng đọc, dịch mới và tạo AI cần Internet. Từ và bài AI đã lưu có thể xem lại khi mất mạng.</p><button id="close-install" class="btn" type="button">Close</button></dialog>
 <div id="audio-status" role="status" hidden></div>
 
-<section class="hero">
+<section class="hero" id="lookup" aria-label="Dictionary search">
   <div class="lookup-panel">
-    <h1>Look up a word. Hear it. Read it in your language.</h1>
-    <p>English definitions, IPA and your selected voice. Tap the eye to reveal the translation in any language you choose.</p>
+    <span class="section-kicker">YOUR PERSONAL DICTIONARY</span>
+    <h1>Look up a word.<br><em>Make it yours.</em></h1>
+    <p>Hear it. Understand it. Keep it.<br>Tra nghĩa, lưu từ và luyện lại theo cách của bạn.</p>
     <form class="search" id="form" role="search">
       <select id="from" aria-label="Search language"></select>
       <input id="q" type="search" placeholder="Search a word" autocomplete="off" autocapitalize="none" spellcheck="false" role="combobox" aria-autocomplete="list" aria-controls="search-suggestions" aria-expanded="false" aria-label="Word to search" required>
@@ -199,13 +205,22 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
   <div class="img-slot" id="slot-hero"></div>
 </section>
 
-<section class="learning-tools" aria-label="Từ đã lưu và lịch sử">
+<nav class="learning-journey" aria-label="Learning journey"><a href="#lookup"><span>01</span><strong>Discover</strong><small>Nghĩa · IPA · Phát âm</small></a><a href="#library"><span>02</span><strong>Keep</strong><small>Kho từ của bạn</small></a><a href="#study"><span>03</span><strong>Practice</strong><small>Quiz · Ghép cặp · Ôn tập</small></a></nav>
+<section class="learning-tools" id="library" aria-label="Từ đã lưu và lịch sử">
   <details><summary>Từ yêu thích <span id="favorites-count">0</span></summary><p>Bấm ☆ cạnh từ để lưu. Dữ liệu lưu riêng trong trình duyệt này.</p><div class="word-list" id="favorites-list"></div></details>
   <details><summary>Lịch sử tra cứu <span id="history-count">0</span></summary><p>40 từ tra thành công gần nhất. Khi database được kết nối, lịch sử được đồng bộ cho thiết bị này.</p><p id="history-sync-status" class="muted" role="status"></p><button class="word-link" id="clear-history" type="button">Xóa lịch sử</button><div class="word-list" id="history-list"></div></details>
 </section>
 <details id="study" class="study-panel">
   <summary><span class="study-heading"><span class="study-icon" aria-hidden="true">✦</span><span>Study · Review & Quiz<small>Turn saved words into lasting memories</small></span></span><span class="study-summary-end"><span id="study-count"></span><span class="study-open-label"><span class="study-closed-copy">Start learning <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></span><span class="study-open-copy">Collapse <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 14l6-6 6 6"/></svg></span></span></span></summary>
   <p id="study-progress"></p><p id="study-next" class="muted"></p>
+  <div class="study-dashboard" aria-label="Study overview">
+    <button class="study-tile" id="open-review" type="button"><span class="tile-symbol" aria-hidden="true">↻</span><strong>Review due</strong><small id="tile-due">Ôn đúng thời điểm</small></button>
+    <button class="study-tile" id="open-decks" type="button"><span class="tile-symbol" aria-hidden="true">▤</span><strong>Word sets</strong><small id="tile-decks">Bộ từ theo mục tiêu</small></button>
+    <button class="study-tile" id="open-progress" type="button" aria-expanded="false" aria-controls="progress-panel"><span class="tile-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20V12m8 8V7m8 13V3"/></svg></span><strong>Your progress</strong><small id="tile-progress">Theo dõi sự tiến bộ</small></button>
+  </div>
+  <section id="progress-panel" class="progress-panel" aria-label="Learning progress" hidden></section>
+  <details id="study-decks" class="study-decks"><summary>My word sets <span id="deck-count">0</span></summary><p>Gom từ yêu thích theo mục tiêu. Một từ có thể nằm trong nhiều bộ.</p><div class="deck-toolbar"><button id="create-deck" class="word-link" type="button">＋ New word set</button><button id="add-current-deck" class="word-link" type="button">Add searched word to a set</button></div><div id="deck-list" class="deck-list"></div><details class="starter-sets"><summary>Try a starter set</summary><p>Bộ nhỏ có nghĩa và ví dụ từ WordNet. Thêm vào kho từ để luyện ngay, không gọi AI.</p><div id="starter-list"></div><p id="starter-status" role="status"></p></details></details>
+  <div class="practice-settings"><label for="study-scope">Practice from<select id="study-scope"><option value="all">All saved words</option></select></label><label for="quiz-mode">Practice style<select id="quiz-mode"><option value="mixed">Quick quiz · Mixed</option><option value="choice">Multiple choice</option><option value="cloze">Fill in the blank</option><option value="type">Type the word</option><option value="matching">Matching pairs</option></select></label></div>
   <p id="quiz-readiness" class="quiz-readiness" role="status"></p>
   <div class="study-actions"><button id="start-review" class="word-link" type="button">Review due words</button><button id="start-quiz" class="word-link" type="button">Quick quiz</button><button id="quiz-sound" class="word-link" type="button" aria-pressed="true">🔊 Quiz sound: on</button><button id="prepare-study" class="word-link" type="button" hidden>Prepare saved words</button><button id="cancel-prepare" class="word-link" type="button" hidden>Cancel preparation</button><button id="end-study" class="word-link" type="button" hidden>End session</button></div>
   <p id="study-status" role="status"></p>
@@ -214,6 +229,7 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
 </details>
 <main id="out" aria-live="polite"></main>
 <footer>Helen Dictionary</footer>
+<dialog id="deck-editor" class="deck-dialog" aria-labelledby="deck-editor-title"><form id="deck-form"><h2 id="deck-editor-title">New word set</h2><label for="deck-existing">Choose a word set</label><select id="deck-existing"><option value="">Create a new set</option></select><label for="deck-name">Word set name</label><input id="deck-name" maxlength="50" required autocomplete="off" placeholder="e.g. IELTS Reading"><label for="deck-filter">Find a saved word</label><input id="deck-filter" type="search" placeholder="Filter your words" autocomplete="off"><fieldset><legend>Select saved words</legend><div id="deck-word-options"></div></fieldset><p id="deck-editor-error" role="alert"></p><div class="dialog-actions"><button class="btn" type="submit">Save word set</button><button id="cancel-deck-editor" class="word-link" type="button">Cancel</button></div></form></dialog>
 <div class="pet-cursor" id="pet-cursor" aria-hidden="true" hidden><span class="pet-pointer"><span class="pet-hotspot"></span><img alt="" draggable="false"></span></div>
 
 <script src="/assets/voice-recorder.js"></script>
@@ -333,6 +349,14 @@ const historySync=globalThis.HelenHistory?.create({storage:localStorage,fetch:ap
   onHistory:words=>{history=words;remember('helen-history',JSON.stringify(history));refreshLibrary();},
   onStatus:text=>{const status=$('#history-sync-status');if(status)status.textContent=text;}});
 function lookupEnglish(word) { $('#q').value=word; $('#from').value='en'; searchWord(); }
+globalThis.HelenDictionary={lookup:lookupEnglish,addFavorites:words=>{
+  const normalized=words.map(value=>String(value).trim().toLowerCase()).filter(value=>value && value.length<=100);
+  const next=[...new Set([...savedWords('helen-favorites',100),...normalized])];if(next.length>100)throw Error('Kho từ tối đa 100 từ. Bỏ lưu một số từ trước khi thêm bộ này.');
+  try{localStorage.setItem('helen-favorites',JSON.stringify(next));}catch{throw Error('Bộ nhớ đầy. Chưa thêm bộ từ; hãy giải phóng dung lượng.');}
+  favorites=next;refreshLibrary();
+  if(lastResult)document.querySelectorAll('.entry .favorite').forEach(button=>updateFavoriteButton(button,lastResult.word));
+  document.dispatchEvent?.(new CustomEvent('helen:favorites',{detail:{result:lastResult}}));
+}};
 function wordButton(word) {
   const button=document.createElement('button'); button.type='button'; button.className='word-link'; button.textContent=word;
   button.onclick=()=>lookupEnglish(word); return button;
@@ -355,6 +379,7 @@ function updateFavoriteButton(button,word) {
   button.setAttribute('aria-pressed',String(saved)); button.setAttribute('aria-label',`${saved?'Bỏ lưu':'Lưu'} ${word}`);
 }
 function toggleFavorite(word,button) {
+  favorites=savedWords('helen-favorites',100);
   if(favorites.includes(word)) favorites=favorites.filter(value=>value!==word);
   else {
     if(favorites.length>=100) { $('#library-status').textContent='Đã lưu 100 từ. Bỏ lưu một từ trước khi thêm.'; return; }
@@ -365,6 +390,10 @@ function toggleFavorite(word,button) {
 }
 $('#clear-history').addEventListener('click',()=>{history=[];remember('helen-history','[]');refreshLibrary();historySync?.clear();});
 refreshLibrary();
+globalThis.addEventListener?.('storage',event=>{if(event.key==='helen-favorites'){
+  favorites=savedWords('helen-favorites',100);refreshLibrary();
+  if(lastResult)document.querySelectorAll('.entry .favorite').forEach(button=>updateFavoriteButton(button,lastResult.word));
+}});
 void historySync?.sync();
 globalThis.addEventListener?.('online',()=>historySync?.sync());
 globalThis.addEventListener?.('pageshow',()=>historySync?.sync());
@@ -963,7 +992,9 @@ $('#target').addEventListener('change', () => {
 if ($('#q').value.trim()) searchWord({ scroll: false, recordHistory: false });
 </script>
 <script src="/assets/study-core.js"></script>
+<script src="/assets/study-library.js"></script>
 <script src="/assets/study.js" defer></script>
+<script src="/assets/workspace.js" defer></script>
 <script src="/assets/pet-pointer.js" defer></script>
 <script src="/assets/pwa.js" defer></script>
 </body>
