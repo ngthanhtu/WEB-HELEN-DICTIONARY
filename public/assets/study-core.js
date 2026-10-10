@@ -2,6 +2,8 @@
   'use strict';
   const DAY=86400000,KEY='helen-study-v1';
   const clean=value=>typeof value==='string'?value.trim().replace(/\s+/g,' '):'';
+  const bilingual=s=>{const result={};if(typeof s.definitionVi==='string' && clean(s.definitionVi) && s.definitionVi.length<=600)result.definitionVi=clean(s.definitionVi);if(typeof s.conceptId==='string' && /^helen:ielts-v2:[a-z]+:/.test(s.conceptId) && s.conceptId.length<=200)result.conceptId=s.conceptId;if(Array.isArray(s.examplesVi) && s.examplesVi.length===s.examples?.length && s.examplesVi.every(v=>typeof v==='string' && v.length<=600))result.examplesVi=s.examplesVi.map(clean);return result;};
+  const questionTranslation=(sense,example)=>({...bilingual(sense),...(example && sense.examplesVi?.[sense.examples.indexOf(example)]?{originalVi:sense.examplesVi[sense.examples.indexOf(example)]}:{})});
   const answer=value=>clean(value).toLowerCase().replace(/[’‘]/g,"'");
   const escape=value=>value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
   function wordPattern(word){return new RegExp(`(^|[^a-zA-Z0-9])(${escape(word).replace(/ /g,'\\s+')})(?=$|[^a-zA-Z0-9])`,'gi');}
@@ -18,12 +20,12 @@
       if(!definition || definition.length>600 || !pos || seen.has(`${pos}|${answer(definition)}`))continue;
       seen.add(`${pos}|${answer(definition)}`);
       const examples=[sense.example,...(Array.isArray(sense.examples)?sense.examples:[])].map(clean).filter(v=>v && v.length<=600);
-      found.push({pos,definition,examples:[...new Set(examples)].slice(0,2),synonyms:(Array.isArray(sense.synonyms)?sense.synonyms:[]).map(answer).filter(Boolean).slice(0,30),source:clean(sense.relationSource || entry.source)});
+      found.push({...bilingual(sense),pos,definition,examples:[...new Set(examples)].slice(0,2),synonyms:(Array.isArray(sense.synonyms)?sense.synonyms:[]).map(answer).filter(Boolean).slice(0,30),source:clean(sense.relationSource || entry.source)});
     }
     // Round-robin keeps all parts of speech represented, rather than only the first noun group.
     const groups=new Map();for(const sense of found){if(!groups.has(sense.pos))groups.set(sense.pos,[]);groups.get(sense.pos).push(sense);}
     const selected=[];for(let i=0;selected.length<16;i++){let added=false;for(const group of groups.values())if(group[i]){selected.push(group[i]);added=true;if(selected.length===16)break;}if(!added)break;}
-    return selected;
+    root.HelenTopicsCore?.registerSenses(selected);return selected;
   }
   function card(result,previous,now=Date.now()){
     const word=answer(result?.word),items=senses(result);
@@ -62,20 +64,20 @@
     const pool=(mode==='cloze' || mode==='mixed' && index%2===1) && contextual.length?contextual:eligible;
     const sense=pool[Math.floor(random()*Math.min(pool.length,3))];if(!sense)return null;
     const example=sense.examples.find(value=>cloze(item.word,value));
-    if(example && (mode==='cloze' || mode==='mixed' && index%2===1))return {type:'cloze',word:item.word,pos:sense.pos,prompt:cloze(item.word,example),definition:sense.definition,original:example,source:sense.source};
-    const distractors=deck.filter(other=>other.word!==item.word && other.senses.some(s=>s.pos===sense.pos) && !item.senses.some(s=>s.synonyms.includes(other.word)) && !other.senses.some(s=>answer(s.definition)===answer(sense.definition) || s.synonyms.includes(item.word))).map(other=>other.word);
+    if(example && (mode==='cloze' || mode==='mixed' && index%2===1))return {...questionTranslation(sense,example),type:'cloze',word:item.word,pos:sense.pos,prompt:cloze(item.word,example),definition:sense.definition,original:example,source:sense.source};
+    const distractors=deck.filter(other=>other.word!==item.word && (!sense.conceptId || !other.senses.some(s=>s.conceptId===sense.conceptId)) && other.senses.some(s=>s.pos===sense.pos) && !item.senses.some(s=>s.synonyms.includes(other.word)) && !other.senses.some(s=>answer(s.definition)===answer(sense.definition) || s.synonyms.includes(item.word))).map(other=>other.word);
     const shuffle=values=>{const list=[...new Set(values)];for(let i=list.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[list[i],list[j]]=[list[j],list[i]];}return list;};
     const choices=shuffle(distractors).slice(0,3);
     const accepted=[item.word,...(!example?deck.filter(other=>other.senses.some(s=>s.pos===sense.pos && (sense.synonyms.includes(other.word) || answer(s.definition)===answer(sense.definition)))).map(other=>other.word):[])];
-    return {type:mode!=='type' && choices.length>=2?'choice':'type',word:item.word,pos:sense.pos,prompt:sense.definition,definition:sense.definition,context:example?cloze(item.word,example):null,original:example || null,source:sense.source,accepted:[...new Set(accepted)],choices:choices.length>=2?shuffle([item.word,...choices]):[]};
+    return {...questionTranslation(sense,example),type:mode!=='type' && choices.length>=2?'choice':'type',word:item.word,pos:sense.pos,prompt:sense.definition,definition:sense.definition,context:example?cloze(item.word,example):null,original:example || null,source:sense.source,accepted:[...new Set(accepted)],choices:choices.length>=2?shuffle([item.word,...choices]):[]};
   }
   function matchingPlan(deck,random=Math.random){
     const candidates=[...quizCards(deck)];for(let i=candidates.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[candidates[i],candidates[j]]=[candidates[j],candidates[i]];}
     const selected=[];
     for(const item of candidates){
       const sense=item.senses.find(s=>!cloze(item.word,s.definition) && !selected.some(pair=>answer(pair.definition)===answer(s.definition) || s.synonyms.includes(pair.word) || pair.synonyms.includes(item.word) || pair.card.senses.some(other=>answer(other.definition)===answer(s.definition))));
-      if(!sense || selected.some(pair=>item.senses.some(s=>s.synonyms.includes(pair.word) || answer(s.definition)===answer(pair.definition))))continue;
-      selected.push({word:item.word,pos:sense.pos,definition:sense.definition,original:sense.examples[0] || null,source:sense.source,synonyms:sense.synonyms,card:item});
+      if(!sense || sense.conceptId && selected.some(pair=>pair.card.senses.some(s=>s.conceptId===sense.conceptId)) || selected.some(pair=>item.senses.some(s=>s.synonyms.includes(pair.word) || answer(s.definition)===answer(pair.definition))))continue;
+      selected.push({...questionTranslation(sense,sense.examples[0]),word:item.word,pos:sense.pos,definition:sense.definition,original:sense.examples[0] || null,source:sense.source,synonyms:sense.synonyms,card:item});
       if(selected.length===6)break;
     }
     return selected.length>=3?selected.map(({card,synonyms,...pair})=>pair):[];

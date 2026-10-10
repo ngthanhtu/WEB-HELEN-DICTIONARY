@@ -1,0 +1,50 @@
+economic growth|an increase in the production of goods and services|sự tăng trưởng sản lượng hàng hóa và dịch vụ của nền kinh tế|stimulate,measure,sustain
+income inequality|unequal distribution of earnings among people|sự phân phối thu nhập không đồng đều giữa mọi người|reduce,measure,address
+financial literacy|the ability to understand and manage financial matters|khả năng hiểu và quản lý các vấn đề tài chính|improve,teach,assess
+fiscal policy|government decisions about taxation and spending|chính sách của chính phủ về thuế và chi tiêu|formulate,implement,review
+monetary policy|central bank decisions influencing money and interest rates|chính sách của ngân hàng trung ương tác động đến tiền và lãi suất|formulate,implement,evaluate
+purchasing power|the amount of goods money can buy|lượng hàng hóa có thể mua bằng một khoản tiền|increase,measure,preserve
+cost of living|the expense of maintaining everyday life|chi phí để duy trì cuộc sống hằng ngày|reduce,calculate,monitor
+public expenditure|money spent by government bodies|các khoản chi tiêu của cơ quan nhà nước|increase,reduce,monitor
+budget deficits|shortfalls when spending exceeds revenue|các khoản thâm hụt khi chi tiêu vượt thu nhập|reduce,finance,monitor
+national debt|money owed by a country's government|số tiền chính phủ một quốc gia đang nợ|reduce,manage,repay
+interest rates|the percentages charged or earned for borrowing or saving|các mức tỷ lệ tính lãi khi vay hoặc gửi tiền|raise,lower,monitor
+household savings|money set aside by families|tiền mà các hộ gia đình để dành|increase,protect,measure
+investment returns|profits or losses resulting from invested money|lợi nhuận hoặc thua lỗ từ tiền đầu tư|calculate,improve,compare
+economic stability|a condition of limited economic volatility|trạng thái nền kinh tế ít biến động mạnh|maintain,promote,restore
+financial inclusion|access to useful and affordable financial services|khả năng tiếp cận dịch vụ tài chính hữu ích với giá hợp lý|promote,improve,measure
+poverty alleviation|efforts to reduce deprivation and material hardship|các nỗ lực giảm nghèo và thiếu thốn vật chất|support,fund,prioritise
+wealth distribution|the way assets are shared across a population|cách của cải được phân bố trong dân cư|measure,analyse,improve
+tax revenue|money collected by government through taxation|tiền chính phủ thu được từ thuế|increase,collect,forecast
+exchange rates|the values of currencies relative to one another|tỷ giá giữa các đồng tiền|monitor,compare,forecast
+inflation rates|the percentages by which general prices rise|các tỷ lệ tăng của mức giá chung|measure,reduce,monitor
+economic recession|a period of significant decline in economic activity|giai đoạn hoạt động kinh tế suy giảm đáng kể|avoid,predict,overcome
+consumer confidence|people's optimism about their finances and the economy|niềm tin của người tiêu dùng vào tài chính và nền kinh tế|restore,measure,boost
+financial resilience|the ability to withstand economic shocks|khả năng chống chịu các cú sốc tài chính|build,assess,strengthen
+creditworthiness|the ability and likelihood of repaying borrowed money|khả năng và mức độ đáng tin cậy trong việc trả nợ|assess,improve,demonstrate
+disposable income|income remaining after taxes|thu nhập còn lại sau khi nộp thuế|increase,calculate,measure
+financial security|having sufficient resources to meet future needs|sự bảo đảm có đủ nguồn lực tài chính cho nhu cầu tương lai|achieve,improve,maintain
+economic diversification|expansion into a wider variety of economic activities|việc mở rộng sang nhiều loại hoạt động kinh tế khác nhau|promote,support,encourage
+capital investment|spending on assets used for future production|việc đầu tư vào tài sản dùng cho sản xuất trong tương lai|increase,attract,finance
+foreign investment|capital provided by investors from other countries|vốn do nhà đầu tư từ quốc gia khác cung cấp|attract,encourage,regulate
+trade deficits|shortfalls when import values exceed export values|các khoản thâm hụt khi giá trị nhập khẩu vượt xuất khẩu|reduce,measure,monitor
+economic forecasts|predictions about future economic conditions|các dự báo về tình hình kinh tế trong tương lai|prepare,revise,compare
+financial planning|organising money to meet present and future goals|việc sắp xếp tài chính để đáp ứng mục tiêu hiện tại và tương lai|improve,undertake,review
+debt repayment|paying back money that has been borrowed|việc trả lại tiền đã vay|schedule,prioritise,complete
+tax evasion|illegally avoiding required tax payments|việc trốn tránh nghĩa vụ nộp thuế trái pháp luật|combat,detect,prevent
+social welfare spending|government spending that supports people's basic needs|chi tiêu nhà nước để hỗ trợ nhu cầu cơ bản của người dân|increase,allocate,monitor
+financial regulation|rules controlling the activities of financial institutions|các quy định kiểm soát hoạt động của tổ chức tài chính|strengthen,enforce,review
+economic recovery|a return to growth after a decline|sự phục hồi tăng trưởng sau một giai đoạn suy giảm|support,accelerate,sustain
+economic productivity|the efficiency of turning resources into output|hiệu quả chuyển các nguồn lực thành sản phẩm|increase,measure,improve
+retirement savings|money set aside for life after stopping work|tiền dành dụm cho cuộc sống sau khi nghỉ hưu|build,protect,manage
+financial risk|the possibility of losing money|nguy cơ mất tiền trong hoạt động tài chính|assess,reduce,manage
+income generation|activities that produce earnings|các hoạt động tạo ra thu nhập|support,encourage,promote
+market volatility|the degree of unpredictable price movement|mức độ biến động khó dự đoán của giá thị trường|measure,monitor,reduce
+economic development|improvement in an economy and living standards|sự phát triển kinh tế gắn với cải thiện mức sống|promote,support,accelerate
+price stability|a situation in which general prices change little|trạng thái mức giá chung tương đối ổn định|maintain,ensure,restore
+public borrowing|government acquisition of loans|việc chính phủ vay tiền|increase,reduce,monitor
+banking services|financial facilities provided by banks|các dịch vụ tài chính do ngân hàng cung cấp|access,provide,improve
+financial assistance|money or support provided to someone in need|tiền hoặc hỗ trợ tài chính dành cho người cần giúp đỡ|provide,receive,seek
+economic hardship|difficulty caused by a lack of money or resources|khó khăn do thiếu tiền hoặc nguồn lực|alleviate,experience,overcome
+investment portfolios|collections of financial assets held by investors|các danh mục tài sản tài chính mà nhà đầu tư nắm giữ|manage,diversify,review
+fiscal sustainability|the ability to maintain government finances over time|khả năng duy trì tài chính nhà nước bền vững lâu dài|improve,assess,ensure

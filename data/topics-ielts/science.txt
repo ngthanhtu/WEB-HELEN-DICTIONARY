@@ -1,0 +1,50 @@
+empirical evidence|information obtained through observation or experiment|bằng chứng thu được qua quan sát hoặc thí nghiệm|collect,evaluate,analyse
+scientific inquiry|systematic investigation of questions about the world|việc tìm hiểu thế giới một cách có hệ thống|conduct,promote,support
+research methodology|the principles and procedures used in a study|các nguyên tắc và quy trình được dùng trong nghiên cứu|develop,evaluate,refine
+statistical significance|evidence that an observed result is unlikely under a specified null model|bằng chứng rằng kết quả quan sát khó xảy ra theo một mô hình giả thuyết không đã xác định|assess,calculate,report
+peer review|evaluation of research by experts in the same field|việc chuyên gia cùng lĩnh vực đánh giá công trình nghiên cứu|conduct,improve,undergo
+scientific literacy|the ability to understand scientific ideas and evidence|khả năng hiểu ý tưởng và bằng chứng khoa học|improve,teach,assess
+research ethics|moral principles governing how studies are carried out|các nguyên tắc đạo đức điều chỉnh cách thực hiện nghiên cứu|uphold,teach,promote
+experimental design|planning procedures to test a scientific question|việc thiết kế quy trình để kiểm tra câu hỏi khoa học|develop,evaluate,improve
+data analysis|examining information to identify patterns or conclusions|việc phân tích thông tin để tìm quy luật hoặc kết luận|conduct,improve,automate
+causal relationships|links in which one factor produces a change in another|các quan hệ trong đó một yếu tố gây thay đổi yếu tố khác|identify,investigate,establish
+research findings|results obtained through systematic study|các kết quả thu được qua nghiên cứu có hệ thống|report,interpret,verify
+scientific consensus|broad agreement among researchers on an issue|sự đồng thuận rộng rãi giữa các nhà nghiên cứu về một vấn đề|assess,communicate,build
+sample size|the number of observations included in a study|số lượng quan sát được đưa vào nghiên cứu|determine,increase,calculate
+research bias|systematic distortion of a study's methods or results|sự sai lệch có hệ thống trong phương pháp hoặc kết quả nghiên cứu|identify,reduce,avoid
+hypothesis testing|assessing a proposed explanation using evidence|việc kiểm định lời giải thích đề xuất bằng bằng chứng|conduct,improve,review
+reproducibility|the ability to obtain consistent results using the same methods|khả năng thu được kết quả nhất quán khi dùng cùng phương pháp|ensure,improve,assess
+scientific innovation|new ideas or methods arising from research|các ý tưởng hoặc phương pháp mới xuất phát từ nghiên cứu|encourage,fund,promote
+research funding|financial resources provided for investigation|nguồn tài chính được cấp cho nghiên cứu|increase,allocate,secure
+interdisciplinary research|investigation combining expertise from different fields|nghiên cứu kết hợp chuyên môn từ nhiều lĩnh vực|conduct,fund,encourage
+scientific collaboration|researchers working together towards shared goals|việc các nhà nghiên cứu hợp tác hướng tới mục tiêu chung|promote,facilitate,strengthen
+quantitative research|study that uses numerical measurements and analysis|nghiên cứu sử dụng đo lường và phân tích bằng số|conduct,evaluate,support
+qualitative research|study exploring meanings and experiences using non-numerical data|nghiên cứu khám phá ý nghĩa và trải nghiệm qua dữ liệu phi số|conduct,evaluate,support
+longitudinal studies|research that follows subjects over a period of time|các nghiên cứu theo dõi đối tượng trong một khoảng thời gian|conduct,fund,design
+control groups|comparison groups that do not receive the tested intervention|các nhóm so sánh không nhận biện pháp đang được thử nghiệm|establish,use,select
+research limitations|constraints that restrict a study's interpretation or scope|các hạn chế ảnh hưởng phạm vi hoặc cách diễn giải nghiên cứu|acknowledge,identify,discuss
+measurement accuracy|how close recorded values are to true values|mức độ giá trị đo gần với giá trị thực|improve,assess,verify
+scientific understanding|knowledge of explanations supported by research|sự hiểu biết các cách giải thích được nghiên cứu hỗ trợ|improve,develop,advance
+research validity|how well a study measures or supports what it claims|mức độ nghiên cứu đo lường hoặc hỗ trợ đúng điều được khẳng định|assess,improve,ensure
+research reliability|the consistency of measurements or methods|tính nhất quán của phép đo hoặc phương pháp nghiên cứu|assess,improve,ensure
+laboratory safety|protection from hazards during experimental work|sự an toàn trước các nguy cơ khi làm thí nghiệm|ensure,improve,monitor
+scientific knowledge|information and explanations gained through systematic inquiry|kiến thức và cách giải thích thu được qua tìm hiểu có hệ thống|expand,apply,share
+research transparency|openness about study methods and results|sự minh bạch về phương pháp và kết quả nghiên cứu|ensure,increase,promote
+open science|research practices that make knowledge and methods accessible|các thực hành nghiên cứu giúp kiến thức và phương pháp được tiếp cận rộng rãi|promote,support,practise
+scientific communication|sharing research ideas and results clearly|việc truyền đạt rõ ràng ý tưởng và kết quả nghiên cứu|improve,promote,facilitate
+research protocols|formal plans specifying how studies will be conducted|các kế hoạch chính thức quy định cách tiến hành nghiên cứu|develop,follow,review
+data integrity|accuracy and completeness of recorded information|tính chính xác và đầy đủ của dữ liệu được ghi lại|maintain,protect,verify
+scientific reasoning|drawing conclusions through evidence and logical argument|việc suy luận dựa trên bằng chứng và lập luận logic|develop,teach,assess
+research objectives|specific questions or goals a study seeks to address|các câu hỏi hoặc mục tiêu cụ thể mà nghiên cứu muốn giải quyết|define,achieve,review
+observational data|information collected without manipulating the situation|dữ liệu được thu thập mà không can thiệp vào tình huống|collect,analyse,interpret
+experimental evidence|information obtained from controlled tests|bằng chứng thu được từ thí nghiệm có kiểm soát|collect,evaluate,interpret
+scientific breakthroughs|major advances in research understanding or capability|các bước đột phá quan trọng trong hiểu biết hoặc năng lực nghiên cứu|achieve,report,celebrate
+research priorities|areas considered most important for investigation|các lĩnh vực được ưu tiên nghiên cứu|identify,set,review
+scientific instruments|devices used to observe or measure in research|các thiết bị dùng để quan sát hoặc đo lường trong nghiên cứu|calibrate,maintain,use
+ethical approval|permission confirming a study meets moral standards|sự chấp thuận xác nhận nghiên cứu đáp ứng tiêu chuẩn đạo đức|obtain,seek,require
+literature reviews|evaluations of existing publications on a topic|các bài tổng quan đánh giá tài liệu đã công bố về một chủ đề|conduct,write,update
+research dissemination|sharing study results with relevant audiences|việc phổ biến kết quả nghiên cứu đến đối tượng liên quan|improve,fund,coordinate
+scientific models|simplified representations used to explain or predict phenomena|các mô hình đơn giản hóa để giải thích hoặc dự đoán hiện tượng|develop,test,refine
+uncertainty estimates|assessments of how imprecise a result may be|các ước tính về mức độ không chắc chắn của kết quả|calculate,report,compare
+research impact|the effects of a study on knowledge or society|tác động của nghiên cứu đối với tri thức hoặc xã hội|assess,increase,measure
+scientific expertise|specialist knowledge and skills in research|kiến thức và kỹ năng chuyên sâu về nghiên cứu khoa học|develop,demonstrate,share

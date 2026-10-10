@@ -1,0 +1,50 @@
+physical fitness|the body's capacity to perform activity effectively|khả năng cơ thể thực hiện hoạt động thể chất hiệu quả|improve,assess,maintain
+sporting participation|involvement in organised physical activities|sự tham gia các hoạt động thể thao có tổ chức|encourage,increase,measure
+athletic performance|how effectively a competitor performs in sport|kết quả thực hiện của vận động viên trong thể thao|improve,assess,monitor
+competitive spirit|motivation to strive for success against others|tinh thần nỗ lực giành thành công trong cạnh tranh|develop,encourage,demonstrate
+sportsmanship|fair and respectful conduct in competition|tinh thần thi đấu công bằng và tôn trọng đối thủ|demonstrate,teach,promote
+physical endurance|the ability to sustain bodily effort over time|khả năng duy trì nỗ lực thể chất trong thời gian dài|build,improve,assess
+injury prevention|measures intended to avoid physical harm|các biện pháp nhằm phòng tránh chấn thương|prioritise,improve,promote
+sports infrastructure|facilities needed for physical training and competition|cơ sở vật chất cần cho tập luyện và thi đấu thể thao|develop,improve,fund
+active lifestyles|ways of living that include regular physical movement|các lối sống có vận động thể chất thường xuyên|adopt,promote,encourage
+sporting excellence|outstanding quality of performance in physical competition|thành tích thi đấu thể thao xuất sắc|pursue,achieve,recognise
+teamwork|cooperative effort towards a shared goal|sự hợp tác hướng tới mục tiêu chung|encourage,improve,demonstrate
+training intensity|the level of effort involved in practice|mức độ nỗ lực trong tập luyện|increase,adjust,monitor
+sports accessibility|how easily people with different needs can take part in sport|mức độ người có nhu cầu khác nhau tham gia được thể thao|improve,assess,ensure
+athlete wellbeing|competitors' physical and mental welfare|sức khỏe thể chất và tinh thần của vận động viên|support,promote,assess
+fair competition|rivalry governed by equitable conditions and rules|sự cạnh tranh theo điều kiện và quy tắc công bằng|ensure,promote,protect
+performance analysis|examining how well tasks are executed in sport|việc phân tích chất lượng thực hiện nhiệm vụ trong thể thao|conduct,improve,use
+sports development|improvement of opportunities and standards in physical activity|việc phát triển cơ hội và chất lượng hoạt động thể thao|support,fund,promote
+physical activity levels|the amounts of movement people undertake|các mức độ vận động thể chất của người dân|increase,measure,monitor
+exercise habits|regular patterns of physical training|các thói quen tập luyện thường xuyên|develop,maintain,change
+sports coaching|guidance intended to improve athletic skills|việc huấn luyện nhằm nâng cao kỹ năng thể thao|provide,improve,fund
+athletic potential|capacity to achieve success in physical competition|tiềm năng đạt thành công trong thi đấu thể thao|identify,develop,assess
+recreational sport|physical activity undertaken mainly for enjoyment|thể thao chủ yếu để giải trí|promote,encourage,support
+sporting opportunities|chances to participate in physical competition or activity|các cơ hội tham gia thi đấu hoặc vận động thể thao|create,expand,provide
+sports funding|financial resources supporting physical activity and competition|nguồn tài chính hỗ trợ hoạt động và thi đấu thể thao|increase,allocate,secure
+athlete development|growth in a competitor's skills and capabilities|sự phát triển kỹ năng và năng lực của vận động viên|support,fund,promote
+training programmes|planned sets of activities for improving physical ability|các chương trình tập luyện có kế hoạch để nâng cao thể lực|design,implement,evaluate
+sports nutrition|dietary practices supporting physical performance|chế độ dinh dưỡng hỗ trợ hoạt động thể thao|study,improve,teach
+physical rehabilitation|support to restore bodily function after injury|sự hỗ trợ phục hồi chức năng thể chất sau chấn thương|provide,improve,fund
+sporting integrity|honesty and ethical conduct in competition|sự trung thực và đạo đức trong thi đấu thể thao|maintain,protect,promote
+anti-doping policies|rules intended to prevent prohibited performance enhancement|các chính sách ngăn sử dụng chất hoặc phương pháp tăng thành tích bị cấm|implement,enforce,review
+sports governance|systems for directing and overseeing sporting organisations|các hệ thống điều hành và giám sát tổ chức thể thao|improve,strengthen,review
+athletic resilience|a competitor's ability to recover from setbacks|khả năng vận động viên phục hồi trước khó khăn|build,assess,strengthen
+physical coordination|the ability to control body movements together effectively|khả năng phối hợp các chuyển động cơ thể hiệu quả|develop,improve,assess
+exercise motivation|the willingness to undertake physical training|động lực tham gia tập luyện thể chất|increase,assess,maintain
+sporting achievement|success attained in physical competition|thành tích đạt được trong thi đấu thể thao|recognise,celebrate,record
+sports inclusion|enabling people of different backgrounds and abilities to participate|việc tạo điều kiện để người có xuất thân và năng lực khác nhau tham gia thể thao|promote,improve,support
+athlete safety|protection of competitors from avoidable harm|sự bảo vệ vận động viên khỏi nguy hiểm có thể phòng tránh|ensure,improve,monitor
+sports facilities|places and equipment used for physical activity|các địa điểm và trang thiết bị phục vụ thể thao|provide,maintain,improve
+community sport|physical activities organised for local residents|các hoạt động thể thao dành cho cộng đồng địa phương|support,fund,promote
+training recovery|restoring physical capacity after exercise|việc phục hồi thể lực sau tập luyện|improve,monitor,prioritise
+sporting discipline|controlled effort and adherence to rules in training or competition|tính kỷ luật trong tập luyện và thi đấu|develop,maintain,demonstrate
+exercise adherence|continuing to follow a planned fitness routine|việc duy trì tuân thủ kế hoạch tập luyện|improve,monitor,encourage
+sports psychology|study of mental factors affecting physical competition|việc nghiên cứu yếu tố tâm lý tác động đến thi đấu thể thao|study,apply,teach
+athletic preparation|getting ready physically and mentally for competition|việc chuẩn bị thể chất và tinh thần cho thi đấu|improve,plan,monitor
+sporting talent|natural or developed ability in physical competition|năng khiếu hoặc năng lực được rèn luyện trong thể thao|identify,develop,recognise
+physical wellbeing|the condition of bodily health and comfort|trạng thái sức khỏe và sự thoải mái thể chất|improve,promote,maintain
+sports investment|money committed to activity facilities and programmes|vốn dành cho cơ sở và chương trình thể thao|increase,attract,allocate
+athletic training|practice intended to improve competitive physical ability|việc tập luyện nhằm nâng cao năng lực thi đấu thể chất|provide,improve,monitor
+spectator behaviour|the actions of people watching sporting events|hành vi của người xem sự kiện thể thao|monitor,study,regulate
+sporting resilience|the ability of sports organisations to withstand disruption|khả năng tổ chức thể thao chống chịu sự gián đoạn|build,assess,strengthen

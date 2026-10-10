@@ -93,7 +93,7 @@
       $('.study-audio').onclick=event=>window.speak?.(item.word,event.currentTarget,audioOptions(item.word));
     }else{
       const q=session.questions[session.index];
-      for(const question of [q,session.questions[session.index+1]].filter(Boolean))for(const item of window.HelenQuizTranslation.items(question))window.HelenTranslationWarmup?.prepare(window.HelenQuizTranslation.chunks(item.text),item.kind==='definition'?{kind:'definition'}:{});
+      for(const question of [q,session.questions[session.index+1]].filter(Boolean))for(const item of window.HelenQuizTranslation.items(question))if(!(document.querySelector('#target').value==='vi' && item.translationVi))window.HelenTranslationWarmup?.prepare(window.HelenQuizTranslation.chunks(item.text),item.kind==='definition'?{kind:'definition'}:{});
       $('#study-stage').innerHTML=`<p class="study-eyebrow">Quiz · ${session.index+1}/${session.items.length}</p><p>${q.type==='cloze'?'Điền từ đã lưu vào chỗ trống.':'Từ đã lưu nào phù hợp với nghĩa này?'}</p><span class="study-pos">${esc(q.pos)}</span><h3 class="study-prompt">${esc(q.prompt)}</h3>${q.type==='cloze'?`<p class="muted">${esc(q.definition)}</p>`:q.context?`<p class="quiz-context">${esc(q.context)}</p>`:''}${q.type==='choice'?`<div class="quiz-options">${q.choices.map(word=>`<button class="word-link" data-choice="${esc(word)}" type="button">${esc(word)}</button>`).join('')}</div>`:'<form id="quiz-form"><label for="quiz-answer">Your answer</label><input id="quiz-answer" autocomplete="off" autocapitalize="none" spellcheck="false" required maxlength="100"><button class="word-link" type="submit">Check answer</button></form>'}<div id="quiz-feedback" role="status"></div>`;
       const respond=value=>{
         if(session?.answered)return;session.answered=true;
@@ -132,7 +132,7 @@
     };
   }
   function showMatching(){
-    for(const q of session.questions)window.HelenTranslationWarmup?.prepare(window.HelenQuizTranslation.chunks(q.definition),{kind:'definition'});
+    for(const q of session.questions)if(!(document.querySelector('#target').value==='vi' && q.definitionVi))window.HelenTranslationWarmup?.prepare(window.HelenQuizTranslation.chunks(q.definition),{kind:'definition'});
     const order=[...session.questions];for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}
     if(order.every((item,index)=>item.word===session.questions[index].word))order.reverse();
     $('#study-stage').hidden=false;
@@ -162,7 +162,7 @@
     $('#study-stage').querySelectorAll('[data-match-meaning]').forEach(button=>button.onclick=()=>select('selectedMeaning',button.dataset.matchMeaning));focus();
   }
   function finish(){
-    const done=session;if(done.topic)document.dispatchEvent(new CustomEvent('helen:topic-completed',{detail:{id:done.topic.id,index:done.topic.index,total:done.items.length,correct:done.correct}}));learning=library.completed(learning,{mode:done.mode==='review'?'review':done.style,total:done.items.length,correct:done.correct});saveLibrary();document.dispatchEvent(new CustomEvent('helen:session-completed',{detail:{mode:done.mode,total:done.items.length,correct:done.correct}}));endSession();$('#end-study').hidden=true;
+    const done=session;if(done.topic)document.dispatchEvent(new CustomEvent('helen:topic-completed',{detail:{id:done.topic.id,index:done.topic.index,edition:done.topic.edition || 1,total:done.items.length,correct:done.correct}}));learning=library.completed(learning,{mode:done.mode==='review'?'review':done.style,total:done.items.length,correct:done.correct});saveLibrary();document.dispatchEvent(new CustomEvent('helen:session-completed',{detail:{mode:done.mode,total:done.items.length,correct:done.correct}}));endSession();$('#end-study').hidden=true;
     $('#study-stage').innerHTML=done.mode==='review'?'<h3>Review complete</h3><p>Lịch ôn đã cập nhật. Từ chưa nhớ sẽ đến hạn sau 10 phút.</p>':`<h3>${done.mode==='matching'?'Matching':'Quiz'} complete · ${done.correct}/${done.items.length}</h3><p>${done.mode==='matching'?'Điểm tính theo cặp đúng ngay lần đầu. ':''}Quiz để luyện thêm; lịch ôn giữ theo đánh giá trong Review.</p>${done.mistakes.length?`<p>Từ nên xem lại: ${done.mistakes.map(esc).join(', ')}.</p><button class="word-link" id="review-mistakes" type="button">${done.topic?'Save & review mistakes':'Review mistakes'}</button>`:'<p>Bạn trả lời đúng tất cả câu trong lượt này.</p>'}`;
     if($('#review-mistakes'))$('#review-mistakes').onclick=()=>{if(done.topic){try{window.HelenDictionary.addFavorites(done.mistakes);for(const word of done.mistakes){const result=topicSource?.results.find(item=>item.word===word);if(result && !cards.some(c=>c.word===word))capture(result);}}catch(error){setStatus(error.message);return;}}start('review',done.mistakes);};
     refresh();
@@ -175,7 +175,7 @@
     if(mode==='quiz' && questions.length<3){setStatus(style==='cloze'?'Cần ít nhất 3 từ có câu ví dụ chứa đúng từ đã lưu. Chọn Quick quiz hoặc chuẩn bị thêm từ.':matching?'Cần ít nhất 3 cặp từ có nghĩa khác nhau. Thêm từ khác hoặc chọn kiểu luyện tập khác.':'Cần ít nhất 3 từ có dữ liệu câu hỏi trong bộ đã chọn.');return;}
     let items=mode==='review'?(words?list.filter(item=>words.includes(item.word)):core.due(list)):questions.map(q=>list.find(item=>item.word===q.word));
     items=items.slice(0,mode==='quiz'?10:20);if(!items.length)return;
-    session={mode:matching?'matching':mode,style,items,index:0,correct:0,mistakes:[],answered:false,questions,matched:new Set(),selectedWord:null,selectedMeaning:null,topic:topic?{id:topicSource.id,index:topicSource.index}:null};host.dataset.session=session.mode;
+    session={mode:matching?'matching':mode,style,items,index:0,correct:0,mistakes:[],answered:false,questions,matched:new Set(),selectedWord:null,selectedMeaning:null,topic:topic?{id:topicSource.id,index:topicSource.index,edition:topicSource.edition || 1}:null};host.dataset.session=session.mode;
     $('#end-study').hidden=false;refresh();showCard();setStatus('');
   }
   async function prepare(){

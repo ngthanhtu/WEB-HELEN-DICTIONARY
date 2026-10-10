@@ -1,0 +1,50 @@
+job satisfaction|contentment with one's work|mức độ hài lòng với công việc|improve,measure,increase
+work-life balance|a manageable division between work and personal life|sự cân bằng hợp lý giữa công việc và cuộc sống cá nhân|maintain,improve,achieve
+employee retention|keeping staff within an organisation|việc giữ chân nhân viên trong tổ chức|improve,measure,increase
+staff turnover|the rate at which employees leave and are replaced|tỷ lệ nhân viên nghỉ việc và được thay thế|reduce,measure,monitor
+career progression|advancement in a person's working life|sự tiến triển trong sự nghiệp của một người|support,facilitate,accelerate
+professional development|continued growth in occupational skills and knowledge|việc phát triển liên tục kỹ năng và kiến thức nghề nghiệp|pursue,support,fund
+job security|confidence that one's employment will continue|sự bảo đảm rằng công việc sẽ được duy trì|improve,provide,protect
+workplace diversity|the presence of staff from different backgrounds|sự đa dạng về xuất thân và đặc điểm của nhân viên|promote,increase,embrace
+flexible working|work arrangements allowing changes to hours or location|cách làm việc cho phép linh hoạt về giờ giấc hoặc địa điểm|introduce,support,implement
+remote working|working away from the employer's usual premises|việc làm từ xa ngoài địa điểm làm việc thông thường|support,introduce,facilitate
+labour productivity|the amount of output produced per worker or hour|lượng sản phẩm tạo ra trên mỗi người lao động hoặc giờ làm|increase,measure,improve
+skills shortages|insufficient numbers of workers with needed abilities|tình trạng thiếu lao động có kỹ năng cần thiết|address,reduce,identify
+employee engagement|staff commitment and active involvement in their work|sự gắn bó và tham gia tích cực của nhân viên vào công việc|increase,measure,encourage
+occupational health|workers' health in relation to their jobs|sức khỏe của người lao động trong môi trường nghề nghiệp|protect,promote,monitor
+workplace safety|conditions that protect staff from harm at work|điều kiện bảo vệ nhân viên khỏi nguy hiểm khi làm việc|ensure,improve,monitor
+collective bargaining|negotiation of employment terms by worker representatives|việc đại diện người lao động thương lượng điều kiện làm việc|support,promote,facilitate
+fair remuneration|payment that appropriately rewards work|việc trả công xứng đáng với công việc thực hiện|provide,ensure,negotiate
+performance appraisal|formal evaluation of an employee's work|việc đánh giá chính thức kết quả làm việc của nhân viên|conduct,improve,review
+talent acquisition|recruiting people with skills an organisation needs|việc tuyển dụng người có năng lực mà tổ chức cần|improve,manage,prioritise
+succession planning|preparing people to take over important roles|việc chuẩn bị người kế nhiệm các vị trí quan trọng|implement,improve,review
+transferable skills|abilities useful across different jobs or settings|các kỹ năng có thể áp dụng ở nhiều công việc hoặc hoàn cảnh|develop,demonstrate,assess
+technical expertise|specialised practical knowledge in a field|kiến thức chuyên môn thực tiễn trong một lĩnh vực|develop,demonstrate,share
+leadership potential|capacity to become an effective leader|khả năng phát triển thành người lãnh đạo hiệu quả|identify,develop,assess
+team cohesion|the strength of cooperation and unity within a team|mức độ đoàn kết và phối hợp trong một nhóm|improve,maintain,enhance
+workplace discrimination|unfair treatment of employees based on personal characteristics|sự đối xử bất công với nhân viên dựa trên đặc điểm cá nhân|prevent,combat,address
+equal pay|the same remuneration for equivalent work|việc trả công ngang nhau cho công việc tương đương|ensure,promote,guarantee
+employment rights|legal protections for people at work|các quyền được pháp luật bảo vệ của người lao động|protect,enforce,uphold
+labour mobility|workers' ability to move between jobs or locations|khả năng chuyển công việc hoặc nơi làm việc của người lao động|increase,promote,facilitate
+staff morale|employees' confidence and enthusiasm at work|tinh thần tự tin và nhiệt huyết của nhân viên tại nơi làm việc|improve,maintain,boost
+workplace conflict|disagreement between people in a work setting|sự bất đồng giữa những người trong môi trường làm việc|resolve,prevent,manage
+employment prospects|chances of finding suitable work|triển vọng tìm được công việc phù hợp|improve,assess,enhance
+job opportunities|available chances to obtain employment|những cơ hội việc làm sẵn có|create,expand,identify
+career aspirations|goals a person hopes to achieve professionally|những mục tiêu một người mong đạt được trong sự nghiệp|pursue,discuss,fulfil
+recruitment criteria|standards used to select candidates for a job|các tiêu chí dùng để chọn ứng viên cho một vị trí|define,apply,revise
+professional competence|the ability to perform an occupation effectively|năng lực thực hiện công việc chuyên môn hiệu quả|develop,assess,demonstrate
+workforce planning|estimating and arranging future staffing needs|việc dự tính và sắp xếp nhu cầu nhân sự trong tương lai|improve,implement,review
+employee wellbeing|staff members' physical and mental welfare|sức khỏe thể chất và tinh thần của nhân viên|support,promote,assess
+staff training|instruction provided to improve employees' skills|việc đào tạo nhằm nâng cao kỹ năng của nhân viên|provide,fund,evaluate
+workplace culture|shared attitudes and practices within an organisation|các thái độ và cách làm việc chung trong tổ chức|improve,shape,transform
+professional networks|connections with people in related occupations|mạng lưới quan hệ với người làm các nghề liên quan|build,expand,maintain
+organisational commitment|an employee's attachment to their organisation|sự gắn bó của nhân viên với tổ chức của mình|increase,measure,encourage
+staff motivation|the willingness of employees to work towards goals|động lực thúc đẩy nhân viên làm việc hướng tới mục tiêu|increase,assess,maintain
+industrial relations|relationships between employers and workers' representatives|quan hệ giữa người sử dụng lao động và đại diện người lao động|improve,manage,maintain
+career guidance|advice about education and employment choices|sự hướng dẫn về lựa chọn học tập và nghề nghiệp|provide,improve,seek
+employment contracts|agreements setting out the terms of a job|hợp đồng quy định các điều kiện của một công việc|negotiate,review,terminate
+parental leave|time away from work to care for a new child|thời gian nghỉ việc để chăm sóc con mới sinh hoặc nhận nuôi|provide,extend,take
+redundancy payments|compensation when a job is no longer needed|khoản bồi thường khi một vị trí việc làm bị cắt giảm|calculate,negotiate,receive
+workplace harassment|unwanted behaviour that intimidates or humiliates staff|hành vi không mong muốn gây đe dọa hoặc làm nhục nhân viên|prevent,report,investigate
+labour force participation|the proportion of people working or seeking work|tỷ lệ người đang làm việc hoặc đang tìm việc|increase,measure,monitor
+professional ethics|moral principles governing conduct in an occupation|các nguyên tắc đạo đức điều chỉnh hành vi trong nghề nghiệp|uphold,teach,promote

@@ -1,0 +1,14 @@
+{
+  "calculate statistical significance": {"definition":"Determine whether a result meets a chosen statistical threshold under a specified null model.","definitionVi":"Xác định liệu kết quả có đạt ngưỡng ý nghĩa thống kê đã chọn theo mô hình giả thuyết không đã xác định."},
+  "take parental leave": {"definition":"Take time away from work to care for a new child.","definitionVi":"Nghỉ làm theo chế độ dành cho cha mẹ để chăm sóc con mới sinh hoặc mới nhận nuôi."},
+  "require medical intervention": {"definition":"Need a medical action or procedure to treat a health problem.","definitionVi":"Cần có biện pháp hoặc thủ thuật y tế để điều trị một vấn đề sức khỏe."},
+  "experience economic hardship": {"definition":"Go through difficulties caused by a lack of money or resources.","definitionVi":"Trải qua khó khăn do thiếu tiền hoặc nguồn lực kinh tế."},
+  "conduct public consultation": {"definition":"Seek people's views before making a decision that affects them.","definitionVi":"Lấy ý kiến người dân trước khi đưa ra quyết định ảnh hưởng đến họ."},
+  "conduct market research": {"definition":"Collect and analyse information about customers and markets.","definitionVi":"Thu thập và phân tích thông tin về khách hàng và thị trường."},
+  "conduct data analysis": {"definition":"Examine collected information to identify patterns and draw conclusions.","definitionVi":"Phân tích thông tin đã thu thập để nhận diện quy luật và rút ra kết luận."},
+  "conduct source verification": {"definition":"Check whether information providers are authentic and reliable.","definitionVi":"Kiểm tra tính xác thực và đáng tin cậy của các nguồn cung cấp thông tin."},
+  "conduct news verification": {"definition":"Check the accuracy of information before accepting or publishing it as news.","definitionVi":"Kiểm chứng tính chính xác của thông tin trước khi chấp nhận hoặc đăng tải thành tin tức."},
+  "conduct fact-checking": {"definition":"Check whether factual claims are supported by reliable evidence.","definitionVi":"Kiểm tra liệu các tuyên bố về sự thật có được bằng chứng đáng tin cậy hỗ trợ hay không."},
+  "develop empathy": {"definition":"Improve one's capacity to understand how other people feel.","definitionVi":"Phát triển khả năng thấu hiểu cảm xúc của người khác."},
+  "teach empathy": {"definition":"Help people learn to understand how others feel.","definitionVi":"Giúp mọi người học cách thấu hiểu cảm xúc của người khác."}
+}

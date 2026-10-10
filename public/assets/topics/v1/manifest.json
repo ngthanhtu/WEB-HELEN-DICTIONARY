@@ -1,440 +1,369 @@
 {
-  "version": 2,
+  "version": 1,
+  "totalWords": 4000,
+  "lessonSize": 20,
   "selectionNote": "Biên soạn để luyện theo ngữ cảnh IELTS, TOEIC và VSTEP; không phải danh sách chính thức hay bảng xếp hạng tần suất đề thi. Một từ có thể có nghĩa khác khi đổi ngữ cảnh.",
+  "licenseUrl": "/assets/licenses/wordnet.txt",
   "topics": [
     {
       "id": "education",
       "title": "Education & Learning",
-      "description": "Từ và cụm học thuật: digital literacy, academic achievement, learning outcomes.",
+      "description": "Trường học, phương pháp học và đánh giá kết quả.",
       "exams": [
         "IELTS",
         "VSTEP",
         "TOEIC"
       ],
-      "domains": [
-        9,
-        14,
-        18,
-        31
-      ],
-      "keywords": "education school learning academic teach study language knowledge",
       "prompts": [
         "Describe a skill you learned and how you practised it.",
         "Discuss the benefits and limitations of online education."
-      ]
+      ],
+      "wordCount": 200,
+      "lessonCount": 10,
+      "url": "/assets/topics/v1/education.json",
+      "bytes": 48486
     },
     {
       "id": "work",
       "title": "Work & Careers",
-      "description": "Từ và cụm học thuật: job satisfaction, work-life balance, employee retention.",
+      "description": "Tuyển dụng, công việc, trách nhiệm và phát triển nghề nghiệp.",
       "exams": [
         "TOEIC",
         "IELTS",
         "VSTEP"
       ],
-      "domains": [
-        4,
-        14,
-        18,
-        41
-      ],
-      "keywords": "job employment work employee occupation profession office career",
       "prompts": [
         "Describe the qualities of a good colleague.",
         "Write a message asking to reschedule a job interview."
-      ]
+      ],
+      "wordCount": 200,
+      "lessonCount": 10,
+      "url": "/assets/topics/v1/work.json",
+      "bytes": 46928
     },
     {
       "id": "business",
       "title": "Business & Management",
-      "description": "Từ và cụm học thuật: competitive advantage, market share, brand loyalty.",
+      "description": "Doanh nghiệp, thị trường, vận hành và chăm sóc khách hàng.",
       "exams": [
         "TOEIC",
         "IELTS",
         "VSTEP"
       ],
-      "domains": [
-        14,
-        21,
-        40,
-        41
-      ],
-      "keywords": "business commercial company trade selling buying market management",
       "prompts": [
         "Explain how a small business can retain its customers.",
         "Summarise a proposal for launching a new service."
-      ]
+      ],
+      "wordCount": 200,
+      "lessonCount": 10,
+      "url": "/assets/topics/v1/business.json",
+      "bytes": 48330
     },
     {
       "id": "money",
       "title": "Money & Economy",
-      "description": "Từ và cụm học thuật: economic growth, income inequality, financial literacy.",
+      "description": "Chi tiêu, ngân hàng, tài chính cá nhân và nền kinh tế.",
       "exams": [
         "IELTS",
         "TOEIC",
         "VSTEP"
       ],
-      "domains": [
-        21,
-        23,
-        40
-      ],
-      "keywords": "money financial monetary economic payment bank currency tax",
       "prompts": [
         "Compare saving money with borrowing money.",
         "Discuss how rising prices affect students and families."
-      ]
+      ],
+      "wordCount": 200,
+      "lessonCount": 10,
+      "url": "/assets/topics/v1/money.json",
+      "bytes": 46550
     },
     {
       "id": "travel",
       "title": "Travel & Tourism",
-      "description": "Từ và cụm học thuật: sustainable tourism, cultural immersion, responsible travel.",
+      "description": "Đặt phòng, điểm đến, tham quan và trải nghiệm du lịch.",
       "exams": [
         "TOEIC",
         "IELTS",
         "VSTEP"
       ],
-      "domains": [
-        4,
-        6,
-        15,
-        17,
-        38
-      ],
-      "keywords": "travel tourist journey hotel geographical place scenery visit",
       "prompts": [
         "Describe a place you would like to visit.",
         "Write an email asking a hotel to change a reservation."
-      ]
+      ],
+      "wordCount": 200,
+      "lessonCount": 10,
+      "url": "/assets/topics/v1/travel.json",
+      "bytes": 45035
     },
     {
       "id": "transport",
       "title": "Transport & Logistics",
-      "description": "Từ và cụm học thuật: public transport provision, traffic congestion, transport infrastructure.",
+      "description": "Đi lại, phương tiện, giao hàng và vận chuyển hàng hóa.",
       "exams": [
         "TOEIC",
         "IELTS",
         "VSTEP"
       ],
-      "domains": [
-        6,
-        15,
-        38
-      ],
-      "keywords": "vehicle transport road ship railway traffic engine freight movement",
       "prompts": [
         "Compare public transport with travelling by car.",
         "Explain a delivery delay and suggest a solution."
-      ]
+      ],
+      "wordCount": 200,
+      "lessonCount": 10,
+      "url": "/assets/topics/v1/transport.json",
+      "bytes": 44191
     },
     {
       "id": "housing",
       "title": "Homes & Cities",
-      "description": "Từ và cụm học thuật: affordable housing, urban planning, housing affordability.",
+      "description": "Nhà ở, nội thất, khu dân cư và phát triển đô thị.",
       "exams": [
         "IELTS",
         "VSTEP",
         "TOEIC"
       ],
-      "domains": [
-        6,
-        15,
-        17,
-        21,
-        36
-      ],
-      "keywords": "house dwelling building home room city furniture residence",
       "prompts": [
         "Describe your ideal home and neighbourhood.",
         "Discuss how cities can provide affordable housing."
-      ]
+      ],
+      "wordCount": 200,
+      "lessonCount": 10,
+      "url": "/assets/topics/v1/housing.json",
+      "bytes": 47124
     },
     {
       "id": "health",
       "title": "Health & Healthcare",
-      "description": "Từ và cụm học thuật: preventive healthcare, public health, mental health.",
+      "description": "Cơ thể, triệu chứng, điều trị và chăm sóc sức khỏe.",
       "exams": [
         "IELTS",
         "VSTEP",
         "TOEIC"
       ],
-      "domains": [
-        8,
-        18,
-        26,
-        29
-      ],
-      "keywords": "medical medicine body disease health treatment patient illness",
       "prompts": [
         "Explain a healthy habit and why it matters.",
         "Discuss the roles of prevention and treatment in healthcare."
-      ]
+      ],
+      "wordCount": 200,
+      "lessonCount": 10,
+      "url": "/assets/topics/v1/health.json",
+      "bytes": 46568
     },
     {
       "id": "environment",
       "title": "Environment & Climate",
-      "description": "Từ và cụm học thuật: climate change mitigation, climate adaptation, carbon emissions.",
+      "description": "Thời tiết, hệ sinh thái, ô nhiễm và bảo vệ môi trường.",
       "exams": [
         "IELTS",
         "VSTEP",
         "TOEIC"
       ],
-      "domains": [
-        5,
-        17,
-        19,
-        20,
-        22,
-        27,
-        43
-      ],
-      "keywords": "environment climate weather ecology nature pollution natural species",
       "prompts": [
         "Describe an environmental problem in your area.",
         "Discuss how individuals and governments can reduce waste."
-      ]
+      ],
+      "wordCount": 200,
+      "lessonCount": 10,
+      "url": "/assets/topics/v1/environment.json",
+      "bytes": 46383
     },
     {
       "id": "science",
       "title": "Science & Research",
-      "description": "Từ và cụm học thuật: empirical evidence, scientific inquiry, research methodology.",
+      "description": "Thí nghiệm, dữ liệu, lập luận và khám phá khoa học.",
       "exams": [
         "IELTS",
         "VSTEP",
         "TOEIC"
       ],
-      "domains": [
-        9,
-        19,
-        22,
-        23,
-        27,
-        31
-      ],
-      "keywords": "science scientific research experiment physical mathematical measurement",
       "prompts": [
         "Explain the difference between a claim and evidence.",
         "Describe an invention that changed everyday life."
-      ]
+      ],
+      "wordCount": 200,
+      "lessonCount": 10,
+      "url": "/assets/topics/v1/science.json",
+      "bytes": 51057
     },
     {
       "id": "technology",
       "title": "Technology & Digital Life",
-      "description": "Từ và cụm học thuật: digital transformation, artificial intelligence, cybersecurity.",
+      "description": "Thiết bị, phần mềm, Internet và an toàn thông tin.",
       "exams": [
         "TOEIC",
         "IELTS",
         "VSTEP"
       ],
-      "domains": [
-        6,
-        9,
-        10,
-        36
-      ],
-      "keywords": "computer computing software electronic digital technology system data",
       "prompts": [
         "Explain how you protect personal information online.",
         "Discuss the advantages and disadvantages of automation."
-      ]
+      ],
+      "wordCount": 200,
+      "lessonCount": 10,
+      "url": "/assets/topics/v1/technology.json",
+      "bytes": 47576
     },
     {
       "id": "communication",
       "title": "Media & Communication",
-      "description": "Từ và cụm học thuật: media literacy, freedom of expression, press freedom.",
+      "description": "Truyền thông, trao đổi thông tin và diễn đạt ý kiến.",
       "exams": [
         "TOEIC",
         "IELTS",
         "VSTEP"
       ],
-      "domains": [
-        10,
-        18,
-        32
-      ],
-      "keywords": "communication speech news message media speaking publishing language",
       "prompts": [
         "Describe how you check whether a news story is reliable.",
         "Write a polite message explaining a misunderstanding."
-      ]
+      ],
+      "wordCount": 200,
+      "lessonCount": 10,
+      "url": "/assets/topics/v1/communication.json",
+      "bytes": 51625
     },
     {
       "id": "society",
       "title": "Society, Law & Citizenship",
-      "description": "Từ và cụm học thuật: social cohesion, social inclusion, civic engagement.",
+      "description": "Cộng đồng, quyền và trách nhiệm, luật pháp và xã hội.",
       "exams": [
         "IELTS",
         "VSTEP",
         "TOEIC"
       ],
-      "domains": [
-        4,
-        14,
-        18,
-        24,
-        41
-      ],
-      "keywords": "society social law legal government political public citizen",
       "prompts": [
         "Discuss how volunteering can benefit a community.",
         "Explain why rules should balance safety and individual freedom."
-      ]
+      ],
+      "wordCount": 200,
+      "lessonCount": 10,
+      "url": "/assets/topics/v1/society.json",
+      "bytes": 47822
     },
     {
       "id": "relationships",
       "title": "Family & Relationships",
-      "description": "Từ và cụm học thuật: intergenerational relationships, family cohesion, parental involvement.",
+      "description": "Gia đình, bạn bè, sự gắn kết và cách ứng xử.",
       "exams": [
         "VSTEP",
         "IELTS",
         "TOEIC"
       ],
-      "domains": [
-        12,
-        14,
-        18,
-        24,
-        37,
-        41
-      ],
-      "keywords": "family relative relationship parent person friendship affection human",
       "prompts": [
         "Describe someone who has had a positive influence on you.",
         "Discuss how families can resolve disagreements respectfully."
-      ]
+      ],
+      "wordCount": 200,
+      "lessonCount": 10,
+      "url": "/assets/topics/v1/relationships.json",
+      "bytes": 44825
     },
     {
       "id": "food",
       "title": "Food & Nutrition",
-      "description": "Từ và cụm học thuật: balanced nutrition, food security, nutritional value.",
+      "description": "Thực phẩm, nấu ăn, ăn uống và lựa chọn dinh dưỡng.",
       "exams": [
         "TOEIC",
         "IELTS",
         "VSTEP"
       ],
-      "domains": [
-        13,
-        27,
-        34,
-        36
-      ],
-      "keywords": "food eat drink cooking nutrition edible meal ingredient",
       "prompts": [
         "Explain how to prepare a dish you enjoy.",
         "Compare cooking at home with eating out."
-      ]
+      ],
+      "wordCount": 200,
+      "lessonCount": 10,
+      "url": "/assets/topics/v1/food.json",
+      "bytes": 42956
     },
     {
       "id": "culture",
       "title": "Arts, Culture & Leisure",
-      "description": "Từ và cụm học thuật: cultural identity, artistic expression, cultural preservation.",
+      "description": "Nghệ thuật, âm nhạc, sách, biểu diễn và sở thích.",
       "exams": [
         "IELTS",
         "VSTEP",
         "TOEIC"
       ],
-      "domains": [
-        4,
-        6,
-        9,
-        10,
-        36
-      ],
-      "keywords": "art artistic music musical literature entertainment performance creative",
       "prompts": [
         "Describe a book, film or performance you enjoyed.",
         "Discuss why communities should preserve cultural traditions."
-      ]
+      ],
+      "wordCount": 200,
+      "lessonCount": 10,
+      "url": "/assets/topics/v1/culture.json",
+      "bytes": 44593
     },
     {
       "id": "shopping",
       "title": "Shopping & Everyday Services",
-      "description": "Từ và cụm học thuật: consumer behaviour, consumer rights, impulse buying.",
+      "description": "Mua sắm, trang phục, hàng hóa và dịch vụ thường ngày.",
       "exams": [
         "TOEIC",
         "VSTEP",
         "IELTS"
       ],
-      "domains": [
-        6,
-        21,
-        27,
-        35,
-        40
-      ],
-      "keywords": "buy sell shopping clothing garment retail customer product",
       "prompts": [
         "Explain how you choose a product before buying it.",
         "Write a complaint about an item and request a replacement."
-      ]
+      ],
+      "wordCount": 200,
+      "lessonCount": 10,
+      "url": "/assets/topics/v1/shopping.json",
+      "bytes": 45575
     },
     {
       "id": "sports",
       "title": "Sports & Active Living",
-      "description": "Từ và cụm học thuật: physical fitness, sporting participation, athletic performance.",
+      "description": "Thể thao, luyện tập, thi đấu và lối sống năng động.",
       "exams": [
         "IELTS",
         "VSTEP",
         "TOEIC"
       ],
-      "domains": [
-        4,
-        6,
-        18,
-        33,
-        38
-      ],
-      "keywords": "sport athletic game exercise competition training physical player",
       "prompts": [
         "Describe an activity that helps you stay active.",
         "Discuss whether schools should emphasise competition or participation."
-      ]
+      ],
+      "wordCount": 200,
+      "lessonCount": 10,
+      "url": "/assets/topics/v1/sports.json",
+      "bytes": 44214
     },
     {
       "id": "agriculture",
       "title": "Agriculture & Natural Resources",
-      "description": "Từ và cụm học thuật: sustainable agriculture, food sovereignty, soil fertility.",
+      "description": "Nông nghiệp, cây trồng, chăn nuôi và nguồn tài nguyên.",
       "exams": [
         "IELTS",
         "VSTEP",
         "TOEIC"
       ],
-      "domains": [
-        5,
-        6,
-        20,
-        27,
-        36
-      ],
-      "keywords": "agriculture farm plant crop animal mineral soil resource cultivation",
       "prompts": [
         "Explain how weather can affect food production.",
         "Discuss ways to use natural resources responsibly."
-      ]
+      ],
+      "wordCount": 200,
+      "lessonCount": 10,
+      "url": "/assets/topics/v1/agriculture.json",
+      "bytes": 43967
     },
     {
       "id": "personal",
       "title": "Personal Skills & Emotions",
-      "description": "Từ và cụm học thuật: emotional intelligence, self-awareness, personal resilience.",
+      "description": "Tính cách, cảm xúc, kỹ năng tự quản lý và phát triển bản thân.",
       "exams": [
         "VSTEP",
         "IELTS",
         "TOEIC"
       ],
-      "domains": [
-        7,
-        9,
-        12,
-        16,
-        26,
-        31,
-        37
-      ],
-      "keywords": "person emotion feeling mental personality character ability attitude",
       "prompts": [
         "Describe a challenge and how you dealt with it.",
         "Discuss how confidence and patience help people learn new skills."
-      ]
+      ],
+      "wordCount": 200,
+      "lessonCount": 10,
+      "url": "/assets/topics/v1/personal.json",
+      "bytes": 48457
     }
   ]
 }

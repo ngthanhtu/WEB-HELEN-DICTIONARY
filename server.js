@@ -289,6 +289,7 @@ app.post('/api/study/prepare',async(req,res)=>{
   if(!Array.isArray(words) || !words.length || words.length>12 || !words.every(word=>typeof word==='string' && word.trim() && word.length<=100 && !/[\x00-\x1f<>]/.test(word)))return res.status(400).json({error:'Chọn tối đa 12 từ hợp lệ mỗi lượt.'});
   const selected=[...new Set(words.map(word=>word.trim().toLowerCase()))],results=[];
   for(const word of selected){
+    const topic=topicEntry(word);if(topic?.topicEdition===2){results.push({word,entries:[topic]});continue;}
     const grouped=new Map();
     for(const sense of learningSenses({entries:[{source:'Princeton WordNet',meanings:studyMeanings(word)}]})){
       if(!grouped.has(sense.pos))grouped.set(sense.pos,[]);
@@ -311,6 +312,8 @@ app.get('/api/collocations',async(req,res)=>{
   res.json(data);
 });
 function beginLookup(word) {
+  const topic=topicEntry(word);
+  if(topic?.topicEdition===2 && word.includes(' ')){const entry={...topic,ipa:''},entries=[entry];cache.set(`d|${word}`,entries);persistDictionary(word,entries);return {first:Promise.resolve(entry),complete:Promise.resolve(entries)};}
   if (lookups.has(word)) return lookups.get(word);
   const lexical = process.env.HELEN_DISABLE_WORDNET === '1' ? Promise.resolve([]) : wordnetMeanings(word).catch(() => null);
   // Let local disk reads finish before starting remote DNS lookups on libuv's shared worker pool.
@@ -363,6 +366,7 @@ app.get('/api/lookup', async (req, res) => {
   try {
     word=(from==='en'?raw:await translations.translate(raw,from,'en',{kind:'lookup'})).trim().toLowerCase();
     let entries=cache.get(`d|${word}`), enriching=false;
+    if(!entries && topicEntry(word)?.topicEdition===2 && word.includes(' '))entries=await beginLookup(word).complete;
     const durable = entries ? null : await database.get(`dictionary-v${REVISION}`,word);
     if (durable?.value?.[0]?.meanings?.length) {
       entries=durable.value;cache.set(`d|${word}`,entries);
@@ -379,7 +383,7 @@ app.get('/api/lookup', async (req, res) => {
       }
     }
     if (!enriching) persistDictionary(word,entries);
-    res.json({query:raw,from,word,entries,enriching,lexicalRevision:REVISION,collocationRevision:collocationService.revision});
+    res.json({query:raw,from,word,entries,enriching,...(entries.length===1 && entries[0].topicGloss?{offlineGloss:entries[0].topicGloss}:{}),lexicalRevision:REVISION,collocationRevision:collocationService.revision});
   } catch(e) {
     const suggestions=e.status===404 ? await spellingSuggestions(word).catch(()=>[]) : [];
     res.status(e.status||502).json({error:e.message || 'Lookup failed. Try again.',...(e.code?{code:e.code}:{}),query:raw,word,suggestions,suggestionLanguage:'en'});

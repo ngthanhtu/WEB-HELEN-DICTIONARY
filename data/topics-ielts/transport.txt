@@ -1,0 +1,50 @@
+public transport provision|the availability of shared passenger transport services|việc cung cấp các dịch vụ vận tải hành khách công cộng|improve,expand,fund
+traffic congestion|overcrowding of roads that slows vehicle movement|tình trạng đường quá đông khiến phương tiện di chuyển chậm|reduce,monitor,alleviate
+transport infrastructure|physical networks and facilities used for movement|mạng lưới và cơ sở vật chất dùng cho giao thông vận tải|improve,maintain,fund
+road safety|conditions that reduce harm to road users|các điều kiện giúp giảm nguy hiểm cho người tham gia giao thông|improve,promote,monitor
+urban mobility|people's ability to move around a city|khả năng đi lại của người dân trong đô thị|improve,facilitate,assess
+sustainable transport|transport that reduces environmental and social harm|giao thông giảm tác hại đối với môi trường và xã hội|promote,develop,support
+freight transport|movement of goods rather than passengers|việc vận chuyển hàng hóa thay vì hành khách|manage,improve,regulate
+logistics efficiency|effective movement and storage of goods with minimal waste|hiệu quả vận chuyển và lưu kho hàng hóa với ít lãng phí|improve,measure,increase
+supply chain visibility|the ability to track goods across a supply network|khả năng theo dõi hàng hóa xuyên suốt chuỗi cung ứng|improve,increase,ensure
+last-mile delivery|the final stage of transporting goods to the recipient|chặng cuối vận chuyển hàng đến người nhận|improve,manage,optimise
+road maintenance|work that keeps roads in usable condition|công việc giữ đường sá trong tình trạng sử dụng được|fund,schedule,prioritise
+transport accessibility|how easily people can use transport services|mức độ dễ dàng tiếp cận và sử dụng dịch vụ giao thông|improve,assess,ensure
+commuting patterns|regular ways people travel between home and work|các hình thức đi lại thường xuyên giữa nhà và nơi làm việc|study,monitor,influence
+vehicle emissions|pollutants released by motor vehicles|các chất ô nhiễm do phương tiện cơ giới thải ra|reduce,measure,regulate
+fuel efficiency|distance or work achieved per unit of fuel|hiệu quả quãng đường hoặc công việc đạt được trên mỗi đơn vị nhiên liệu|improve,measure,increase
+transport connectivity|links that allow movement between places|các kết nối cho phép di chuyển giữa các địa điểm|improve,expand,assess
+rail capacity|the amount of traffic a railway network can carry|năng lực chuyên chở của mạng lưới đường sắt|increase,assess,expand
+port capacity|the volume of goods or vessels a harbour can handle|khối lượng hàng hoặc tàu mà cảng có thể tiếp nhận|increase,assess,expand
+shipping costs|expenses incurred in transporting goods|các chi phí phát sinh khi vận chuyển hàng hóa|reduce,calculate,compare
+cargo handling|loading and moving goods in transport facilities|việc bốc xếp và di chuyển hàng tại cơ sở vận tải|improve,manage,automate
+traffic management|organising vehicle flows to improve road use|việc điều phối luồng xe để cải thiện sử dụng đường|improve,coordinate,review
+parking restrictions|rules limiting where or when vehicles may park|các quy định hạn chế địa điểm hoặc thời gian đỗ xe|enforce,introduce,review
+transport subsidies|financial support that lowers transport costs|các khoản trợ cấp giúp giảm chi phí giao thông|provide,increase,review
+passenger demand|the number of people wanting to use transport|nhu cầu sử dụng phương tiện vận tải của hành khách|forecast,meet,monitor
+journey times|durations of trips between locations|thời gian các chuyến đi giữa các địa điểm|reduce,calculate,compare
+transport reliability|the consistency of services in operating as expected|mức độ dịch vụ vận tải hoạt động ổn định như dự kiến|improve,assess,maintain
+intermodal transport|movement using more than one transport mode|việc vận chuyển sử dụng nhiều hơn một loại phương tiện|promote,develop,coordinate
+fleet management|organising and maintaining a group of vehicles|việc tổ chức và bảo dưỡng một đội phương tiện|improve,automate,review
+warehouse capacity|the quantity of goods a storage facility can hold|lượng hàng hóa mà kho có thể chứa|increase,assess,expand
+inventory control|managing the quantities of goods held in stock|việc quản lý lượng hàng được giữ trong kho|improve,implement,automate
+delivery schedules|planned times for goods to reach destinations|các lịch trình dự kiến đưa hàng đến nơi nhận|prepare,adjust,meet
+transport costs|expenses associated with moving people or goods|chi phí gắn với việc vận chuyển người hoặc hàng|reduce,calculate,compare
+pedestrian safety|protection of people travelling on foot|sự bảo vệ an toàn cho người đi bộ|improve,promote,ensure
+cycling infrastructure|facilities that support bicycle travel|cơ sở vật chất hỗ trợ đi lại bằng xe đạp|develop,improve,fund
+road capacity|the amount of traffic a road can accommodate|lượng phương tiện mà một con đường có thể tiếp nhận|increase,assess,expand
+transport planning|designing future services and networks for movement|việc quy hoạch dịch vụ và mạng lưới giao thông trong tương lai|improve,coordinate,review
+accessibility standards|requirements ensuring services suit people with diverse needs|các tiêu chuẩn bảo đảm dịch vụ phù hợp người có nhu cầu đa dạng|define,apply,enforce
+transport investment|money committed to networks and movement services|vốn đầu tư cho mạng lưới và dịch vụ giao thông vận tải|increase,attract,allocate
+route optimisation|finding efficient paths for transport operations|việc tìm tuyến đường hiệu quả cho hoạt động vận tải|implement,improve,automate
+traffic flows|patterns of vehicle movement through a network|các luồng di chuyển phương tiện trong mạng lưới giao thông|monitor,manage,improve
+road accidents|collisions or other harmful incidents on roads|các vụ va chạm hoặc sự cố gây hại trên đường|prevent,investigate,reduce
+speed limits|maximum legally permitted driving speeds|các mức tốc độ lái xe tối đa được pháp luật cho phép|enforce,reduce,review
+transport emissions|pollution released through transport activity|khí thải ô nhiễm từ hoạt động giao thông vận tải|reduce,measure,monitor
+rail electrification|conversion of railway operations to electrical power|việc chuyển hoạt động đường sắt sang sử dụng điện|fund,accelerate,complete
+customs clearance|official approval for goods to cross a border|việc hoàn tất thủ tục cho phép hàng hóa qua biên giới|obtain,streamline,facilitate
+shipment tracking|following the location and status of goods in transit|việc theo dõi vị trí và tình trạng hàng đang vận chuyển|improve,automate,enable
+transport resilience|the ability of transport systems to withstand disruption|khả năng hệ thống giao thông chống chịu sự gián đoạn|improve,assess,strengthen
+passenger information|details that help travellers use transport services|thông tin giúp hành khách sử dụng dịch vụ vận tải|provide,update,improve
+transport integration|coordination of different transport services and networks|việc phối hợp các dịch vụ và mạng lưới giao thông khác nhau|improve,promote,facilitate
+logistics networks|linked organisations and facilities that move goods|mạng lưới tổ chức và cơ sở phối hợp vận chuyển hàng hóa|develop,expand,manage

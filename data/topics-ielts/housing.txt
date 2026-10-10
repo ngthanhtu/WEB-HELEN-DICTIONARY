@@ -1,0 +1,50 @@
+affordable housing|homes available at costs people can reasonably pay|nhà ở có chi phí mà người dân có khả năng chi trả hợp lý|provide,build,fund
+urban planning|designing the development and use of city spaces|việc quy hoạch phát triển và sử dụng không gian đô thị|improve,coordinate,review
+housing affordability|the relationship between housing costs and people's income|mức độ chi phí nhà ở phù hợp với thu nhập của người dân|improve,assess,monitor
+residential density|the number of dwellings within a given area|mật độ nhà ở trong một diện tích nhất định|increase,measure,regulate
+urban regeneration|renewal of neglected or declining city areas|việc cải tạo các khu đô thị xuống cấp hoặc bị bỏ bê|fund,plan,support
+social housing|homes provided with public support for those in need|nhà ở được hỗ trợ công cho người có nhu cầu|provide,build,expand
+rental affordability|how manageable rent is relative to income|mức độ tiền thuê phù hợp với thu nhập|improve,assess,monitor
+housing supply|the number of homes available for occupation|nguồn cung nhà ở sẵn có để cư trú|increase,expand,monitor
+property prices|the amounts charged for land and buildings|giá của đất đai và bất động sản|monitor,compare,forecast
+urban sprawl|the spread of development into surrounding rural land|sự lan rộng đô thị sang đất nông thôn xung quanh|limit,control,monitor
+mixed-use development|buildings or areas combining residential and other functions|việc phát triển khu vực kết hợp nhà ở với các chức năng khác|promote,plan,approve
+green spaces|areas of vegetation within built-up environments|các không gian cây xanh trong khu vực xây dựng|create,protect,expand
+community facilities|shared places that provide services for local residents|các cơ sở dùng chung phục vụ cư dân địa phương|provide,improve,maintain
+building regulations|legal rules governing construction standards|các quy định pháp lý về tiêu chuẩn xây dựng|enforce,review,update
+energy-efficient housing|homes designed to use less energy|nhà ở được thiết kế để sử dụng ít năng lượng|build,promote,fund
+housing quality|the standard and condition of residential accommodation|chất lượng và tình trạng của nhà ở|improve,assess,monitor
+land use|the purposes for which areas of ground are used|các mục đích sử dụng đất|plan,regulate,monitor
+urban infrastructure|networks and facilities that support city life|các mạng lưới và cơ sở vật chất phục vụ đời sống đô thị|improve,maintain,fund
+residential development|construction of new homes and neighbourhoods|việc xây dựng nhà ở và khu dân cư mới|plan,approve,regulate
+neighbourhood safety|protection from harm within a local residential area|sự an toàn trong khu dân cư địa phương|improve,assess,promote
+home ownership|having legal possession of a residential property|việc sở hữu hợp pháp một bất động sản để ở|promote,encourage,support
+housing shortages|insufficient homes to meet demand|tình trạng thiếu nhà ở so với nhu cầu|address,reduce,alleviate
+rental agreements|contracts setting the terms of renting a property|các hợp đồng quy định điều kiện thuê bất động sản|negotiate,review,terminate
+property maintenance|work to keep buildings in good condition|công việc giữ công trình trong tình trạng tốt|schedule,fund,prioritise
+construction costs|expenses involved in building structures|các chi phí phát sinh khi xây dựng công trình|reduce,calculate,monitor
+building insulation|materials that reduce heat transfer in buildings|vật liệu giúp hạn chế truyền nhiệt trong công trình|install,improve,replace
+urban sustainability|cities' ability to support life without exhausting resources|khả năng đô thị duy trì đời sống mà không làm cạn kiệt tài nguyên|improve,assess,promote
+public amenities|facilities available for the use of the wider community|các tiện ích phục vụ cộng đồng|provide,improve,maintain
+housing policies|official rules and plans concerning residential accommodation|các quy định và kế hoạch chính thức về nhà ở|formulate,implement,evaluate
+spatial planning|organising the location of activities and development|việc tổ chức vị trí các hoạt động và khu vực phát triển|improve,coordinate,review
+urban resilience|a city's ability to withstand and recover from shocks|khả năng đô thị chống chịu và phục hồi sau biến cố|build,assess,strengthen
+population density|the number of people living within a given area|mật độ người sinh sống trong một diện tích nhất định|measure,monitor,compare
+housing investment|money committed to residential buildings and services|vốn đầu tư cho nhà ở và dịch vụ liên quan|increase,attract,allocate
+building permits|official permissions to carry out construction|giấy phép chính thức cho hoạt động xây dựng|obtain,issue,revoke
+rental demand|the number of people seeking rented accommodation|nhu cầu tìm nhà thuê|forecast,meet,monitor
+housing access|the ability to obtain suitable accommodation|khả năng tiếp cận chỗ ở phù hợp|improve,assess,ensure
+urban renewal|rebuilding or improving existing city neighbourhoods|việc xây dựng lại hoặc cải thiện khu đô thị hiện có|fund,plan,coordinate
+neighbourhood cohesion|the strength of connections between local residents|mức độ gắn kết giữa cư dân trong khu vực|build,maintain,strengthen
+property valuation|estimating the financial worth of land or buildings|việc xác định giá trị tài chính của đất hoặc công trình|conduct,review,verify
+residential segregation|separation of population groups into different neighbourhoods|sự phân tách các nhóm dân cư vào những khu vực khác nhau|reduce,study,address
+urban expansion|growth of the area occupied by a city|sự mở rộng diện tích đô thị|plan,manage,monitor
+housing standards|minimum requirements for acceptable accommodation|các tiêu chuẩn tối thiểu của chỗ ở phù hợp|improve,enforce,review
+wastewater treatment|removing pollutants from used water|việc loại bỏ chất ô nhiễm khỏi nước thải|improve,fund,regulate
+sanitation facilities|systems that safely manage human waste and hygiene|các cơ sở bảo đảm xử lý chất thải và vệ sinh an toàn|provide,improve,maintain
+urban design|shaping the appearance and function of city spaces|việc thiết kế hình thức và chức năng không gian đô thị|improve,review,evaluate
+home renovation|work to improve or update an existing dwelling|việc sửa chữa để cải thiện hoặc làm mới nhà ở hiện có|plan,fund,complete
+housing insecurity|uncertainty about keeping safe and stable accommodation|tình trạng không được bảo đảm chỗ ở an toàn và ổn định|reduce,address,measure
+land ownership|legal possession of an area of ground|quyền sở hữu hợp pháp một diện tích đất|verify,transfer,protect
+construction quality|the standard of workmanship in building projects|chất lượng thi công trong các dự án xây dựng|improve,assess,monitor
+urban liveability|how suitable a city is for comfortable daily life|mức độ đô thị phù hợp với đời sống hằng ngày thuận tiện|improve,assess,enhance

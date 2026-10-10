@@ -1,0 +1,50 @@
+digital transformation|using digital tools to fundamentally change how activities operate|việc dùng công cụ số để thay đổi căn bản cách hoạt động|accelerate,implement,manage
+artificial intelligence|computing systems that perform tasks requiring human-like reasoning|các hệ thống máy tính thực hiện nhiệm vụ đòi hỏi suy luận tương tự con người|develop,regulate,use
+cybersecurity|protection of digital systems against attacks and unauthorised access|việc bảo vệ hệ thống số khỏi tấn công và truy cập trái phép|strengthen,improve,prioritise
+data privacy|individuals' control over the use of their personal information|quyền kiểm soát việc sử dụng thông tin cá nhân của mỗi người|protect,ensure,promote
+digital inclusion|fair access to digital tools and services|sự tiếp cận công bằng các công cụ và dịch vụ số|promote,improve,assess
+technological innovation|development of new practical tools and systems|việc phát triển các công cụ và hệ thống công nghệ mới|encourage,fund,promote
+algorithmic bias|systematic unfairness in automated decisions|sự thiên lệch bất công có hệ thống trong quyết định tự động|detect,reduce,prevent
+online security|protection from threats while using internet services|sự bảo vệ trước nguy cơ khi dùng dịch vụ trực tuyến|improve,ensure,maintain
+data protection|measures preventing misuse or loss of information|các biện pháp ngăn sử dụng sai hoặc mất dữ liệu|strengthen,ensure,improve
+technological dependence|reliance on digital tools to perform activities|sự phụ thuộc vào công cụ công nghệ để thực hiện hoạt động|reduce,assess,manage
+digital infrastructure|networks and systems supporting electronic services|mạng lưới và hệ thống phục vụ dịch vụ số|develop,improve,fund
+cloud computing|using remotely hosted computing resources over a network|việc sử dụng tài nguyên máy tính lưu trữ từ xa qua mạng|adopt,use,implement
+machine learning|computational methods that learn patterns from data|các phương pháp máy tính học quy luật từ dữ liệu|use,develop,apply
+information security|protecting information against unauthorised access or alteration|việc bảo vệ thông tin khỏi truy cập hoặc thay đổi trái phép|improve,ensure,maintain
+user experience|how a person perceives and interacts with a product|trải nghiệm của người dùng khi cảm nhận và tương tác với sản phẩm|improve,evaluate,enhance
+software development|creating and maintaining computer programs|việc tạo và duy trì các chương trình máy tính|manage,improve,automate
+technological adoption|beginning to use new tools or systems|việc bắt đầu sử dụng công cụ hoặc hệ thống công nghệ mới|accelerate,encourage,facilitate
+digital connectivity|the ability to connect to electronic networks|khả năng kết nối với các mạng điện tử|improve,expand,ensure
+data governance|rules and responsibilities for managing information|các quy tắc và trách nhiệm quản lý dữ liệu|improve,implement,strengthen
+automation|the use of systems to carry out tasks with limited human input|việc dùng hệ thống thực hiện nhiệm vụ với ít sự can thiệp của con người|introduce,implement,expand
+online accessibility|how easily people with different needs can use internet content|mức độ người có nhu cầu khác nhau sử dụng được nội dung trực tuyến|improve,assess,ensure
+digital competence|the ability to use technology appropriately and effectively|năng lực sử dụng công nghệ phù hợp và hiệu quả|develop,assess,demonstrate
+technological resilience|the ability of digital systems to recover from disruption|khả năng hệ thống công nghệ phục hồi sau sự gián đoạn|build,assess,strengthen
+data analytics|methods for finding useful patterns in information|các phương pháp tìm quy luật hữu ích trong dữ liệu|use,improve,apply
+system reliability|the consistency of a system in functioning correctly|mức độ hệ thống hoạt động ổn định và chính xác|improve,assess,maintain
+network performance|how efficiently a communication network operates|hiệu quả hoạt động của mạng truyền thông|improve,measure,monitor
+technological disruption|changes caused by innovations that alter existing practices|sự thay đổi do công nghệ mới làm biến đổi cách hoạt động hiện có|anticipate,manage,analyse
+human-computer interaction|the ways people communicate with digital systems|các cách con người tương tác với hệ thống máy tính|study,improve,evaluate
+digital rights|entitlements relating to the use of technology and information|các quyền liên quan đến sử dụng công nghệ và thông tin|protect,promote,uphold
+cybercrime|illegal activity carried out through digital systems|hoạt động phạm pháp thực hiện qua hệ thống số|combat,investigate,prevent
+data breaches|incidents in which protected information is exposed|các sự cố dữ liệu được bảo vệ bị lộ|prevent,detect,investigate
+software updates|changes issued to improve or repair computer programs|các bản cập nhật nhằm cải thiện hoặc sửa lỗi phần mềm|install,download,schedule
+digital platforms|online systems connecting users and services|các nền tảng trực tuyến kết nối người dùng với dịch vụ|develop,regulate,use
+technology transfer|sharing technical knowledge for use by another organisation|việc chuyển giao kiến thức công nghệ cho tổ chức khác sử dụng|facilitate,promote,support
+computational thinking|solving problems using ideas from computer science|việc giải quyết vấn đề bằng tư duy khoa học máy tính|develop,teach,assess
+internet governance|the rules and processes used to manage online networks|các quy tắc và quy trình quản lý mạng internet|improve,strengthen,review
+technology investment|money committed to developing or acquiring technical systems|vốn dành để phát triển hoặc mua hệ thống công nghệ|increase,attract,allocate
+system integration|connecting separate technical components to function together|việc kết nối các thành phần kỹ thuật để cùng hoạt động|improve,implement,manage
+digital identity|information representing a person in electronic systems|thông tin đại diện cho một người trong các hệ thống số|verify,protect,manage
+biometric authentication|verifying identity using physical or behavioural characteristics|việc xác thực danh tính bằng đặc điểm sinh học hoặc hành vi|use,implement,improve
+open-source software|programs whose code is available for permitted reuse and modification|phần mềm có mã nguồn được cung cấp để tái sử dụng và chỉnh sửa theo giấy phép|develop,use,maintain
+technology literacy|understanding of how practical tools work and are used|sự hiểu biết cách công cụ công nghệ hoạt động và được sử dụng|improve,teach,assess
+ethical AI|development and use of automated intelligence according to moral principles|việc phát triển và sử dụng trí tuệ nhân tạo theo nguyên tắc đạo đức|develop,promote,support
+smart infrastructure|physical systems enhanced with sensors and automated controls|cơ sở hạ tầng được bổ sung cảm biến và điều khiển tự động|develop,fund,maintain
+technology regulation|rules controlling the development and use of technical systems|các quy định kiểm soát phát triển và sử dụng công nghệ|strengthen,enforce,review
+digital services|activities provided through electronic systems|các dịch vụ được cung cấp qua hệ thống số|provide,improve,expand
+system scalability|the ability to handle increased demand without unacceptable loss of performance|khả năng xử lý nhu cầu tăng mà không làm giảm hiệu năng quá mức|improve,assess,ensure
+software interoperability|the ability of different programs to exchange and use information|khả năng các phần mềm khác nhau trao đổi và sử dụng dữ liệu|improve,assess,ensure
+technological capability|the capacity to develop and use technical systems|năng lực phát triển và sử dụng các hệ thống công nghệ|develop,assess,strengthen
+digital wellbeing|a healthy relationship with electronic tools and online activity|việc sử dụng công cụ số và hoạt động trực tuyến một cách lành mạnh|promote,improve,support

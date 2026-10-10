@@ -1,0 +1,50 @@
+preventive healthcare|measures intended to stop illness before it occurs|các biện pháp ngăn bệnh trước khi xuất hiện|provide,fund,promote
+public health|the health and wellbeing of a population|sức khỏe và trạng thái lành mạnh của cộng đồng|protect,improve,promote
+mental health|a person's psychological and emotional wellbeing|sức khỏe tâm lý và cảm xúc của một người|protect,improve,assess
+health literacy|the ability to understand and use health information|khả năng hiểu và sử dụng thông tin sức khỏe|improve,teach,assess
+healthcare access|the ability to obtain needed medical services|khả năng tiếp cận dịch vụ y tế cần thiết|improve,expand,ensure
+health inequalities|unfair differences in health between groups|các chênh lệch bất công về sức khỏe giữa các nhóm|reduce,measure,address
+chronic disease|illness that persists over a long period|bệnh kéo dài trong thời gian dài|prevent,manage,diagnose
+patient safety|protection from avoidable harm during medical care|việc bảo vệ người bệnh khỏi tác hại có thể phòng tránh khi điều trị|improve,ensure,monitor
+primary care|first-contact general healthcare services|dịch vụ chăm sóc sức khỏe tổng quát ở tuyến tiếp xúc đầu tiên|provide,strengthen,fund
+vaccination coverage|the proportion of a population receiving vaccines|tỷ lệ dân số được tiêm vắc xin|increase,measure,monitor
+antimicrobial resistance|microbes' ability to withstand medicines used against them|khả năng vi sinh vật chống lại thuốc được dùng để tiêu diệt chúng|combat,monitor,reduce
+health promotion|activities that help people improve their wellbeing|các hoạt động giúp người dân nâng cao sức khỏe|support,fund,coordinate
+medical research|systematic investigation aimed at improving healthcare|việc nghiên cứu có hệ thống nhằm cải thiện chăm sóc y tế|conduct,fund,support
+clinical trials|studies that test medical treatments in people|các nghiên cứu thử nghiệm phương pháp điều trị trên người|conduct,regulate,monitor
+informed consent|agreement given after understanding relevant medical information|sự đồng ý sau khi hiểu thông tin y tế liên quan|obtain,document,ensure
+patient confidentiality|protection of private information about people receiving care|việc bảo mật thông tin riêng tư của người được chăm sóc y tế|protect,maintain,ensure
+healthcare expenditure|money spent on medical services and health systems|chi tiêu cho dịch vụ y tế và hệ thống chăm sóc sức khỏe|increase,monitor,calculate
+medical expertise|specialised knowledge and skills in healthcare|kiến thức và kỹ năng chuyên môn về y tế|develop,demonstrate,share
+early diagnosis|identification of a condition at an initial stage|việc chẩn đoán bệnh ở giai đoạn sớm|facilitate,improve,promote
+health screening|testing to identify possible disease before symptoms|việc kiểm tra để phát hiện bệnh tiềm ẩn trước khi có triệu chứng|provide,undergo,fund
+health awareness|understanding of issues affecting wellbeing|nhận thức về các vấn đề ảnh hưởng đến sức khỏe|increase,promote,improve
+disease prevention|actions that reduce the likelihood of illness|các hành động giảm khả năng mắc bệnh|prioritise,fund,promote
+medical intervention|an action intended to treat a health problem|biện pháp nhằm điều trị một vấn đề sức khỏe|provide,evaluate,require
+healthcare workforce|people employed to deliver medical services|đội ngũ lao động cung cấp dịch vụ y tế|expand,train,support
+patient outcomes|results of medical care for individuals|các kết quả chăm sóc y tế của người bệnh|improve,measure,monitor
+healthcare quality|the standard of medical services provided|chất lượng dịch vụ y tế được cung cấp|improve,assess,monitor
+health insurance coverage|protection against medical costs through insurance|sự bảo đảm chi phí y tế thông qua bảo hiểm|expand,provide,improve
+medical infrastructure|facilities and systems needed for healthcare|cơ sở vật chất và hệ thống cần để chăm sóc y tế|improve,maintain,fund
+emergency preparedness|readiness to respond to urgent health threats|sự sẵn sàng ứng phó với các mối đe dọa sức khỏe khẩn cấp|improve,assess,strengthen
+pandemic preparedness|readiness to respond to widespread infectious outbreaks|sự sẵn sàng ứng phó với dịch bệnh lây lan rộng|improve,fund,strengthen
+maternal health|women's health during pregnancy and childbirth|sức khỏe phụ nữ trong thai kỳ và khi sinh con|improve,protect,monitor
+childhood immunisation|vaccination of children against infectious diseases|việc tiêm chủng cho trẻ để phòng bệnh truyền nhiễm|promote,fund,expand
+palliative care|support focused on relieving suffering from serious illness|chăm sóc tập trung giảm đau khổ do bệnh nghiêm trọng|provide,improve,fund
+medical rehabilitation|support to restore function after illness or injury|hỗ trợ phục hồi chức năng sau bệnh tật hoặc chấn thương|provide,fund,improve
+patient autonomy|a person's right to decide about their medical care|quyền của người bệnh quyết định về chăm sóc y tế của mình|respect,protect,promote
+healthcare equity|fairness in the distribution of medical support|sự công bằng trong phân bổ hỗ trợ y tế|promote,improve,assess
+medical ethics|moral principles guiding healthcare decisions|các nguyên tắc đạo đức định hướng quyết định y tế|uphold,teach,promote
+health behaviour|actions that influence a person's wellbeing|các hành vi ảnh hưởng đến sức khỏe của một người|study,change,monitor
+disease surveillance|systematic tracking of illness in a population|việc theo dõi bệnh tật có hệ thống trong dân cư|improve,strengthen,fund
+medical innovation|new approaches or technologies in healthcare|các phương pháp hoặc công nghệ mới trong chăm sóc y tế|encourage,fund,promote
+health risk assessment|evaluation of factors that may harm wellbeing|việc đánh giá các yếu tố có thể gây hại sức khỏe|conduct,improve,review
+medical records|documented information about a patient's health and care|hồ sơ thông tin về sức khỏe và điều trị của người bệnh|maintain,update,protect
+hospital capacity|the number of patients a hospital can accommodate|số lượng người bệnh mà bệnh viện có thể tiếp nhận|increase,assess,expand
+medical supplies|materials and equipment used in healthcare|các vật tư và thiết bị dùng trong chăm sóc y tế|provide,procure,distribute
+health education|teaching that helps people make informed health decisions|việc giáo dục giúp người dân quyết định về sức khỏe có hiểu biết|provide,improve,promote
+healthcare reform|changes intended to improve a medical system|các thay đổi nhằm cải thiện hệ thống y tế|implement,propose,evaluate
+healthcare affordability|how manageable medical costs are for patients|mức độ người bệnh có thể chi trả chi phí y tế|improve,assess,ensure
+patient advocacy|support for patients' interests and rights|sự bảo vệ lợi ích và quyền của người bệnh|promote,support,encourage
+medical treatment adherence|following an agreed plan for managing a condition|việc tuân thủ kế hoạch điều trị đã được thống nhất|improve,monitor,encourage
+health resilience|the ability to recover from threats to wellbeing|khả năng phục hồi trước các nguy cơ đối với sức khỏe|build,assess,strengthen

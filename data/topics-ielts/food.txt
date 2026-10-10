@@ -1,0 +1,50 @@
+balanced nutrition|getting appropriate proportions of essential nutrients|việc nhận đủ các chất dinh dưỡng thiết yếu theo tỷ lệ hợp lý|promote,ensure,maintain
+food security|reliable access to sufficient and suitable food|khả năng tiếp cận ổn định thực phẩm đầy đủ và phù hợp|improve,ensure,protect
+nutritional value|the contribution of food to meeting dietary needs|giá trị của thực phẩm trong đáp ứng nhu cầu dinh dưỡng|assess,compare,improve
+healthy eating habits|regular food choices that support wellbeing|các thói quen ăn uống giúp duy trì sức khỏe|develop,promote,maintain
+food safety|protection against illness caused by contaminated food|sự bảo đảm an toàn trước bệnh do thực phẩm nhiễm bẩn|ensure,improve,monitor
+sustainable diets|eating patterns that support health with limited environmental harm|các chế độ ăn tốt cho sức khỏe với tác hại môi trường hạn chế|adopt,promote,encourage
+food waste|edible material discarded rather than consumed|thực phẩm có thể ăn được nhưng bị bỏ đi|reduce,measure,prevent
+nutrient deficiency|insufficient intake or availability of an essential dietary substance|sự thiếu hụt một chất dinh dưỡng thiết yếu|prevent,identify,address
+processed foods|food products altered from their original state before sale|các thực phẩm được chế biến trước khi bán|consume,limit,compare
+plant-based diets|eating patterns centred on foods from plants|các chế độ ăn tập trung vào thực phẩm nguồn gốc thực vật|adopt,promote,study
+dietary guidelines|recommendations for appropriate food intake|các hướng dẫn về chế độ ăn phù hợp|develop,follow,review
+calorie intake|the amount of dietary energy consumed|lượng năng lượng từ thực phẩm được tiêu thụ|monitor,reduce,calculate
+food consumption|the eating or use of food products|việc tiêu thụ các sản phẩm thực phẩm|monitor,measure,study
+nutritional awareness|understanding of food's effects on health|nhận thức về tác động của dinh dưỡng đối với sức khỏe|increase,promote,improve
+food affordability|how manageable the cost of nourishment is|mức độ người dân có thể chi trả cho thực phẩm|improve,assess,monitor
+food supply chains|networks bringing nourishment from producers to consumers|các chuỗi đưa thực phẩm từ người sản xuất đến người tiêu dùng|improve,manage,strengthen
+food labelling|information displayed on packaging about contents and nutrition|thông tin trên bao bì về thành phần và dinh dưỡng|improve,regulate,review
+public nutrition|efforts to improve dietary health across a population|các nỗ lực nâng cao sức khỏe dinh dưỡng cộng đồng|improve,promote,support
+local food production|growing or making nourishment within the surrounding area|việc sản xuất thực phẩm trong khu vực địa phương|support,increase,promote
+culinary traditions|customs relating to cooking and eating|các truyền thống về nấu nướng và ăn uống|preserve,share,celebrate
+food hygiene|practices that keep nourishment safe and clean|các thực hành giữ thực phẩm sạch và an toàn|improve,maintain,teach
+childhood nutrition|dietary provision for young people|việc cung cấp dinh dưỡng cho trẻ em|improve,assess,support
+food accessibility|how easily people can obtain suitable nourishment|mức độ người dân dễ tiếp cận thực phẩm phù hợp|improve,assess,ensure
+meal planning|organising what food will be eaten and when|việc lên kế hoạch ăn món gì và vào lúc nào|improve,practise,teach
+sugar consumption|the amount of sweet dietary substances eaten|lượng đường được tiêu thụ trong chế độ ăn|reduce,monitor,limit
+salt intake|the amount of sodium chloride consumed in food|lượng muối được tiêu thụ qua thực phẩm|reduce,monitor,measure
+protein intake|the amount of body-building dietary material consumed|lượng chất đạm được tiêu thụ qua chế độ ăn|increase,monitor,calculate
+food preservation|methods that prevent nourishment from spoiling|các phương pháp ngăn thực phẩm hư hỏng|improve,practise,teach
+nutritional balance|appropriate proportions of different dietary substances|sự cân đối các loại chất dinh dưỡng trong khẩu phần|maintain,assess,improve
+food contamination|the presence of harmful substances in nourishment|tình trạng thực phẩm nhiễm chất độc hại|prevent,detect,monitor
+dietary diversity|the variety of foods consumed|sự đa dạng các loại thực phẩm được ăn|increase,promote,assess
+food policies|official decisions governing production and consumption of nourishment|các chính sách về sản xuất và tiêu thụ thực phẩm|formulate,implement,evaluate
+healthy food choices|selections of nourishment that support wellbeing|các lựa chọn thực phẩm tốt cho sức khỏe|make,encourage,promote
+school meals|food provided to learners during the educational day|các bữa ăn được cung cấp cho học sinh tại trường|provide,improve,fund
+food standards|requirements concerning the quality and safety of nourishment|các tiêu chuẩn về chất lượng và an toàn thực phẩm|enforce,improve,review
+nutritional education|teaching about dietary choices and health|việc giáo dục về lựa chọn ăn uống và sức khỏe|provide,improve,promote
+food resilience|the ability of food systems to withstand disruption|khả năng hệ thống thực phẩm chống chịu sự gián đoạn|build,assess,strengthen
+food processing|turning raw ingredients into edible products|việc chế biến nguyên liệu thô thành sản phẩm thực phẩm|regulate,improve,automate
+food distribution|moving nourishment to places where people obtain it|việc phân phối thực phẩm tới nơi người dân tiếp cận|improve,coordinate,manage
+ethical consumption|choosing products with consideration for social and environmental effects|việc tiêu dùng có cân nhắc tác động xã hội và môi trường|promote,encourage,practise
+food imports|nourishment brought into a country from abroad|thực phẩm được nhập từ nước ngoài|regulate,monitor,reduce
+sustainable food systems|networks providing nourishment while protecting long-term resources|các hệ thống cung cấp thực phẩm đồng thời bảo vệ nguồn lực lâu dài|develop,support,promote
+portion control|regulating the amount of food served or eaten|việc kiểm soát lượng thực phẩm được phục vụ hoặc ăn|practise,teach,improve
+food literacy|the ability to understand and make informed dietary choices|khả năng hiểu và lựa chọn thực phẩm có cơ sở|develop,teach,assess
+nutritional research|systematic investigation of diet and health|việc nghiên cứu có hệ thống về dinh dưỡng và sức khỏe|conduct,fund,support
+food marketing|promotion of products intended for consumption|việc quảng bá sản phẩm thực phẩm|regulate,study,review
+food traceability|the ability to follow a product's origin and movement|khả năng truy xuất nguồn gốc và quá trình lưu chuyển thực phẩm|improve,ensure,strengthen
+food packaging|materials used to protect and contain nourishment|các vật liệu dùng để chứa và bảo vệ thực phẩm|improve,reduce,regulate
+food innovation|new products or methods in nourishment provision|các sản phẩm hoặc phương pháp mới trong cung cấp thực phẩm|encourage,fund,promote
+dietary preferences|individual choices about what to eat|các sở thích cá nhân về thực phẩm|respect,study,accommodate

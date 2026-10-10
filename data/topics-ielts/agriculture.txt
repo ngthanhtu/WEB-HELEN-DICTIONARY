@@ -1,0 +1,50 @@
+sustainable agriculture|farming that maintains production while protecting resources|nông nghiệp duy trì sản xuất đồng thời bảo vệ tài nguyên|promote,develop,support
+food sovereignty|communities' ability to shape their own food systems|khả năng cộng đồng quyết định hệ thống thực phẩm của mình|promote,protect,support
+soil fertility|the ground's ability to support crop growth|khả năng đất cung cấp điều kiện cho cây trồng phát triển|improve,maintain,assess
+crop yields|the quantities of produce harvested from cultivated land|các mức sản lượng thu hoạch từ đất canh tác|increase,measure,improve
+agricultural productivity|output achieved relative to farming inputs|năng suất đầu ra so với nguồn lực đầu vào trong nông nghiệp|increase,measure,improve
+irrigation efficiency|effective use of water supplied to crops|hiệu quả sử dụng nước cấp cho cây trồng|improve,measure,increase
+organic farming|cultivation using methods that restrict synthetic chemical inputs|việc canh tác hạn chế sử dụng đầu vào hóa chất tổng hợp|practise,promote,support
+crop diversification|growing a wider range of plants|việc đa dạng hóa loại cây được trồng|promote,encourage,support
+agricultural innovation|new techniques and technologies used in farming|các kỹ thuật và công nghệ mới trong nông nghiệp|encourage,fund,promote
+rural livelihoods|the means by which countryside residents earn a living|các sinh kế của người dân nông thôn|improve,protect,support
+water management|organising the use and protection of water resources|việc quản lý sử dụng và bảo vệ tài nguyên nước|improve,coordinate,review
+land degradation|decline in the ground's productive or ecological quality|sự suy giảm chất lượng sản xuất hoặc sinh thái của đất|prevent,reverse,monitor
+agricultural resilience|farming systems' ability to withstand adverse conditions|khả năng hệ thống nông nghiệp chống chịu điều kiện bất lợi|build,assess,strengthen
+pest management|controlling organisms that damage crops|việc kiểm soát sinh vật gây hại cây trồng|improve,implement,review
+soil conservation|protecting land from erosion and loss of quality|việc bảo vệ đất khỏi xói mòn và suy giảm chất lượng|promote,prioritise,fund
+rural development|improvement of countryside living and economic conditions|việc cải thiện đời sống và điều kiện kinh tế nông thôn|support,fund,promote
+agricultural mechanisation|using machines to perform farming tasks|việc sử dụng máy móc thực hiện công việc nông nghiệp|promote,fund,accelerate
+crop rotation|growing different plants successively on the same land|việc luân phiên trồng các loại cây trên cùng diện tích đất|practise,implement,promote
+agricultural subsidies|financial support provided to farming producers|các khoản trợ cấp cho người sản xuất nông nghiệp|provide,review,allocate
+farm management|organising the activities and resources of agricultural holdings|việc quản lý hoạt động và nguồn lực của trang trại|improve,teach,review
+livestock welfare|the health and humane treatment of farm animals|sức khỏe và việc đối xử nhân đạo với vật nuôi|protect,improve,ensure
+agricultural biodiversity|the variety of organisms associated with farming|sự đa dạng sinh vật gắn với nông nghiệp|protect,maintain,monitor
+land tenure|the arrangements governing rights to use or own land|các hình thức quy định quyền sử dụng hoặc sở hữu đất|reform,secure,clarify
+precision agriculture|farming that uses detailed data to target resources accurately|nông nghiệp dùng dữ liệu chi tiết để phân bổ nguồn lực chính xác|adopt,develop,promote
+harvest losses|produce lost during or after crop gathering|các tổn thất nông sản trong hoặc sau thu hoạch|reduce,measure,prevent
+agricultural extension|advice and education provided to farming communities|các hoạt động tư vấn và đào tạo khuyến nông|provide,fund,improve
+rural infrastructure|facilities and networks supporting countryside life|cơ sở vật chất và mạng lưới phục vụ đời sống nông thôn|develop,improve,fund
+agricultural research|systematic investigation aimed at improving farming|việc nghiên cứu có hệ thống để cải thiện nông nghiệp|conduct,fund,support
+water use efficiency|benefits achieved relative to the amount of water consumed|hiệu quả đạt được so với lượng nước sử dụng|improve,measure,increase
+agricultural exports|farm products sold to other countries|các sản phẩm nông nghiệp bán sang nước khác|increase,promote,regulate
+rural employment|jobs available in countryside communities|các việc làm tại cộng đồng nông thôn|create,increase,measure
+agricultural investment|money committed to farming production and facilities|vốn đầu tư cho sản xuất và cơ sở nông nghiệp|increase,attract,allocate
+crop protection|measures keeping cultivated plants safe from harm|các biện pháp bảo vệ cây trồng khỏi tác hại|improve,prioritise,fund
+sustainable forestry|management of woodland without undermining future resources|việc quản lý rừng không làm tổn hại tài nguyên trong tương lai|practise,promote,support
+natural resource management|organising the use and protection of materials found in nature|việc quản lý sử dụng và bảo vệ tài nguyên thiên nhiên|improve,coordinate,review
+agricultural sustainability|the ability to continue farming without exhausting resources|khả năng duy trì nông nghiệp mà không làm cạn kiệt tài nguyên|improve,assess,promote
+farm incomes|money earned from agricultural activity|thu nhập từ hoạt động nông nghiệp|increase,protect,measure
+rural poverty|material deprivation in countryside communities|tình trạng nghèo khó ở cộng đồng nông thôn|reduce,measure,address
+agricultural policies|official decisions governing farming activity|các chính sách điều hành hoạt động nông nghiệp|formulate,implement,evaluate
+soil health|the condition of land as a living productive system|tình trạng đất với tư cách hệ thống sống có khả năng sản xuất|improve,assess,monitor
+crop resilience|plants' ability to withstand adverse growing conditions|khả năng cây trồng chống chịu điều kiện phát triển bất lợi|improve,assess,strengthen
+farm efficiency|how effectively agricultural resources produce output|mức độ hiệu quả sử dụng nguồn lực để tạo sản phẩm nông nghiệp|improve,measure,increase
+livestock production|raising animals for food and other products|việc chăn nuôi để tạo thực phẩm và sản phẩm khác|increase,regulate,improve
+rural connectivity|links enabling countryside communities to access services and markets|các kết nối giúp cộng đồng nông thôn tiếp cận dịch vụ và thị trường|improve,expand,ensure
+agricultural value chains|linked activities that add worth to farm products|các chuỗi hoạt động tạo giá trị cho sản phẩm nông nghiệp|develop,improve,strengthen
+resource conservation|protecting natural materials from unnecessary depletion|việc bảo tồn tài nguyên khỏi hao hụt không cần thiết|promote,prioritise,support
+land restoration|repairing ground damaged by degradation|việc phục hồi đất bị suy thoái|fund,support,prioritise
+agricultural cooperation|farmers and organisations working together towards shared goals|việc nông dân và tổ chức hợp tác hướng tới mục tiêu chung|promote,facilitate,strengthen
+sustainable fisheries|harvesting aquatic species without exhausting their populations|việc khai thác thủy sản không làm cạn kiệt quần thể|support,promote,regulate
+rural entrepreneurship|starting and developing businesses in the countryside|việc khởi nghiệp và phát triển doanh nghiệp ở nông thôn|encourage,support,promote

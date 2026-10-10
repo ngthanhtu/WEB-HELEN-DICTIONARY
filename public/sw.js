@@ -160,7 +160,7 @@ self.addEventListener('fetch',event=>{
   if(url.pathname.startsWith('/api/') || url.pathname==='/healthz' || url.pathname==='/sw.js')return;
   if(!url.pathname.startsWith('/assets/') && url.pathname!=='/manifest.webmanifest')return;
   // Explicitly downloaded topics survive app updates and never displace personal lookups/audio.
-  if(/^\/assets\/topics\/v1\/[a-z]+\.json$/.test(url.pathname)){
+  if(/^\/assets\/topics\/v[12]\/[a-z]+\.json$/.test(url.pathname)){
     event.respondWith((async()=>{const cache=await caches.open(TOPICS),saved=await cache.match(request);if(saved)return saved;return fetch(request);})());return;
   }
   event.respondWith((async()=>{

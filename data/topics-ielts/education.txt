@@ -1,0 +1,51 @@
+# term | English sense | Vietnamese sense | three explicitly selected collocation verbs
+ digital literacy|the ability to use digital tools effectively|khả năng sử dụng công cụ số hiệu quả|develop,improve,assess
+academic achievement|success in formal education|thành tích đạt được trong học tập|improve,measure,recognise
+learning outcomes|the knowledge and skills gained through learning|kiến thức và kỹ năng đạt được sau quá trình học|define,assess,improve
+critical thinking|careful evaluation of ideas and evidence|việc đánh giá ý tưởng và bằng chứng một cách có suy xét|develop,encourage,assess
+lifelong learning|continued learning throughout a person's life|việc học tập liên tục trong suốt cuộc đời|promote,support,embrace
+inclusive education|education that accommodates learners with diverse needs|giáo dục đáp ứng người học với các nhu cầu khác nhau|promote,provide,support
+educational inequality|unequal access to educational opportunities|sự bất bình đẳng trong cơ hội tiếp cận giáo dục|reduce,address,measure
+academic integrity|honesty in learning and research|sự trung thực trong học tập và nghiên cứu|maintain,promote,ensure
+student engagement|active involvement in learning|sự tham gia tích cực của người học vào việc học|increase,measure,encourage
+cognitive development|growth in thinking and understanding abilities|sự phát triển khả năng tư duy và hiểu biết|support,assess,promote
+curriculum reform|changes intended to improve what schools teach|việc thay đổi nhằm cải thiện chương trình giảng dạy|implement,propose,evaluate
+formative assessment|assessment used during learning to guide improvement|đánh giá trong quá trình học để định hướng cải thiện|use,implement,improve
+summative assessment|assessment of achievement at the end of learning|đánh giá kết quả khi kết thúc một giai đoạn học|design,conduct,evaluate
+vocational training|instruction in skills needed for a particular occupation|việc đào tạo kỹ năng cần thiết cho một nghề cụ thể|provide,expand,fund
+higher education|education at university or college level|giáo dục ở bậc đại học hoặc cao đẳng|pursue,access,fund
+distance learning|education delivered without attending a physical classroom|việc học không yêu cầu đến lớp học trực tiếp|expand,support,evaluate
+blended learning|education combining classroom and online instruction|việc học kết hợp giảng dạy trực tiếp và trực tuyến|implement,support,evaluate
+personalised learning|instruction adapted to an individual learner's needs|việc dạy học phù hợp với nhu cầu riêng của từng người học|provide,implement,support
+peer assessment|evaluation of a learner's work by other learners|việc người học đánh giá bài làm của nhau|use,introduce,evaluate
+teacher autonomy|teachers' freedom to make professional decisions|quyền chủ động của giáo viên trong quyết định chuyên môn|promote,protect,increase
+tuition fees|money charged for instruction at an educational institution|khoản tiền cơ sở giáo dục thu cho việc giảng dạy|pay,reduce,increase
+student retention|keeping students enrolled until they complete their course|việc duy trì học viên theo học đến khi hoàn thành khóa học|improve,measure,increase
+educational attainment|the highest level of education a person has completed|bậc học cao nhất mà một người đã hoàn thành|measure,improve,increase
+language proficiency|ability to use a language effectively|khả năng sử dụng một ngôn ngữ hiệu quả|develop,assess,demonstrate
+research skills|abilities needed to investigate a question systematically|các kỹ năng cần để nghiên cứu một vấn đề có hệ thống|develop,teach,assess
+knowledge transfer|sharing knowledge so others can use it|việc chuyển giao kiến thức để người khác vận dụng|facilitate,promote,support
+intellectual curiosity|a desire to understand and explore ideas|mong muốn tìm hiểu và khám phá các ý tưởng|encourage,develop,stimulate
+extracurricular activities|organised activities outside the regular curriculum|các hoạt động được tổ chức ngoài chương trình học chính|organise,support,fund
+learning difficulties|problems that make acquiring knowledge or skills harder|những khó khăn cản trở việc tiếp thu kiến thức hoặc kỹ năng|identify,address,overcome
+special educational needs|learning needs requiring additional or adapted support|nhu cầu học tập cần hỗ trợ bổ sung hoặc điều chỉnh|identify,assess,address
+academic performance|how well a student does in academic work|mức độ thực hiện tốt các nhiệm vụ học tập của học sinh|improve,assess,monitor
+educational policy|official principles and decisions governing education|các nguyên tắc và quyết định chính thức điều hành giáo dục|formulate,implement,evaluate
+classroom management|organising a classroom to support effective learning|việc tổ chức lớp học để hỗ trợ học tập hiệu quả|improve,teach,evaluate
+academic qualifications|credentials gained by completing formal study|các văn bằng hoặc chứng chỉ đạt được qua học tập chính quy|obtain,recognise,verify
+rote learning|memorising information through repetition without understanding|việc học thuộc bằng lặp lại mà không hiểu nội dung|discourage,avoid,reduce
+experiential learning|learning through direct experience and reflection|việc học qua trải nghiệm trực tiếp và suy ngẫm|promote,implement,support
+collaborative learning|learning through working together with others|việc học thông qua hợp tác với người khác|encourage,implement,support
+problem-solving skills|abilities used to find solutions to difficulties|các kỹ năng dùng để tìm lời giải cho vấn đề|develop,teach,assess
+educational infrastructure|facilities and systems needed to deliver education|cơ sở vật chất và hệ thống cần thiết để cung cấp giáo dục|improve,fund,maintain
+school funding|financial resources provided to schools|nguồn tài chính được cung cấp cho các trường học|increase,allocate,monitor
+student wellbeing|students' physical and psychological welfare|sức khỏe thể chất và tinh thần của học sinh|promote,support,assess
+teacher development|continued improvement of teachers' professional skills|việc không ngừng nâng cao kỹ năng nghề nghiệp của giáo viên|support,fund,promote
+assessment criteria|standards used to judge a learner's work|các tiêu chí dùng để đánh giá bài làm của người học|define,apply,revise
+academic literacy|the ability to understand and produce academic texts|khả năng hiểu và viết các văn bản học thuật|develop,teach,assess
+educational opportunities|chances to access learning and develop knowledge|cơ hội tiếp cận việc học và phát triển kiến thức|expand,provide,create
+interdisciplinary learning|learning that connects different fields of study|việc học kết nối nhiều lĩnh vực kiến thức khác nhau|promote,implement,support
+independent learning|learning managed by the learner with limited supervision|việc người học tự quản lý với ít sự giám sát|encourage,develop,support
+learning motivation|the desire that drives a person to learn|mong muốn thúc đẩy một người học tập|increase,assess,maintain
+school dropout rates|the proportions of students leaving school before completion|tỷ lệ học sinh bỏ học trước khi hoàn thành chương trình|reduce,measure,monitor
+graduate employability|graduates' ability to obtain and maintain employment|khả năng tìm và duy trì việc làm của người tốt nghiệp|improve,assess,enhance

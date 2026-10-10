@@ -1,14 +1,16 @@
 {
-  "version": 1,
+  "version": 2,
   "totalWords": 4000,
+  "totalConcepts": 1000,
   "lessonSize": 20,
-  "selectionNote": "Biên soạn để luyện theo ngữ cảnh IELTS, TOEIC và VSTEP; không phải danh sách chính thức hay bảng xếp hạng tần suất đề thi. Một từ có thể có nghĩa khác khi đổi ngữ cảnh.",
+  "levelAim": "IELTS 6.5+",
+  "selectionNote": "Helen biên soạn cho mục tiêu IELTS 6.5+: 50 khái niệm và 150 collocations hành động mỗi chủ đề. Đây là định hướng luyện tập, không phải danh sách chính thức, thống kê tần suất hoặc cam kết điểm thi.",
   "licenseUrl": "/assets/licenses/wordnet.txt",
   "topics": [
     {
       "id": "education",
       "title": "Education & Learning",
-      "description": "Trường học, phương pháp học và đánh giá kết quả.",
+      "description": "Từ và cụm học thuật: digital literacy, academic achievement, learning outcomes.",
       "exams": [
         "IELTS",
         "VSTEP",
@@ -18,15 +20,18 @@
         "Describe a skill you learned and how you practised it.",
         "Discuss the benefits and limitations of online education."
       ],
+      "levelAim": "IELTS 6.5+",
+      "conceptCount": 50,
+      "collocationCount": 150,
       "wordCount": 200,
       "lessonCount": 10,
-      "url": "/assets/topics/v1/education.json",
-      "bytes": 48486
+      "url": "/assets/topics/v2/education.json",
+      "bytes": 83336
     },
     {
       "id": "work",
       "title": "Work & Careers",
-      "description": "Tuyển dụng, công việc, trách nhiệm và phát triển nghề nghiệp.",
+      "description": "Từ và cụm học thuật: job satisfaction, work-life balance, employee retention.",
       "exams": [
         "TOEIC",
         "IELTS",
@@ -36,15 +41,18 @@
         "Describe the qualities of a good colleague.",
         "Write a message asking to reschedule a job interview."
       ],
+      "levelAim": "IELTS 6.5+",
+      "conceptCount": 50,
+      "collocationCount": 150,
       "wordCount": 200,
       "lessonCount": 10,
-      "url": "/assets/topics/v1/work.json",
-      "bytes": 46928
+      "url": "/assets/topics/v2/work.json",
+      "bytes": 80971
     },
     {
       "id": "business",
       "title": "Business & Management",
-      "description": "Doanh nghiệp, thị trường, vận hành và chăm sóc khách hàng.",
+      "description": "Từ và cụm học thuật: competitive advantage, market share, brand loyalty.",
       "exams": [
         "TOEIC",
         "IELTS",
@@ -54,15 +62,18 @@
         "Explain how a small business can retain its customers.",
         "Summarise a proposal for launching a new service."
       ],
+      "levelAim": "IELTS 6.5+",
+      "conceptCount": 50,
+      "collocationCount": 150,
       "wordCount": 200,
       "lessonCount": 10,
-      "url": "/assets/topics/v1/business.json",
-      "bytes": 48330
+      "url": "/assets/topics/v2/business.json",
+      "bytes": 83353
     },
     {
       "id": "money",
       "title": "Money & Economy",
-      "description": "Chi tiêu, ngân hàng, tài chính cá nhân và nền kinh tế.",
+      "description": "Từ và cụm học thuật: economic growth, income inequality, financial literacy.",
       "exams": [
         "IELTS",
         "TOEIC",
@@ -72,15 +83,18 @@
         "Compare saving money with borrowing money.",
         "Discuss how rising prices affect students and families."
       ],
+      "levelAim": "IELTS 6.5+",
+      "conceptCount": 50,
+      "collocationCount": 150,
       "wordCount": 200,
       "lessonCount": 10,
-      "url": "/assets/topics/v1/money.json",
-      "bytes": 46550
+      "url": "/assets/topics/v2/money.json",
+      "bytes": 78616
     },
     {
       "id": "travel",
       "title": "Travel & Tourism",
-      "description": "Đặt phòng, điểm đến, tham quan và trải nghiệm du lịch.",
+      "description": "Từ và cụm học thuật: sustainable tourism, cultural immersion, responsible travel.",
       "exams": [
         "TOEIC",
         "IELTS",
@@ -90,15 +104,18 @@
         "Describe a place you would like to visit.",
         "Write an email asking a hotel to change a reservation."
       ],
+      "levelAim": "IELTS 6.5+",
+      "conceptCount": 50,
+      "collocationCount": 150,
       "wordCount": 200,
       "lessonCount": 10,
-      "url": "/assets/topics/v1/travel.json",
-      "bytes": 45035
+      "url": "/assets/topics/v2/travel.json",
+      "bytes": 81696
     },
     {
       "id": "transport",
       "title": "Transport & Logistics",
-      "description": "Đi lại, phương tiện, giao hàng và vận chuyển hàng hóa.",
+      "description": "Từ và cụm học thuật: public transport provision, traffic congestion, transport infrastructure.",
       "exams": [
         "TOEIC",
         "IELTS",
@@ -108,15 +125,18 @@
         "Compare public transport with travelling by car.",
         "Explain a delivery delay and suggest a solution."
       ],
+      "levelAim": "IELTS 6.5+",
+      "conceptCount": 50,
+      "collocationCount": 150,
       "wordCount": 200,
       "lessonCount": 10,
-      "url": "/assets/topics/v1/transport.json",
-      "bytes": 44191
+      "url": "/assets/topics/v2/transport.json",
+      "bytes": 82841
     },
     {
       "id": "housing",
       "title": "Homes & Cities",
-      "description": "Nhà ở, nội thất, khu dân cư và phát triển đô thị.",
+      "description": "Từ và cụm học thuật: affordable housing, urban planning, housing affordability.",
       "exams": [
         "IELTS",
         "VSTEP",
@@ -126,15 +146,18 @@
         "Describe your ideal home and neighbourhood.",
         "Discuss how cities can provide affordable housing."
       ],
+      "levelAim": "IELTS 6.5+",
+      "conceptCount": 50,
+      "collocationCount": 150,
       "wordCount": 200,
       "lessonCount": 10,
-      "url": "/assets/topics/v1/housing.json",
-      "bytes": 47124
+      "url": "/assets/topics/v2/housing.json",
+      "bytes": 80398
     },
     {
       "id": "health",
       "title": "Health & Healthcare",
-      "description": "Cơ thể, triệu chứng, điều trị và chăm sóc sức khỏe.",
+      "description": "Từ và cụm học thuật: preventive healthcare, public health, mental health.",
       "exams": [
         "IELTS",
         "VSTEP",
@@ -144,15 +167,18 @@
         "Explain a healthy habit and why it matters.",
         "Discuss the roles of prevention and treatment in healthcare."
       ],
+      "levelAim": "IELTS 6.5+",
+      "conceptCount": 50,
+      "collocationCount": 150,
       "wordCount": 200,
       "lessonCount": 10,
-      "url": "/assets/topics/v1/health.json",
-      "bytes": 46568
+      "url": "/assets/topics/v2/health.json",
+      "bytes": 81381
     },
     {
       "id": "environment",
       "title": "Environment & Climate",
-      "description": "Thời tiết, hệ sinh thái, ô nhiễm và bảo vệ môi trường.",
+      "description": "Từ và cụm học thuật: climate change mitigation, climate adaptation, carbon emissions.",
       "exams": [
         "IELTS",
         "VSTEP",
@@ -162,15 +188,18 @@
         "Describe an environmental problem in your area.",
         "Discuss how individuals and governments can reduce waste."
       ],
+      "levelAim": "IELTS 6.5+",
+      "conceptCount": 50,
+      "collocationCount": 150,
       "wordCount": 200,
       "lessonCount": 10,
-      "url": "/assets/topics/v1/environment.json",
-      "bytes": 46383
+      "url": "/assets/topics/v2/environment.json",
+      "bytes": 84890
     },
     {
       "id": "science",
       "title": "Science & Research",
-      "description": "Thí nghiệm, dữ liệu, lập luận và khám phá khoa học.",
+      "description": "Từ và cụm học thuật: empirical evidence, scientific inquiry, research methodology.",
       "exams": [
         "IELTS",
         "VSTEP",
@@ -180,15 +209,18 @@
         "Explain the difference between a claim and evidence.",
         "Describe an invention that changed everyday life."
       ],
+      "levelAim": "IELTS 6.5+",
+      "conceptCount": 50,
+      "collocationCount": 150,
       "wordCount": 200,
       "lessonCount": 10,
-      "url": "/assets/topics/v1/science.json",
-      "bytes": 51057
+      "url": "/assets/topics/v2/science.json",
+      "bytes": 84576
     },
     {
       "id": "technology",
       "title": "Technology & Digital Life",
-      "description": "Thiết bị, phần mềm, Internet và an toàn thông tin.",
+      "description": "Từ và cụm học thuật: digital transformation, artificial intelligence, cybersecurity.",
       "exams": [
         "TOEIC",
         "IELTS",
@@ -198,15 +230,18 @@
         "Explain how you protect personal information online.",
         "Discuss the advantages and disadvantages of automation."
       ],
+      "levelAim": "IELTS 6.5+",
+      "conceptCount": 50,
+      "collocationCount": 150,
       "wordCount": 200,
       "lessonCount": 10,
-      "url": "/assets/topics/v1/technology.json",
-      "bytes": 47576
+      "url": "/assets/topics/v2/technology.json",
+      "bytes": 86604
     },
     {
       "id": "communication",
       "title": "Media & Communication",
-      "description": "Truyền thông, trao đổi thông tin và diễn đạt ý kiến.",
+      "description": "Từ và cụm học thuật: media literacy, freedom of expression, press freedom.",
       "exams": [
         "TOEIC",
         "IELTS",
@@ -216,15 +251,18 @@
         "Describe how you check whether a news story is reliable.",
         "Write a polite message explaining a misunderstanding."
       ],
+      "levelAim": "IELTS 6.5+",
+      "conceptCount": 50,
+      "collocationCount": 150,
       "wordCount": 200,
       "lessonCount": 10,
-      "url": "/assets/topics/v1/communication.json",
-      "bytes": 51625
+      "url": "/assets/topics/v2/communication.json",
+      "bytes": 86033
     },
     {
       "id": "society",
       "title": "Society, Law & Citizenship",
-      "description": "Cộng đồng, quyền và trách nhiệm, luật pháp và xã hội.",
+      "description": "Từ và cụm học thuật: social cohesion, social inclusion, civic engagement.",
       "exams": [
         "IELTS",
         "VSTEP",
@@ -234,15 +272,18 @@
         "Discuss how volunteering can benefit a community.",
         "Explain why rules should balance safety and individual freedom."
       ],
+      "levelAim": "IELTS 6.5+",
+      "conceptCount": 50,
+      "collocationCount": 150,
       "wordCount": 200,
       "lessonCount": 10,
-      "url": "/assets/topics/v1/society.json",
-      "bytes": 47822
+      "url": "/assets/topics/v2/society.json",
+      "bytes": 83273
     },
     {
       "id": "relationships",
       "title": "Family & Relationships",
-      "description": "Gia đình, bạn bè, sự gắn kết và cách ứng xử.",
+      "description": "Từ và cụm học thuật: intergenerational relationships, family cohesion, parental involvement.",
       "exams": [
         "VSTEP",
         "IELTS",
@@ -252,15 +293,18 @@
         "Describe someone who has had a positive influence on you.",
         "Discuss how families can resolve disagreements respectfully."
       ],
+      "levelAim": "IELTS 6.5+",
+      "conceptCount": 50,
+      "collocationCount": 150,
       "wordCount": 200,
       "lessonCount": 10,
-      "url": "/assets/topics/v1/relationships.json",
-      "bytes": 44825
+      "url": "/assets/topics/v2/relationships.json",
+      "bytes": 83189
     },
     {
       "id": "food",
       "title": "Food & Nutrition",
-      "description": "Thực phẩm, nấu ăn, ăn uống và lựa chọn dinh dưỡng.",
+      "description": "Từ và cụm học thuật: balanced nutrition, food security, nutritional value.",
       "exams": [
         "TOEIC",
         "IELTS",
@@ -270,15 +314,18 @@
         "Explain how to prepare a dish you enjoy.",
         "Compare cooking at home with eating out."
       ],
+      "levelAim": "IELTS 6.5+",
+      "conceptCount": 50,
+      "collocationCount": 150,
       "wordCount": 200,
       "lessonCount": 10,
-      "url": "/assets/topics/v1/food.json",
-      "bytes": 42956
+      "url": "/assets/topics/v2/food.json",
+      "bytes": 79658
     },
     {
       "id": "culture",
       "title": "Arts, Culture & Leisure",
-      "description": "Nghệ thuật, âm nhạc, sách, biểu diễn và sở thích.",
+      "description": "Từ và cụm học thuật: cultural identity, artistic expression, cultural preservation.",
       "exams": [
         "IELTS",
         "VSTEP",
@@ -288,15 +335,18 @@
         "Describe a book, film or performance you enjoyed.",
         "Discuss why communities should preserve cultural traditions."
       ],
+      "levelAim": "IELTS 6.5+",
+      "conceptCount": 50,
+      "collocationCount": 150,
       "wordCount": 200,
       "lessonCount": 10,
-      "url": "/assets/topics/v1/culture.json",
-      "bytes": 44593
+      "url": "/assets/topics/v2/culture.json",
+      "bytes": 83700
     },
     {
       "id": "shopping",
       "title": "Shopping & Everyday Services",
-      "description": "Mua sắm, trang phục, hàng hóa và dịch vụ thường ngày.",
+      "description": "Từ và cụm học thuật: consumer behaviour, consumer rights, impulse buying.",
       "exams": [
         "TOEIC",
         "VSTEP",
@@ -306,15 +356,18 @@
         "Explain how you choose a product before buying it.",
         "Write a complaint about an item and request a replacement."
       ],
+      "levelAim": "IELTS 6.5+",
+      "conceptCount": 50,
+      "collocationCount": 150,
       "wordCount": 200,
       "lessonCount": 10,
-      "url": "/assets/topics/v1/shopping.json",
-      "bytes": 45575
+      "url": "/assets/topics/v2/shopping.json",
+      "bytes": 80959
     },
     {
       "id": "sports",
       "title": "Sports & Active Living",
-      "description": "Thể thao, luyện tập, thi đấu và lối sống năng động.",
+      "description": "Từ và cụm học thuật: physical fitness, sporting participation, athletic performance.",
       "exams": [
         "IELTS",
         "VSTEP",
@@ -324,15 +377,18 @@
         "Describe an activity that helps you stay active.",
         "Discuss whether schools should emphasise competition or participation."
       ],
+      "levelAim": "IELTS 6.5+",
+      "conceptCount": 50,
+      "collocationCount": 150,
       "wordCount": 200,
       "lessonCount": 10,
-      "url": "/assets/topics/v1/sports.json",
-      "bytes": 44214
+      "url": "/assets/topics/v2/sports.json",
+      "bytes": 81451
     },
     {
       "id": "agriculture",
       "title": "Agriculture & Natural Resources",
-      "description": "Nông nghiệp, cây trồng, chăn nuôi và nguồn tài nguyên.",
+      "description": "Từ và cụm học thuật: sustainable agriculture, food sovereignty, soil fertility.",
       "exams": [
         "IELTS",
         "VSTEP",
@@ -342,15 +398,18 @@
         "Explain how weather can affect food production.",
         "Discuss ways to use natural resources responsibly."
       ],
+      "levelAim": "IELTS 6.5+",
+      "conceptCount": 50,
+      "collocationCount": 150,
       "wordCount": 200,
       "lessonCount": 10,
-      "url": "/assets/topics/v1/agriculture.json",
-      "bytes": 43967
+      "url": "/assets/topics/v2/agriculture.json",
+      "bytes": 85014
     },
     {
       "id": "personal",
       "title": "Personal Skills & Emotions",
-      "description": "Tính cách, cảm xúc, kỹ năng tự quản lý và phát triển bản thân.",
+      "description": "Từ và cụm học thuật: emotional intelligence, self-awareness, personal resilience.",
       "exams": [
         "VSTEP",
         "IELTS",
@@ -360,10 +419,13 @@
         "Describe a challenge and how you dealt with it.",
         "Discuss how confidence and patience help people learn new skills."
       ],
+      "levelAim": "IELTS 6.5+",
+      "conceptCount": 50,
+      "collocationCount": 150,
       "wordCount": 200,
       "lessonCount": 10,
-      "url": "/assets/topics/v1/personal.json",
-      "bytes": 48457
+      "url": "/assets/topics/v2/personal.json",
+      "bytes": 82023
     }
   ]
 }

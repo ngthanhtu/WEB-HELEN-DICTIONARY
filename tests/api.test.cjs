@@ -349,3 +349,17 @@ test('topic pronunciation approves published modern words and examples but refus
   const approved=await request(entry.word);assert.equal(approved.status,200);assert.ok((await approved.json()).proof);assert.equal((await request('An arbitrary unrelated passage.')).status,403);
   const sports=await (await fetch(`${base}/assets/topics/v1/sports.json`)).json(),match=sports.entries.find(e=>e.word==='match');const example=await fetch(`${base}/api/pronunciation`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word:match.word,text:match.examples[0]})});assert.equal(example.status,200);
 });
+
+test('published IELTS compounds resolve locally with complete bilingual senses and pronunciation',async()=>{
+ await ready;
+ for(const word of ['academic achievement','learning outcomes','develop digital literacy']){
+  const response=await fetch(`${base}/api/lookup?word=${encodeURIComponent(word)}&from=en&details=1`);assert.equal(response.status,200);const d=await response.json();assert.equal(d.enriching,false);assert.equal(d.entries[0].source,'Helen editorial');const s=d.entries[0].meanings[0].senses[0];assert.ok(s.definitionVi);assert.ok(d.offlineGloss);assert.equal(d.entries[0].collocations.pending,false);
+  const tr=await fetch(`${base}/api/translate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({texts:[s.definition],from:'en',to:'vi',kind:'definition'})});assert.equal(tr.status,200);assert.deepEqual((await tr.json()).translations,[s.definitionVi]);
+  const audio=await fetch(`${base}/api/pronunciation`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word,text:word})});assert.equal(audio.status,200);
+ }
+});
+
+test('saved modern topic phrases can be prepared for Study without a remote dictionary',async()=>{
+ await ready;const words=['digital literacy','assess learning outcomes','improve financial literacy'];
+ const response=await fetch(`${base}/api/study/prepare`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({words})});assert.equal(response.status,200);const d=await response.json();assert.deepEqual(d.missing,[]);assert.deepEqual(d.results.map(r=>r.word),words);assert.ok(d.results.every(r=>r.entries[0].meanings[0].senses[0].definitionVi));
+});

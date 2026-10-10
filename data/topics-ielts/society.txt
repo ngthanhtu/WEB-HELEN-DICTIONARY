@@ -1,0 +1,50 @@
+social cohesion|the strength of relationships and unity within society|mức độ gắn kết và đoàn kết trong xã hội|build,maintain,strengthen
+social inclusion|enabling all people to participate in community life|việc tạo điều kiện để mọi người tham gia đời sống cộng đồng|promote,improve,support
+civic engagement|participation in activities that affect community decisions|sự tham gia vào hoạt động tác động đến quyết định của cộng đồng|encourage,increase,measure
+human rights|basic entitlements inherent to every person|các quyền cơ bản vốn có của mỗi người|protect,promote,uphold
+rule of law|the principle that everyone is subject to legal rules|nguyên tắc mọi người đều chịu sự điều chỉnh của pháp luật|uphold,strengthen,protect
+social justice|fair treatment and opportunities within society|sự đối xử và cơ hội công bằng trong xã hội|promote,pursue,advance
+criminal justice|systems for investigating and responding to crime|các hệ thống điều tra và xử lý tội phạm|improve,review,study
+crime prevention|actions intended to stop unlawful activity|các hành động nhằm ngăn hoạt động phạm pháp|fund,prioritise,coordinate
+community participation|local people's involvement in shared activities and decisions|sự tham gia của người dân vào hoạt động và quyết định chung|encourage,increase,facilitate
+political accountability|officials' responsibility to explain and justify their actions|trách nhiệm của người làm chính trị trong giải thích và chịu trách nhiệm về hành động|ensure,increase,strengthen
+social mobility|movement between different social and economic positions|sự chuyển dịch giữa các vị thế xã hội và kinh tế|increase,promote,measure
+civil liberties|personal freedoms protected against excessive state interference|các quyền tự do cá nhân được bảo vệ khỏi sự can thiệp quá mức của nhà nước|protect,defend,uphold
+gender equality|equal rights and opportunities regardless of gender|quyền và cơ hội ngang nhau không phụ thuộc giới tính|promote,achieve,advance
+social responsibility|a duty to act in the interests of the wider community|trách nhiệm hành động vì lợi ích cộng đồng rộng hơn|demonstrate,promote,embrace
+community development|improvement of local social and economic conditions|việc cải thiện điều kiện xã hội và kinh tế của cộng đồng|support,fund,promote
+legal protection|safeguards provided through enforceable rules|sự bảo vệ được cung cấp qua các quy định pháp lý|provide,ensure,strengthen
+cultural diversity|the presence of varied traditions and ways of life|sự đa dạng các truyền thống và lối sống|protect,promote,celebrate
+institutional trust|confidence in the organisations that govern society|niềm tin vào các tổ chức điều hành xã hội|build,restore,measure
+public accountability|responsibility to explain decisions to the wider population|trách nhiệm giải trình quyết định trước công chúng|ensure,increase,strengthen
+citizen participation|people's involvement in public decision-making|sự tham gia của công dân vào quyết định công|encourage,increase,facilitate
+social welfare|support intended to meet people's basic needs|sự hỗ trợ nhằm đáp ứng nhu cầu cơ bản của người dân|improve,fund,provide
+justice reform|changes intended to improve legal systems|các thay đổi nhằm cải thiện hệ thống tư pháp|implement,propose,support
+legal awareness|understanding of rights and responsibilities under law|sự hiểu biết về quyền và trách nhiệm theo pháp luật|increase,promote,improve
+social integration|the process of joining and participating in society|quá trình hòa nhập và tham gia vào xã hội|promote,facilitate,support
+community resilience|a population's ability to recover from adversity|khả năng cộng đồng phục hồi trước nghịch cảnh|build,assess,strengthen
+public safety|protection of the population from harm|sự bảo vệ cộng đồng khỏi nguy hiểm|ensure,improve,maintain
+social norms|shared expectations about acceptable behaviour|các chuẩn mực chung về hành vi được chấp nhận|challenge,study,shape
+civic responsibility|duties associated with membership of a community|các trách nhiệm gắn với tư cách thành viên cộng đồng|promote,teach,demonstrate
+political representation|having one's interests voiced in government decisions|việc các lợi ích của một người hoặc nhóm được đại diện trong quyết định nhà nước|improve,ensure,increase
+public consultation|seeking people's views before making decisions|việc lấy ý kiến người dân trước khi ra quyết định|conduct,improve,require
+legal assistance|help in understanding or using legal processes|sự hỗ trợ để hiểu hoặc sử dụng thủ tục pháp lý|provide,seek,fund
+social inequality|unequal access to resources and opportunities in society|sự bất bình đẳng trong tiếp cận nguồn lực và cơ hội xã hội|reduce,measure,address
+anti-discrimination policies|rules intended to prevent unfair treatment of groups|các chính sách nhằm ngăn đối xử bất công với các nhóm|implement,enforce,review
+criminal rehabilitation|support that helps offenders rejoin society lawfully|sự hỗ trợ giúp người phạm tội tái hòa nhập xã hội và tuân thủ pháp luật|fund,support,promote
+community policing|law enforcement that works closely with local residents|việc cảnh sát phối hợp chặt chẽ với cư dân địa phương|implement,improve,support
+legal compliance|acting according to applicable rules and laws|việc tuân thủ các quy định và pháp luật hiện hành|ensure,monitor,improve
+public institutions|organisations that serve or govern the wider community|các tổ chức phục vụ hoặc quản lý cộng đồng|strengthen,reform,support
+social reform|changes intended to improve society|các cải cách nhằm cải thiện xã hội|implement,propose,support
+humanitarian assistance|help provided to people affected by crises|sự hỗ trợ dành cho người chịu ảnh hưởng của khủng hoảng|provide,fund,coordinate
+civic education|teaching about participation and responsibilities in society|việc giáo dục về sự tham gia và trách nhiệm trong xã hội|provide,improve,fund
+public services|activities provided to meet collective needs|các dịch vụ được cung cấp để đáp ứng nhu cầu chung|provide,improve,fund
+legal frameworks|the sets of rules governing a field of activity|các khuôn khổ pháp luật điều chỉnh một lĩnh vực hoạt động|develop,strengthen,review
+social solidarity|mutual support among members of society|sự đoàn kết và hỗ trợ lẫn nhau giữa các thành viên xã hội|promote,build,strengthen
+community dialogue|discussion between people about local concerns|việc đối thoại giữa người dân về vấn đề của cộng đồng|encourage,facilitate,promote
+social progress|improvement in wellbeing and opportunity within society|sự tiến bộ về đời sống và cơ hội trong xã hội|promote,measure,support
+judicial independence|courts' freedom from improper outside influence|sự độc lập của tòa án trước tác động không phù hợp từ bên ngoài|protect,ensure,strengthen
+victim support|assistance for people harmed by crime or abuse|sự hỗ trợ cho người bị hại bởi tội phạm hoặc lạm dụng|provide,fund,improve
+community empowerment|giving local people greater influence over their lives|việc tăng quyền chủ động của người dân đối với cuộc sống của họ|promote,support,facilitate
+public policy|official principles that guide decisions affecting society|các chính sách chính thức định hướng quyết định ảnh hưởng xã hội|formulate,implement,evaluate
+social protection|measures safeguarding people from poverty and hardship|các biện pháp bảo vệ người dân khỏi nghèo đói và khó khăn|provide,expand,strengthen

@@ -9,13 +9,13 @@
   }
   function items(question){
     const definition=question.definition || (question.type!=='cloze'?question.prompt:'');
-    return [definition?{id:'definition',label:question.type==='cloze'?'Nghĩa':'Đề bài',text:definition,kind:'definition'}:null,
-      question.original?{id:'sentence',label:question.type==='cloze'?'Đề bài (đã điền đáp án)':'Câu ví dụ',text:question.original,kind:'sentence'}:null].filter(Boolean);
+    return [definition?{id:'definition',label:question.type==='cloze'?'Nghĩa':'Đề bài',text:definition,kind:'definition',...(question.definitionVi?{translationVi:question.definitionVi}:{})}:null,
+      question.original?{id:'sentence',label:question.type==='cloze'?'Đề bài (đã điền đáp án)':'Câu ví dụ',text:question.original,kind:'sentence',...(question.originalVi?{translationVi:question.originalVi}:{})}:null].filter(Boolean);
   }
   async function translate(question,to,translateTexts){
     return Promise.all(items(question).map(async item=>{
       try{
-        const parts=chunks(item.text),values=to==='en'?parts:await translateTexts(parts,'en',to,item.kind==='definition'?{kind:'definition'}:{});
+        const parts=chunks(item.text),values=to==='vi' && item.translationVi?[item.translationVi]:to==='en'?parts:await translateTexts(parts,'en',to,item.kind==='definition'?{kind:'definition',...(question.definitionVi?{translationVi:question.definitionVi}:{})}:{});
         if(!Array.isArray(values) || values.length!==parts.length || !values.every(value=>typeof value==='string' && value.trim()))throw Error('Chưa nhận được bản dịch. Hãy thử lại.');
         return {...item,translation:values.join(' ')};
       }catch(error){return {...item,error:error?.message || 'Chưa dịch được. Hãy thử lại.'};}

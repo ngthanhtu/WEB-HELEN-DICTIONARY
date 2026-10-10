@@ -1,0 +1,50 @@
+consumer behaviour|patterns in how people choose and buy products|các cách người tiêu dùng lựa chọn và mua sản phẩm|study,analyse,influence
+consumer rights|legal entitlements of people buying goods or services|các quyền hợp pháp của người mua hàng hóa hoặc dịch vụ|protect,promote,uphold
+impulse buying|purchasing without prior planning|việc mua hàng theo hứng mà không có kế hoạch trước|avoid,reduce,study
+ethical purchasing|buying with regard for social and environmental consequences|việc mua sắm cân nhắc hệ quả xã hội và môi trường|promote,encourage,practise
+customer service|assistance provided to people buying or using products|sự hỗ trợ dành cho người mua hoặc sử dụng sản phẩm|improve,provide,evaluate
+consumer protection|measures safeguarding buyers against unfair practices|các biện pháp bảo vệ người mua khỏi hành vi không công bằng|strengthen,ensure,improve
+product quality|the standard of goods offered to buyers|chất lượng của hàng hóa được cung cấp cho người mua|improve,assess,maintain
+value for money|benefits that justify the amount paid|giá trị nhận được xứng đáng với số tiền đã trả|assess,offer,improve
+consumer awareness|understanding of purchasing issues and buyer rights|nhận thức về vấn đề mua sắm và quyền người tiêu dùng|increase,promote,improve
+retail competition|rivalry between businesses selling to end users|sự cạnh tranh giữa các doanh nghiệp bán lẻ|increase,encourage,regulate
+online shopping|buying goods through internet services|việc mua hàng qua các dịch vụ internet|use,study,regulate
+sustainable purchasing|buying in ways that conserve resources and limit harm|việc mua sắm giúp tiết kiệm tài nguyên và hạn chế tác hại|promote,encourage,practise
+product durability|the ability of goods to remain usable over time|độ bền và khả năng sử dụng lâu dài của sản phẩm|improve,assess,compare
+consumer confidence in brands|buyers' trust in the reliability of product identities|niềm tin của người mua vào sự đáng tin cậy của thương hiệu|build,restore,measure
+retail prices|the amounts charged to final consumers|các mức giá bán cho người tiêu dùng cuối cùng|compare,monitor,reduce
+product warranties|promises to repair or replace goods under stated conditions|các cam kết bảo hành sửa hoặc thay hàng theo điều kiện quy định|provide,extend,review
+customer complaints|expressions of dissatisfaction from buyers|các khiếu nại của khách hàng|resolve,investigate,address
+return policies|rules governing the acceptance of purchased goods back|các quy định về việc nhận lại hàng đã mua|review,clarify,implement
+consumer preferences|buyers' tastes and choices|các sở thích và lựa chọn của người tiêu dùng|study,understand,accommodate
+retail accessibility|how easily people can reach and use shopping services|mức độ người dân tiếp cận và sử dụng dịch vụ mua sắm|improve,assess,ensure
+product information|details that help buyers understand goods|thông tin giúp người mua hiểu sản phẩm|provide,verify,improve
+customer experience|a buyer's overall perceptions of interactions with a business|trải nghiệm tổng thể của khách hàng khi tương tác với doanh nghiệp|improve,evaluate,enhance
+retail innovation|new approaches to selling goods to consumers|các cách tiếp cận mới trong bán lẻ hàng hóa|encourage,fund,promote
+consumer spending|money used by households to buy goods and services|tiền hộ gia đình chi để mua hàng hóa và dịch vụ|measure,monitor,stimulate
+shopping habits|regular patterns of purchasing activity|các thói quen mua sắm thường xuyên|study,change,monitor
+product safety|protection against harm caused by goods|sự bảo đảm sản phẩm không gây nguy hiểm|ensure,improve,monitor
+fair trade|commerce that offers producers equitable terms|thương mại cung cấp điều kiện công bằng cho người sản xuất|support,promote,encourage
+retail sustainability|selling practices that can continue with limited harm|các thực hành bán lẻ có thể duy trì với tác hại hạn chế|improve,promote,assess
+price transparency|clear disclosure of the full cost of goods|việc công bố rõ ràng toàn bộ giá sản phẩm|ensure,increase,promote
+consumer trust|buyers' confidence in sellers and products|niềm tin của người tiêu dùng vào người bán và sản phẩm|build,restore,maintain
+product reviews|evaluations of goods by users or experts|các đánh giá sản phẩm của người dùng hoặc chuyên gia|read,write,compare
+retail regulations|rules governing businesses that sell to consumers|các quy định quản lý doanh nghiệp bán lẻ|enforce,review,update
+consumer choice|the range of purchasing options available|phạm vi lựa chọn mua sắm sẵn có|expand,protect,improve
+shopping convenience|the ease of obtaining desired products|sự thuận tiện khi mua sản phẩm mong muốn|improve,increase,assess
+retail employment|jobs in selling goods to end users|việc làm trong lĩnh vực bán lẻ|create,increase,measure
+product availability|the extent to which goods can be obtained|mức độ sản phẩm sẵn có để mua|improve,ensure,monitor
+consumer education|teaching that helps buyers make informed decisions|việc giáo dục giúp người mua ra quyết định có hiểu biết|provide,fund,promote
+retail demand|buyers' willingness and ability to purchase goods|nhu cầu và khả năng mua hàng bán lẻ|forecast,meet,monitor
+customer expectations|standards buyers anticipate a business will meet|các kỳ vọng khách hàng mong doanh nghiệp đáp ứng|meet,manage,understand
+product traceability|the ability to follow goods through production and distribution|khả năng truy xuất sản phẩm qua sản xuất và phân phối|improve,ensure,strengthen
+retail infrastructure|facilities and networks used to sell goods|cơ sở vật chất và mạng lưới phục vụ bán lẻ|develop,improve,fund
+consumer feedback|comments from buyers about their experiences|các phản hồi của người mua về trải nghiệm|collect,analyse,respond to
+product authenticity|the genuineness of goods rather than imitation|tính xác thực của sản phẩm thay vì hàng giả|verify,ensure,assess
+purchasing decisions|choices about which goods or services to buy|các quyết định về việc mua hàng hóa hoặc dịch vụ nào|make,influence,evaluate
+retail trends|changes in patterns of consumer sales|các xu hướng thay đổi trong hoạt động bán lẻ|monitor,analyse,predict
+customer retention|keeping buyers returning to a business|việc giữ khách hàng tiếp tục quay lại doanh nghiệp|improve,measure,increase
+service accessibility|how easily people with different needs can use a service|mức độ người có nhu cầu khác nhau sử dụng được dịch vụ|improve,assess,ensure
+consumer satisfaction|how well purchases meet buyers' needs|mức độ sản phẩm mua được đáp ứng nhu cầu người tiêu dùng|improve,measure,monitor
+product innovation|new or improved goods introduced to buyers|các sản phẩm mới hoặc cải tiến được cung cấp cho người mua|encourage,fund,promote
+retail resilience|the ability of selling businesses to withstand disruption|khả năng doanh nghiệp bán lẻ chống chịu sự gián đoạn|build,assess,strengthen

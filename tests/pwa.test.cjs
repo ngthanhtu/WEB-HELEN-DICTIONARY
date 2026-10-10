@@ -148,3 +148,11 @@ test('downloaded topic packs survive build activation and open offline without d
 test('browsing a topic does not silently download every topic or add it to the personal offline word cache',async()=>{
   const w=worker(async()=>Response.json({id:'money'}));let response;w.events.fetch({request:w.request('/assets/topics/v1/money.json'),respondWith:value=>response=value});assert.equal((await (await response).json()).id,'money');assert.equal((await (await w.caches.open('helen-topic-packs-v1')).keys()).length,0);assert.ok(vm.runInContext("shell.includes('/assets/topics/manifest.json') && !shell.some(x=>x.includes('/topics/v1/'))",w.context));
 });
+
+test('new and archived downloaded topic editions remain independent and survive activation',async()=>{
+ const w=worker(async()=>{throw Error('offline');}),cache=await w.caches.open('helen-topic-packs-v1');
+ for(const version of [1,2])await cache.put(`https://helen.test/assets/topics/v${version}/education.json`,Response.json({version,id:'education'}));
+ let done;w.events.activate({waitUntil:p=>done=p});await done;
+ for(const version of [1,2]){let response;w.events.fetch({request:w.request(`/assets/topics/v${version}/education.json`),respondWith:p=>response=p});assert.equal((await (await response).json()).version,version);}
+ assert.equal((await cache.keys()).length,2);
+});
