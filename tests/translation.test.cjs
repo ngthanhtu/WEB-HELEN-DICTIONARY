@@ -36,6 +36,12 @@ test('startup restores persistent translations once and validates purpose before
   await service.prepareCache();assert.equal(await service.translate(text,'en','vi',{kind:'definition'}),'số tiền được cho vay tạm thời');assert.equal(reads,0);
   assert.equal(await service.translate(text,'en','fr',{kind:'definition'}),'un montant prêté temporairement');assert.equal(reads,1);
 });
+test('a translation produced during database startup persists when the connection becomes ready without another provider call',async()=>{
+  let connected=false,calls=0;const writes=[],service=createTranslationService({store:{status:()=>({configured:true,connected}),translationCache:async()=>[],set:async(...args)=>{writes.push(args);return true;}},fetchImpl:async()=>{calls++;return Response.json({responseStatus:200,responseData:{translatedText:'khoản tiền được cho vay tạm thời'}});}});
+  await service.translate('money lent temporarily','en','vi',{kind:'definition'});assert.equal(writes.length,0);
+  connected=true;await service.prepareCache();await new Promise(resolve=>setImmediate(resolve));assert.equal(writes.length,1);assert.equal(writes[0][0],'translation-v2');
+  await service.translate('money lent temporarily','en','vi',{kind:'definition'});assert.equal(calls,1);
+});
 test('startup preparation resolves the Lite model and applies its fast generation settings',async()=>{
   let listed=0;
   const service=createTranslationService({apiKey:'test-only',fetchImpl:async(url,request)=>{
