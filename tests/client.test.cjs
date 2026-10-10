@@ -345,6 +345,12 @@ test('saved pronunciation opens offline without a TTS request and an unsaved dif
   vm.runInContext("selectedVoice='Bella'",p.context);await vm.runInContext("speak('loan',document.querySelector('#speaker'))",p.context);
   assert.equal(played.length,1);assert.match(p.element('#voice-status').textContent,/chưa được lưu/);
 });
+test('switching Topic audio mode stops playback and prevents a late ElevenLabs response from playing',async()=>{
+  let finish,played=0,stopped=0;const p=page({'helen-voice':'Sarah'},null,{HelenDeviceSpeech:{stop:()=>stopped++},Audio:class{play(){played++;}pause(){}}},url=>url.includes('/api/tts')?new Promise(resolve=>finish=resolve):undefined);
+  const reading=vm.runInContext("speak('loan',document.querySelector('#speaker'),{word:'loan'})",p.context);await new Promise(resolve=>setImmediate(resolve));
+  vm.runInContext('HelenAudio.stop()',p.context);assert.equal(p.element('#audio-status').hidden,true);
+  finish(new Response('clip',{headers:{'Content-Type':'audio/mpeg'}}));await reading;assert.equal(played,0);assert.ok(stopped>0);assert.equal(p.saved['helen-voice'],'Sarah');
+});
 test('successful online audio is saved under the requested voice while provider errors are not saved',async()=>{
   const saved=[];
   const p=page({'helen-voice':'Sarah'},null,{HelenOfflineAudio:{get:async()=>null,save:async(text,voice)=>{saved.push([text,voice]);return true;}},Audio:class{async play(){}pause(){}}},url=>url.includes('/api/tts')?new Response('clip',{headers:{'Content-Type':'audio/mpeg'}}):undefined);

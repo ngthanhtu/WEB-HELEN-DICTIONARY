@@ -453,6 +453,10 @@ globalThis.addEventListener?.('online',()=>historySync?.sync());
 globalThis.addEventListener?.('pageshow',()=>historySync?.sync());
 let audio, audioURL, lastResult, speakRequest=0;
 let targetRequest = 0;
+globalThis.HelenAudio={stop(){
+  speakRequest++;audio?.pause();globalThis.HelenDeviceSpeech?.stop();
+  $('#audio-status').hidden=true;$('#audio-status').replaceChildren();$('#audio-status').removeAttribute('aria-busy');
+}};
 async function speak(text, btn,options={}) {
   if(btn.getAttribute('aria-busy')==='true') return;
   const device=options.device===true;

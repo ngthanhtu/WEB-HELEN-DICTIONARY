@@ -8,7 +8,7 @@
   audioMode.value=savedAudioMode==='selected' || !window.HelenDeviceSpeech?.available?'selected':'device';
   audioMode.querySelector('[value="device"]').disabled=!window.HelenDeviceSpeech?.available;
   if(!window.HelenDeviceSpeech?.available)$('#topic-audio-note').textContent='Trình duyệt này chưa hỗ trợ giọng trên thiết bị. Giọng ElevenLabs vẫn dùng được khi có mạng.';
-  audioMode.onchange=()=>{window.HelenDeviceSpeech?.stop();try{storage?.setItem('helen-topic-audio-mode-v1',audioMode.value);}catch{}prepareAudio();};
+  audioMode.onchange=()=>{window.HelenAudio?.stop();try{storage?.setItem('helen-topic-audio-mode-v1',audioMode.value);}catch{}prepareAudio();};
   let manifest,pack,current,index=0,request=0,loadingManifest,progress=core.read(storage);const packs=new Map(),CACHE='helen-topic-packs-v1';
   const status=message=>{$('#topics-status').removeAttribute('aria-busy');$('#topics-status').textContent=message;};
   async function json(url){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),4500);try{const response=await fetch(url,{signal:controller.signal});if(!response.ok)throw Error('Chưa tải được bộ từ. Kết nối mạng rồi thử lại.');return await response.json();}catch(error){if(error.name==='TypeError')throw Error(navigator.onLine?'Chưa kết nối được thư viện. Thử lại sau nhé.':'Chủ đề này chưa tải trên thiết bị. Kết nối Internet rồi chọn Save topic offline.');if(error.name==='SyntaxError')throw Error('Chưa đọc được bộ từ. Cập nhật app rồi tải lại nhé.');throw error;}finally{clearTimeout(timer);}}
