@@ -1,10 +1,10 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
 function app(start='/study'){
   const listeners={},windowEvents={},events=[],pushes=[];
-  const location=new URL(start,'https://helen.test'),names=['dictionary','study','words','history','offline'];
+  const location=new URL(start,'https://helen.test'),names=['dictionary','study','words','history','offline','topics'];
   const element=(extra={})=>({attributes:{},setAttribute(name,value){this.attributes[name]=value;},removeAttribute(name){delete this.attributes[name];},focus(){this.focused=true;},...extra});
   const sections=names.map(name=>element({dataset:{appPage:name},heading:element(),querySelector(){return this.heading;}}));
-  const links=['/','/study','/words','/history','/offline'].map(path=>element({href:new URL(path,location).href}));
+  const links=['/','/study','/words','/history','/offline','/topics'].map(path=>element({href:new URL(path,location).href}));
   const skip=element(),study=element(),preferences={open:true},window={history:{pushState(state,unused,url){pushes.push(url);const next=new URL(url,location);location.pathname=next.pathname;location.search=next.search;location.hash=next.hash;},replaceState(state,unused,url){const next=new URL(url,location);location.pathname=next.pathname;location.hash=next.hash;}},scrollTo(){},addEventListener:(name,fn)=>windowEvents[name]=fn};
   const document={documentElement:{dataset:{}},querySelectorAll(selector){return selector==='[data-app-page]'?sections:links;},getElementById(id){return id==='study'?study:sections[names.indexOf(id.replace('page-',''))];},querySelector(selector){return selector==='.skip-link'?skip:preferences;},addEventListener(name,fn){listeners[name]=fn;},dispatchEvent(event){events.push(event);}};
   const context=vm.createContext({window,document,location,URL,CustomEvent:class{constructor(type,options){this.type=type;Object.assign(this,options);}}});
@@ -39,4 +39,8 @@ test('modified clicks retain native new-tab behavior while a normal link switche
   const p=app(),link=p.links[2];let prevented=false;
   p.listeners.click({target:{closest:()=>link},button:0,ctrlKey:true,preventDefault(){prevented=true;}});assert.equal(p.pushes.length,0);assert.equal(prevented,false);
   p.listeners.click({target:{closest:()=>link},button:0,preventDefault(){prevented=true;}});assert.equal(prevented,true);assert.equal(p.location.pathname,'/words');
+});
+
+test('topic catalog has its own shareable destination and preserves other page state',()=>{
+  const p=app('/topics');assert.equal(p.window.HelenPages.current(),'topics');assert.equal(p.document.title,'Topics · Helen Dictionary');assert.deepEqual(p.sections.filter(item=>!item.hidden).map(item=>item.dataset.appPage),['topics']);p.window.HelenPages.go('/study');assert.equal(p.window.HelenPages.current(),'study');
 });

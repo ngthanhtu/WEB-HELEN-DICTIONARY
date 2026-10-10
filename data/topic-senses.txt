@@ -1,0 +1,661 @@
+# Context-specific editorial definitions, especially for ambiguous or modern terms.
+# word | part of speech | definition | optional original example
+[education]
+university|noun|an institution that provides higher education and awards academic degrees
+academy|noun|an institution for study or training in a particular field
+lecture|noun|a talk given to students to explain an academic subject|The lecture introduced three approaches to language learning.
+seminar|noun|a small-group academic meeting in which participants discuss a subject
+module|noun|a self-contained unit of study within a larger course
+term|noun|one of the periods into which an academic year is divided
+student|noun|a person who is studying at a school, college or university
+enrollment|noun|the process of officially registering for a course or educational institution
+scholarship|noun|financial support awarded to a student to help pay for education
+bursary|noun|money provided to help a student meet the costs of education
+degree|noun|an academic qualification awarded after completing a course of higher education
+certificate|noun|an official document confirming that someone has completed training or met a requirement
+grade|noun|a letter or number showing the quality of a student's work
+feedback|noun|information about performance that helps a learner understand what to improve
+assignment|noun|a piece of work that a student is required to complete
+presentation|noun|a prepared talk that explains information or ideas to an audience
+exercise|noun|a task designed to practise or test a particular skill
+quiz|noun|a short test of knowledge
+test|noun|a set of questions or tasks used to assess knowledge or ability
+answer|noun|a response to a question or the solution to a problem
+solution|noun|a way of solving a problem or answering a question
+performance|noun|how well someone carries out a task or meets learning requirements
+fluency|noun|the ability to speak or write smoothly and with ease
+punctuation|noun|the marks used in writing to organise sentences and make meaning clear
+conjunction|noun|a word used to join words, phrases or clauses
+calculus|noun|a branch of mathematics dealing with rates of change and accumulation
+philosophy|noun|the study of fundamental questions about knowledge, reality and values
+chalk|noun|a soft material used for writing on a blackboard
+ruler|noun|a straight tool used for measuring lengths and drawing straight lines
+calculator|noun|a device that performs mathematical calculations
+illiterate|adjective|unable to read or write
+advanced|adjective|at a high level of knowledge or skill
+[work]
+job|noun|paid work or a particular position of employment|She applied for a job at a local engineering company.
+profession|noun|an occupation that usually requires specialised knowledge and training
+personnel|noun|the people employed by an organisation
+director|noun|a person responsible for leading a department, organisation or major activity
+designer|noun|a person who plans the appearance or structure of products, buildings or visual materials
+developer|noun|a person who creates or improves products, systems or property
+barber|noun|a person whose job is cutting hair, particularly men's hair
+candidate|noun|a person being considered for a job or other position
+application|noun|a formal request to be considered for a job
+reference|noun|a statement about a job applicant's character, qualifications or work
+recommendation|noun|a statement supporting someone's suitability for a position
+vacancy|noun|an available job that has not yet been filled
+appointment|noun|an arrangement to meet someone at a particular time
+orientation|noun|an introduction that helps new employees understand their workplace
+dismissal|noun|the act of ending someone's employment
+redundancy|noun|the loss of a job because the employer no longer needs that position
+wage|noun|money paid to an employee for work, often calculated by the hour or week
+bonus|noun|extra money paid in addition to normal wages or salary
+commission|noun|payment based on the amount of business or sales a person generates
+break|noun|a short period of rest during a working day
+office|noun|a room or building where administrative or professional work is done
+cubicle|noun|a small workspace separated from others by partitions
+reception|noun|the area where visitors to a workplace are greeted
+canteen|noun|a place in a workplace or school where meals are provided
+tool|noun|a device or implement used to carry out a task
+machinery|noun|machines considered together, especially those used for industrial work
+apply|verb|to formally ask for a job or position
+manage|verb|to organise and direct work, people or resources
+contribute|verb|to provide help, ideas or effort towards a shared result
+promote|verb|to give an employee a more senior position
+organize|verb|to arrange tasks, people or materials into a useful order
+casual|adjective|employed for limited or irregular periods rather than on a permanent basis
+manual|noun|a book or document giving instructions for a task or device
+[business]
+startup|noun|a newly established business, often aiming to develop an innovative product
+division|noun|a major section of a company with its own responsibilities
+stakeholder|noun|a person or group affected by or interested in an organisation's activities
+partner|noun|a person or organisation sharing ownership or responsibility in a business
+founder|noun|a person who establishes a company or organisation
+client|noun|a person or organisation that uses a professional service
+order|noun|a request to buy specified goods or services|The supplier confirmed our order for fifty chairs.
+receipt|noun|a document showing that a payment has been received
+quotation|noun|an estimate of the price a supplier will charge for goods or services
+bid|noun|an offer of a price or proposal to carry out work
+tender|noun|a formal offer to supply goods or services at a stated price
+takeover|noun|the process in which one company gains control of another
+growth|noun|an increase in a business's size, sales or activity
+asset|noun|something owned by a business that has economic value
+liability|noun|a financial obligation or amount owed by a business
+loss|noun|the amount by which a business's costs exceed its income
+target|noun|a result or level of performance that a business aims to achieve
+distribution|noun|the process of supplying products to places where customers can obtain them
+demand|noun|customers' willingness and ability to buy a product or service
+input|noun|a resource such as materials, labour or money used in producing an output
+quality|noun|the standard of a product or service compared with what is expected
+accounting|noun|the process of recording, summarising and reporting financial transactions
+transparency|noun|openness about decisions, actions and information in an organisation
+trademark|noun|a legally protected name, symbol or sign identifying a company's products
+branding|noun|the creation of a distinctive identity and image for a business or product
+image|noun|the public impression of a company, product or organisation
+campaign|noun|a coordinated series of activities designed to achieve a business or marketing goal
+segmentation|noun|the division of a market into groups of customers with similar characteristics
+niche|noun|a specific part of a market serving a particular group of customers
+survey|noun|a set of questions used to collect information from a group of people
+response|noun|a reply or reaction from a customer or other participant
+complaint|noun|a statement that a product, service or situation is unsatisfactory
+execute|verb|to carry out a plan, instruction or task
+certify|verb|to officially confirm that something meets a particular standard
+transparent|adjective|open about information and decisions rather than concealing them
+endorsement|noun|a public statement recommending or supporting a product
+acquisition|noun|the purchase of a company or business asset
+[money]
+currency|noun|the money system used in a country or economic area
+account|noun|an arrangement with a bank for depositing, withdrawing or managing money
+deposit|noun|money placed in a bank account
+withdrawal|noun|the act of taking money out of a bank account
+transfer|noun|the movement of money from one account or recipient to another
+payment|noun|money given to settle a bill or fulfil a financial obligation
+credit|noun|an arrangement that allows someone to obtain money or goods and pay later
+debt|noun|money that is owed to another person or organisation
+consumption|noun|the use of goods and services by households or other buyers
+auditor|noun|a person who officially examines financial records for accuracy
+derivative|noun|a financial contract whose value depends on another asset, rate or index
+appreciation|noun|an increase in the value of an asset or currency
+revaluation|noun|a reassessment or official increase of an asset's or currency's value
+speculation|noun|buying or selling assets in the hope of profiting from changes in their price
+speculator|noun|a person who buys or sells assets while accepting risk to seek profit
+deductible|noun|the amount an insured person pays before insurance covers the remaining eligible cost
+austerity|noun|policies that reduce public spending or increase taxes to limit government borrowing
+liquidity|noun|the ease with which an asset can be converted into money without a large loss in value
+prize|noun|money or another reward awarded for winning a competition
+afford|verb|to have enough money to pay for something|Many students cannot afford a large rent increase.
+lend|verb|to give someone money temporarily with an agreement that it will be repaid
+withdraw|verb|to take money out of a bank account
+consume|verb|to use goods, services or resources
+appreciate|verb|to increase in financial value
+depreciate|verb|to lose value over time
+inflate|verb|to increase prices or monetary amounts beyond their previous level
+deflate|verb|to reduce prices or the size of monetary amounts
+recover|verb|to return towards a healthier financial or economic state
+indebted|adjective|owing money to another person or organisation
+extravagant|adjective|spending much more money than is necessary or reasonable
+fixed|adjective|set at a level that does not change during a specified period
+statement|noun|a document listing transactions and balances for a financial account
+[travel]
+expedition|noun|a journey organised for exploration or a particular purpose
+safari|noun|a trip to observe wild animals in their natural surroundings
+getaway|noun|a short holiday away from one's usual surroundings
+reservation|noun|an arrangement to keep accommodation or transport available for someone
+confirmation|noun|a message verifying that a travel booking has been accepted
+accommodation|noun|a place to stay, such as a hotel room or rented home
+resort|noun|a place offering accommodation and facilities for holidays and leisure
+checkout|noun|the process of paying and leaving a hotel at the end of a stay
+concierge|noun|a hotel employee who helps guests with arrangements and information
+local|noun|a person who lives in the place being visited
+atlas|noun|a book or collection of maps
+compass|noun|an instrument that indicates direction using the Earth's magnetic field
+attraction|noun|a place or activity that visitors want to see or experience
+view|noun|the scenery that can be seen from a particular place
+panorama|noun|a wide view of a landscape
+gallery|noun|a place where works of art are displayed
+memorial|noun|a structure or place created to remember a person or event
+pyramid|noun|an ancient monumental structure with triangular sides rising to a point
+square|noun|an open public space surrounded by buildings in a town or city
+harbor|noun|a sheltered area of water where boats and ships can stay
+harbour|noun|a sheltered area of water where boats and ships can stay
+spring|noun|a place where water naturally flows out of the ground
+oasis|noun|a fertile place with water in a desert
+jungle|noun|an area of dense tropical vegetation
+trail|noun|a path used for walking through the countryside
+path|noun|a route or track used for walking
+confirm|verb|to state that a booking or arrangement is definite
+pack|verb|to put clothes and other belongings into luggage for a journey
+isolated|adjective|far away from other places or people
+breathtaking|adjective|so impressive or beautiful that it causes strong admiration
+historical|adjective|connected with events or periods in the past
+[transport]
+lorry|noun|a large motor vehicle used to carry goods
+van|noun|a motor vehicle with an enclosed space for carrying goods or passengers
+coach|noun|a comfortable bus used for longer journeys
+cab|noun|a taxi hired to carry passengers
+bike|noun|a bicycle, used for transport or recreation
+tram|noun|an electric passenger vehicle that runs on tracks in streets
+subway|noun|an urban railway that usually runs underground
+railway|noun|a transport system with trains running on tracks
+railroad|noun|a transport system with trains running on tracks
+carriage|noun|one of the vehicles in a train used to carry passengers
+wagon|noun|a rail vehicle used for carrying goods
+stamp|noun|a small label showing that postage for a letter or parcel has been paid
+sender|noun|the person or organisation that sends a letter, parcel or message
+dispatch|noun|the act of sending goods or vehicles to a destination
+station|noun|a place where trains or buses stop to pick up and set down passengers
+platform|noun|a raised area beside a railway track where passengers board trains
+runway|noun|a prepared strip of ground where aircraft take off and land
+flight|noun|a journey through the air in an aircraft
+airline|noun|a company that operates flights for passengers or goods
+aviation|noun|the activity and industry of flying aircraft
+connection|noun|a further bus, train or flight that continues a passenger's journey
+commuter|noun|a person who regularly travels between home and work or study
+conductor|noun|a transport employee who checks tickets or assists passengers
+captain|noun|the person in command of a ship or aircraft
+kayak|noun|a narrow boat moved with a paddle that has a blade at each end
+navigation|noun|the process of determining and following a route
+dock|noun|an area or structure where ships load, unload or are repaired
+anchorage|noun|a place where ships can safely remain held by their anchors
+hull|noun|the main outer body of a ship or boat
+paddle|noun|an implement with a broad blade used to move or steer a small boat
+crossroads|noun|a place where two roads cross
+crossing|noun|a marked place where pedestrians can cross a road
+shoulder|noun|the strip of ground along the edge of a road
+congestion|noun|a situation in which too much traffic prevents easy movement
+bottleneck|noun|a point where limited capacity slows the flow of traffic or goods
+deliver|verb|to take goods or messages to their intended recipient
+convey|verb|to transport people or goods from one place to another
+direct|adjective|going to a destination without a change of vehicle or unnecessary stops
+frequent|adjective|happening often or at short intervals
+delayed|adjective|taking place later than planned or expected
+congested|adjective|so crowded with traffic that movement is difficult
+distance|noun|the amount of space between two places
+engine|noun|a machine that provides power to move a vehicle
+clutch|noun|a mechanism connecting or disconnecting an engine from the transmission
+wiper|noun|a moving blade that clears rain or dirt from a vehicle's windscreen
+diesel|noun|fuel used in engines that ignite it by compression
+[housing]
+house|noun|a building used as a home
+home|noun|the place where a person lives
+settlement|noun|a place where people have established a community of homes
+lease|noun|a contract giving someone the right to use a property for an agreed period
+eviction|noun|the legal removal of a tenant from a property
+infrastructure|noun|the basic facilities and networks needed for a community to function
+insulation|noun|material that reduces the movement of heat, sound or electricity
+foundation|noun|the supporting base beneath a building
+framework|noun|the supporting structure around which a building is constructed
+step|noun|one of the flat surfaces in a staircase
+lift|noun|a device that carries people or goods between floors of a building
+passage|noun|a narrow route through a building
+hearth|noun|the floor area of a fireplace
+accommodate|verb|to provide a place for someone to live or stay
+dwell|verb|to live in a particular place
+detached|adjective|describing a house that is not joined to another building
+vacant|adjective|not occupied or being used
+sheet|noun|a large piece of cloth used as bedding
+blind|noun|a window covering that can be raised or adjusted to control light
+socket|noun|a fitting into which an electrical plug is inserted
+plug|noun|a connector inserted into a socket to supply power to an appliance
+basin|noun|a bowl-shaped fixture used for washing hands or the face
+toilet|noun|a bathroom fixture used for disposing of human waste
+kettle|noun|a container used for boiling water, often electrically heated
+[health]
+medical|adjective|relating to the diagnosis, prevention or treatment of illness
+emergency|noun|a serious situation requiring immediate medical attention
+practitioner|noun|a qualified professional who provides medical care
+pediatrician|noun|a doctor specialising in the health of babies, children and adolescents
+radiologist|noun|a doctor who uses medical imaging to diagnose or treat disease
+diagnosis|noun|the identification of a disease or condition from examination and evidence
+sign|noun|an observable indication of a medical condition
+stroke|noun|a sudden brain injury caused by interrupted blood flow or bleeding
+obesity|noun|a medical condition involving excessive body fat that can affect health
+dementia|noun|a condition involving a decline in memory and other thinking abilities
+virus|noun|a tiny infectious agent that reproduces inside living cells
+bacterium|noun|a single-celled microorganism, some of which cause disease
+bacteria|noun|single-celled microorganisms, some of which cause disease
+parasite|noun|an organism that lives on or in a host and obtains nutrients at the host's expense
+vaccine|noun|a preparation that helps the immune system recognise and resist a particular infection
+rehabilitation|noun|treatment and support that help a person regain function after illness or injury
+recovery|noun|the process of returning to health after illness or injury
+prescription|noun|a medical professional's written instructions for a medicine or treatment
+cream|noun|a soft preparation applied to the skin for treatment or care
+tablet|noun|a small solid dose of medicine designed to be swallowed
+pill|noun|a small solid form of medicine taken by mouth
+injection|noun|the introduction of medicine or another substance into the body using a needle
+infusion|noun|the controlled delivery of fluid or medicine into a vein
+needle|noun|a thin hollow instrument used to inject medicine or draw blood
+dressing|noun|a protective covering placed over a wound
+plaster|noun|an adhesive covering for a small wound, or material used to support an injured limb
+suture|noun|a stitch used to close a wound or surgical incision
+screening|noun|testing people for signs of a condition before symptoms become apparent
+pulse|noun|the rhythmic movement of blood in the arteries caused by the heartbeat
+heartbeat|noun|one contraction of the heart as it pumps blood
+weakness|noun|a reduced ability to exert physical strength
+cut|noun|an injury in which the skin has been broken by something sharp
+burn|noun|an injury caused by heat, chemicals, electricity or radiation
+treat|verb|to provide medical care intended to improve a person's condition
+operate|verb|to perform a surgical procedure on a patient
+terminal|adjective|describing an illness expected to lead to death
+clinical|adjective|relating to examining and treating patients
+acute|adjective|developing suddenly or lasting a relatively short time
+[environment]
+flora|noun|the plants naturally found in a particular region
+fauna|noun|the animals naturally found in a particular region
+climate|noun|the typical weather conditions of a region over a long period
+weather|noun|the conditions of the atmosphere at a particular place and time
+cloud|noun|a visible mass of tiny water droplets or ice crystals in the atmosphere
+sunshine|noun|light and warmth coming directly from the sun
+polar|adjective|relating to the regions around the North or South Pole
+continental|adjective|relating to the climate or geography of large land areas
+seasonal|adjective|occurring during or varying with particular times of the year
+meteorology|noun|the scientific study of the atmosphere and weather
+warming|noun|an increase in temperature
+landfill|noun|a site where waste is buried in the ground
+dump|noun|a place where waste is deposited
+disposal|noun|the process of getting rid of waste
+generation|noun|the process of producing energy or electricity
+degradation|noun|a decline in the quality of an environment or natural resource
+extinction|noun|the permanent disappearance of a species
+invasive|adjective|describing a species that spreads beyond its original habitat and can harm local ecosystems
+endemic|adjective|naturally found only in a particular geographical area
+migration|noun|the regular movement of animals between regions or habitats
+carnivore|noun|an animal that feeds on other animals
+recycle|verb|to process used materials so that they can be made into new products
+dispose|verb|to get rid of waste or unwanted material
+evolve|verb|to change across generations through biological processes
+reproduce|verb|to produce offspring
+cultivation|noun|the preparation and use of land for growing plants or crops
+organic|adjective|relating to farming that restricts the use of artificial fertilisers and pesticides
+natural|adjective|existing in or produced by nature rather than made by people
+synthetic|adjective|made through chemical processes rather than obtained directly from nature
+clean|adjective|free from pollution, dirt or harmful contamination
+dirty|adjective|containing dirt or pollution
+[science]
+protocol|noun|a detailed plan of procedures to follow in a study or experiment
+deduction|noun|a conclusion reached by applying general principles to particular facts
+significance|noun|the importance of a finding or the statistical strength of evidence against chance
+error|noun|a difference between a measured or calculated value and the correct value
+precision|noun|the closeness of repeated measurements to one another
+fraction|noun|a number representing part of a whole
+median|noun|the middle value of an ordered set of numbers
+mode|noun|the value that occurs most often in a set of observations
+range|noun|the difference between the largest and smallest values in a data set
+variance|noun|a measure of how far values are spread around their mean
+process|noun|a series of related changes or actions through which something develops
+law|noun|a statement describing a consistent relationship observed in nature
+replication|noun|repeating a study or experiment to check its findings
+journal|noun|a publication containing academic or scientific articles
+abstract|noun|a short summary of a research paper or study
+citation|noun|a reference to the source of information used in an academic work
+flask|noun|a laboratory container used for holding or mixing liquids
+biotechnology|noun|the use of living organisms or biological processes to develop useful products or methods
+matter|noun|physical substance that has mass and occupies space
+mass|noun|a measure of the amount of matter in an object
+motion|noun|a change in the position of an object over time
+momentum|noun|a quantity describing motion, calculated as mass multiplied by velocity
+replicate|verb|to repeat a study or procedure to check whether its results can be reproduced
+quantify|verb|to express or measure something as a number or amount
+nuclear|adjective|relating to the nucleus of an atom
+wave|noun|a disturbance that transfers energy through a medium or through space
+magnetism|noun|the physical effects associated with magnetic fields
+particle|noun|a very small piece of matter or a basic component of physical substance
+[technology]
+tablet|noun|a portable computer controlled mainly through a touch-sensitive screen
+desktop|noun|a computer intended for use at a desk
+program|noun|a set of instructions that tells a computer how to perform a task
+network|noun|a group of connected devices that can exchange data
+website|noun|a collection of related web pages available at a particular Internet address
+folder|noun|a named location used to organise files on a computer
+menu|noun|a list of commands or options available in a software interface
+button|noun|an on-screen control that activates a command when selected
+screen|noun|the surface on which a device displays images or information
+monitor|noun|a device that displays visual output from a computer
+mouse|noun|a pointing device used to control a cursor and select items on a computer
+camera|noun|a device used to capture photographs or video
+chip|noun|a small piece of semiconductor material containing an electronic circuit
+memory|noun|electronic storage used by a computer to hold data and instructions
+storage|noun|the capacity or means of retaining digital data for later use
+disk|noun|a medium used for storing digital information
+disc|noun|a round optical medium used to store digital information
+drive|noun|a device used to store or access digital data
+port|noun|a connection point through which a device exchanges data or power
+signal|noun|an electrical, optical or radio variation that carries information
+connection|noun|a link that allows devices or systems to communicate
+release|noun|a version of software made available to users
+patch|noun|a software change intended to fix a problem or improve behaviour
+backup|noun|an additional copy of data kept for recovery if the original is lost
+worm|noun|malicious software that can copy itself and spread between computers
+trojan|noun|harmful software that pretends to be a legitimate program
+exploit|noun|a method or piece of code that takes advantage of a security weakness
+breach|noun|an incident in which protected systems or information are accessed without permission
+crash|noun|a sudden failure that stops software or a device from working
+freeze|noun|a situation in which software stops responding to user input
+coding|noun|the activity of writing instructions for a computer program
+syntax|noun|the rules governing the structure of statements in a programming language
+loop|noun|a programming structure that repeats a set of instructions
+recursion|noun|a method in which a function calls itself to solve smaller parts of a problem
+array|noun|a data structure containing an ordered collection of elements
+bit|noun|a binary digit with a value of zero or one
+refresh|verb|to reload or update the information displayed by software
+restart|verb|to stop and start a device or program again
+digital|adjective|using discrete values, usually binary numbers, to represent information
+autonomous|adjective|able to operate with limited or no direct human control
+interactive|adjective|allowing a user and a system to respond to one another
+intuitive|adjective|easy to understand and use without extensive instruction
+responsive|adjective|reacting quickly or adjusting appropriately to user actions or screen conditions
+online|adjective|connected to the Internet or a computer network
+virtual|adjective|created or represented through computer technology rather than physically present
+resolution|noun|the level of detail an image or display can show
+animation|noun|a sequence of images creating the appearance of movement
+analog|adjective|representing information through continuously varying physical signals
+automatic|adjective|operating with little or no direct human intervention
+smart|adjective|using digital technology to perform functions intelligently or adaptively
+portable|adjective|easy to carry and use in different places
+compact|adjective|small and arranged to use space efficiently
+modern|adjective|using present-day ideas, methods or technology
+remote|adjective|operated or accessed from another location
+disconnect|verb|to end the link between devices or systems
+[communication]
+medium|noun|a means or channel through which information is communicated
+leaflet|noun|a small printed sheet giving information or advertising something
+caption|noun|words accompanying an image to explain or identify it
+title|noun|the name of a book, article, programme or other work
+column|noun|a regular section of a newspaper or magazine on a particular subject
+feature|noun|a detailed article or programme about a subject of interest
+censorship|noun|the suppression or restriction of material considered unacceptable by an authority
+programme|noun|a television or radio show
+show|noun|a programme or performance intended for an audience
+podcast|noun|an audio or video programme distributed online for listening or viewing
+forum|noun|a place or online space for exchanging ideas and discussing a subject
+irony|noun|a contrast between what is said or expected and what actually happens or is meant
+direction|noun|an instruction explaining how to do something or reach a place
+idiom|noun|a fixed expression whose meaning is not simply the meanings of its individual words
+subscriber|noun|a person who signs up to receive a publication, channel or service
+follower|noun|a person who regularly receives or views updates from an online account
+fluent|adjective|able to express ideas smoothly and easily in a language
+literal|adjective|using the ordinary, direct meaning of words rather than a figurative meaning
+presenter|noun|a person who introduces or hosts a radio or television programme
+[society]
+social|adjective|relating to people, their relationships and the organisation of society
+ethnic|adjective|relating to groups sharing cultural traditions, ancestry or identity
+race|noun|a social grouping associated with perceived shared ancestry or physical characteristics
+racial|adjective|relating to social groupings associated with race
+justice|noun|fair treatment and the administration of laws
+value|noun|a principle or belief regarded as important by a person or community
+secular|adjective|not based on religion or controlled by religious institutions
+tolerance|noun|willingness to accept beliefs, practices or people different from one's own
+intolerance|noun|unwillingness to accept people or views that differ from one's own
+inclusion|noun|the practice of allowing people to participate and feel that they belong
+politics|noun|activities and decisions concerning government and public power
+constitutional|adjective|relating to or permitted by a country's fundamental system of laws
+authoritarian|adjective|demanding obedience and restricting individual freedom or participation
+totalitarian|adjective|describing a system in which the state seeks to control almost every aspect of life
+assembly|noun|a body of people gathered to discuss or make public decisions
+ministry|noun|a government department responsible for a particular area of public policy
+sanction|noun|a restriction or penalty intended to influence the behaviour of a state or organisation
+radical|adjective|supporting fundamental changes in political or social structures
+trial|noun|a court proceeding in which evidence is considered to determine a legal case
+acquit|verb|to formally decide that a defendant is not guilty of a criminal charge
+civil|adjective|relating to citizens or to non-criminal legal matters
+offense|noun|an act that violates a law or rule
+offence|noun|an act that violates a law or rule
+officer|noun|a person serving in the police force
+detention|noun|the act of holding someone in official custody
+pardon|verb|to formally forgive a criminal offence or cancel a legal punishment
+[relationships]
+brother|noun|a male sibling
+stepbrother|noun|a son of one's stepparent who is not a biological sibling
+stepsister|noun|a daughter of one's stepparent who is not a biological sibling
+lineage|noun|a line of descent connecting a person with their ancestors
+ancestry|noun|the family origins and ancestors of a person
+kinship|noun|a family connection through birth, marriage or adoption
+nuclear family|noun|a family unit consisting of parents and their children
+youth|noun|the period of life between childhood and full adulthood
+elderly|adjective|describing people in the later years of life
+mate|noun|a friend or companion
+ally|noun|a person who supports another person or group
+enemy|noun|a person who is actively hostile towards another
+engagement|noun|an agreement to marry
+dating|noun|meeting people socially to explore a romantic relationship
+trust|noun|belief that another person is honest, reliable or has good intentions
+respect|noun|consideration for another person's feelings, rights or qualities
+patience|noun|the ability to remain calm while waiting or dealing with difficulty
+help|noun|assistance that makes a task or situation easier to deal with
+raise|verb|to care for a child through their development
+adopt|verb|to legally take a child into one's family as a parent
+forgive|verb|to stop feeling resentment towards someone for something they have done
+sympathetic|adjective|showing understanding and concern for another person's difficulties
+thoughtful|adjective|showing consideration for other people's needs and feelings
+outgoing|adjective|friendly and comfortable meeting and talking with people
+reserved|adjective|not readily expressing personal thoughts or feelings
+[food]
+portion|noun|an amount of food intended for one person
+specialty|noun|a dish for which a cook, restaurant or region is particularly known
+plate|noun|a flat dish from which food is served or eaten
+mug|noun|a drinking container with a handle, usually larger than a cup
+glass|noun|a drinking container made of a transparent material
+saucer|noun|a small shallow dish placed beneath a cup
+peeler|noun|a kitchen tool used to remove the skin of fruit or vegetables
+toaster|noun|an appliance that heats slices of bread until they are browned
+mixer|noun|a kitchen appliance used to combine or beat ingredients
+cake|noun|a sweet baked food typically made with flour, eggs and sugar
+cereal|noun|a food made from processed grain, often eaten at breakfast
+lamb|noun|meat from a young sheep
+fry|verb|to cook food in hot oil or fat
+steam|verb|to cook food using hot water vapour
+grate|verb|to reduce food into small pieces by rubbing it against a rough tool
+knead|verb|to work dough by pressing, folding and stretching it
+sour|adjective|having a sharp acidic taste
+bitter|adjective|having a strong taste that is neither sweet nor salty
+salty|adjective|containing or tasting of salt
+savory|adjective|having a pleasantly seasoned taste rather than being sweet
+savoury|adjective|having a pleasantly seasoned taste rather than being sweet
+delicious|adjective|very pleasant to taste
+raw|adjective|not cooked
+healthy|adjective|supporting good health when eaten as part of a balanced diet
+unhealthy|adjective|likely to harm health when consumed excessively or as part of a poor diet
+nutrient|noun|a substance needed by the body for growth, energy or normal functioning
+fiber|noun|material in plant foods that aids digestion and is not fully digested by the body
+fibre|noun|material in plant foods that aids digestion and is not fully digested by the body
+diet|noun|the food and drink a person usually consumes
+[culture]
+arts|noun|creative activities such as painting, music, literature and performance
+portrait|noun|a picture representing a person, especially their face
+canvas|noun|a prepared fabric surface on which an artist paints
+acrylic|noun|a fast-drying paint containing pigment in an acrylic medium
+pastel|noun|a coloured stick or material used for drawing
+embroidery|noun|decorative stitching made on fabric
+graffiti|noun|writing or drawings made on walls or other public surfaces
+aesthetic|adjective|relating to beauty or artistic appearance
+inspiration|noun|an idea, feeling or influence that stimulates creative work
+colour|noun|the visual quality produced by light reflected or emitted by an object
+form|noun|the structure or arrangement of an artistic work
+band|noun|a group of musicians who perform together
+choir|noun|a group of people who sing together
+chorus|noun|the repeated main section of a song
+rock|noun|a style of popular music commonly featuring guitars, drums and a strong beat
+pop|noun|popular music intended for a broad audience
+folk|noun|music rooted in the traditions of a community
+gig|noun|a live musical performance
+stage|noun|a raised area where performers appear before an audience
+character|noun|a person represented in a story, film or play
+plot|noun|the sequence of events forming the story of a literary or dramatic work
+scene|noun|a section of a play or film occurring in a particular place or time
+spectator|noun|a person watching a performance or event
+prop|noun|an object used by actors during a performance
+set|noun|the scenery and surroundings prepared for a stage or screen production
+audition|noun|a short performance used to assess a person's suitability for a role
+directing|noun|the activity of guiding a performance or film production
+draw|verb|to make a picture using lines on a surface
+original|adjective|showing new ideas rather than copying an existing work
+animation|noun|a sequence of images made to create the impression of movement
+exposure|noun|the amount of light allowed to reach a camera's sensor or film
+focus|noun|the adjustment that makes a photographic subject appear sharp
+[shopping]
+store|noun|a place where goods are sold to customers
+outlet|noun|a shop selling a particular company's goods, sometimes at reduced prices
+stall|noun|a stand or small area used for selling goods
+counter|noun|a surface in a shop where customers are served or purchases are handled
+checkout|noun|the place or process where a customer pays for purchases
+till|noun|a cash register or compartment in which a shop keeps money
+display|noun|an arrangement of products intended to attract customers' attention
+range|noun|a collection of related products offered for sale
+selection|noun|the assortment of goods from which customers can choose
+value|noun|the usefulness or quality of something compared with its price
+clearance|noun|a sale intended to sell remaining stock, often at reduced prices
+change|noun|money returned to a customer who pays more than the price
+replacement|noun|an item supplied in place of another that is lost, faulty or unsuitable
+fit|verb|to be the right size or shape for a person
+wear|verb|to have clothing or accessories on the body
+vest|noun|a sleeveless garment worn on the upper body
+trainer|noun|a comfortable sports shoe
+heel|noun|the raised back part of a shoe beneath the foot
+model|noun|a particular design or version of a product
+stock|verb|to keep goods available for sale
+[shopping]
+shopping|noun|the activity of visiting shops or websites to buy goods|We usually do our shopping on Saturday.
+mall|noun|a large building or area containing many shops and other services|The new mall has a supermarket and several cafes.
+cart|noun|a wheeled container used to carry purchases in a shop
+trolley|noun|a wheeled container used to carry purchases in a shop
+aisle|noun|a passage between rows of shelves in a shop
+voucher|noun|a document or code that can be exchanged for goods, services or a discount
+bill|noun|a statement showing how much money you owe for goods or services
+return|noun|the act of taking a purchased product back to a seller
+pants|noun|a piece of clothing covering both legs, called trousers in British English
+glove|noun|a piece of clothing covering the hand and each finger
+bracelet|noun|a piece of jewellery worn around the wrist
+gem|noun|a valuable stone used in jewellery
+reasonable|adjective|fair and not too expensive
+free|adjective|available without payment
+complimentary|adjective|provided without an extra charge
+used|adjective|previously owned or used by someone else
+secondhand|adjective|previously owned by someone else
+loose|adjective|not fitting closely against the body
+redeem|verb|to exchange a voucher, coupon or points for a benefit
+redemption|noun|the exchange of a voucher, coupon or points for a benefit
+haggling|noun|negotiating to agree on a price
+[sports]
+match|noun|a sports contest between two players or teams|Our team won the match by two goals.
+fixture|noun|a sporting event scheduled for a particular date
+event|noun|a particular competition within a sports programme
+marathon|noun|a running race over a distance of about 42 kilometres
+relay|noun|a race in which members of a team take turns completing sections
+shooting|noun|a sport in which competitors fire at targets
+fencing|noun|a sport in which two competitors fight using protected swords
+running|noun|the activity or sport of moving quickly on foot
+climbing|noun|the activity or sport of going up rocks, walls or mountains
+equestrian|adjective|connected with horse riding
+vaulting|noun|jumping over an obstacle, often with support from a pole or apparatus
+defender|noun|a player whose main role is to stop opponents from scoring
+striker|noun|an attacking player whose main role is to score goals
+rookie|noun|a person playing their first season in a professional sport
+fan|noun|a person who enthusiastically supports a player, team or sport
+arena|noun|a place with a central area for sports and seats for spectators
+field|noun|an area of ground used for outdoor sports
+track|noun|a marked course used for running or racing
+net|noun|a mesh barrier or goal used in sports such as tennis or football
+hoop|noun|the circular ring through which a basketball is thrown
+bat|noun|an implement used to hit the ball in sports such as cricket and baseball
+racket|noun|an implement with strings stretched across a frame, used to hit a ball or shuttlecock
+kit|noun|clothing and equipment used for a sport
+jersey|noun|a sports shirt worn by a player
+point|noun|a unit used to count a score in a game
+shot|noun|an attempt to score by hitting, kicking or throwing a ball
+pass|noun|the action of sending a ball to another player on your team
+tackle|noun|an attempt to take the ball from an opponent
+dive|verb|to jump headfirst into water
+throw|verb|to send a ball or other object through the air using your hand
+catch|verb|to stop and hold a moving ball or object
+shoot|verb|to send a ball towards a goal or basket in an attempt to score
+eliminate|verb|to remove a competitor from a tournament after a defeat
+active|adjective|regularly taking part in physical activity
+aerobic|adjective|involving exercise that increases breathing and heart rate for a sustained period
+anaerobic|adjective|involving short, intense exercise using energy produced without oxygen
+dribble|noun|the action of moving with a ball by bouncing it or repeatedly touching it
+header|noun|an action of hitting a ball with your head, especially in football
+block|noun|an action that prevents an opponent's shot or movement
+defense|noun|the actions and players used to prevent opponents from scoring
+defence|noun|the actions and players used to prevent opponents from scoring
+formation|noun|the arrangement of players on the field
+reaction|noun|a response to something that happens during a game
+resilience|noun|the ability to recover after setbacks or difficulties
+determination|noun|a strong commitment to keep trying to achieve a goal
+[agriculture]
+quarry|noun|a place where stone is dug out of the ground
+refine|verb|to remove impurities from a raw material such as oil or metal
+smelt|verb|to heat ore to obtain the metal it contains
+agriculture|noun|the practice of growing crops and keeping animals for food and other products
+plant|noun|a living organism such as a tree, flower or grass that usually grows in soil
+orchard|noun|an area of land where fruit trees are grown
+cocoa|noun|a tropical crop whose seeds are used to make chocolate
+tea|noun|a crop whose leaves are used to make the drink called tea
+fertility|noun|the ability of soil to support healthy plant growth
+fertile|adjective|able to support healthy plant growth and produce good crops
+infertile|adjective|unable to support healthy plant growth
+barren|adjective|unable to produce crops or vegetation
+grow|verb|to cultivate plants or crops
+trim|verb|to cut off parts of a plant to keep it tidy or healthy
+thresh|verb|to separate grain from the rest of a harvested cereal plant
+mill|verb|to process grain into flour using machinery
+grind|verb|to crush grain or another substance into small particles or powder
+fertilization|noun|the process of adding nutrients to soil to improve crop growth
+pest|noun|an organism that damages crops or stored food
+[personal]
+concentration|noun|the ability to keep your attention on a task or activity
+persistence|noun|the quality of continuing to try despite difficulties
+integrity|noun|the quality of being honest and following strong moral principles
+acceptance|noun|a willingness to recognise or welcome a person, situation or idea
+autonomy|noun|the ability to make your own decisions independently
+feeling|noun|an emotion or emotional response
+insecure|adjective|lacking confidence in yourself or feeling uncertain about your situation
+humble|adjective|not considering yourself better or more important than other people
+rigid|adjective|unwilling to change your opinions or ways of doing things
+versatile|adjective|able to do many different things well
+disloyal|adjective|not faithful to a person, group or commitment
+hopeless|adjective|feeling or showing no hope of improvement
+accomplishment|noun|something successfully achieved through effort or skill
+curious|adjective|wanting to learn or know more about something
+persistent|adjective|continuing to try despite difficulties

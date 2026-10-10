@@ -260,3 +260,11 @@ Giao diện Study/chấm bài hoạt động ngay trên thiết bị; không ch�
 Đường chuẩn bị bài học đọc trực tiếp bộ đệm WordNet đã nạp trước khi server lắng nghe, tránh hàng loạt thao tác đọc đĩa nhỏ của thư viện cũ khi Render vừa khởi động. Mỗi từ trả tối đa 16 nghĩa, phân bổ giữa các từ loại, mỗi nghĩa tối đa 2 ví dụ để giảm dữ liệu trên điện thoại; không giới hạn số nghĩa ở phần tra cứu từ điển chính.
 
 Refresh ưu tiên HTML từ server và tải CSS/JavaScript có cùng mã phiên bản triển khai. Khi offline hoặc kết nối chậm, app dùng bản đã cài đầy đủ; HTML của bản mới không thay thế bộ offline cũ cho đến khi bản mới cài xong. Trên lượt reload, worker mới đã sẵn sàng sẽ được kích hoạt tự động nếu không có phiên học đang chạy. Với app còn giữ cache từ bản trước thay đổi này, bấm **Update app** một lần để cập nhật cơ chế refresh; từ và lịch ôn được giữ.
+
+## Topics — 4.000 mục từ theo 20 chủ đề
+
+Mở **Topics** (`/topics`) → chọn chủ đề → chọn một nhóm 20 từ. Mỗi chủ đề có 200 mục từ, chia thành 10 nhóm. Có quiz nghĩa, gõ từ, ghép cặp và bài điền từ khi đủ câu ví dụ; thêm hai đề luyện nói/viết tự biên soạn cho mỗi chủ đề. Bộ từ dựa trên WordNet có giấy phép và phần biên soạn của Helen, không phải danh sách chính thức hay thống kê tần suất đề thi IELTS/TOEIC/VSTEP.
+
+Có thể luyện ngay mà không tự thêm toàn bộ thư viện vào Favorites. Lưu từng từ hoặc nhóm 20 từ để ôn theo lịch; từ đã lưu giữ nguyên các nghĩa và lịch ôn. Kết quả hoàn thành nhóm được lưu trên thiết bị và đi cùng JSON backup. **Save topic offline** tải 200 từ của chủ đề vào cache riêng, giữ qua cập nhật app; dịch mới và giọng AI cần mạng.
+
+Chỉ tải dữ liệu chủ đề đang mở, không gọi AI khi tạo quiz. Kiểm tra và tái tạo bằng `npm run build:topics` / `npm run audit:topics`. Xem [quy trình biên soạn và kiểm tra](docs/topics.md).

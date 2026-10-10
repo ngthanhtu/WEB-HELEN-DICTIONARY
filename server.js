@@ -5,6 +5,7 @@ const path = require('path');
 const { wordnetMeanings } = require('./lib/lexicon');
 const { studyMeanings } = require('./lib/study-lexicon');
 const {senses:learningSenses}=require('./public/assets/study-core');
+const {topicEntry}=require('./lib/topic-lexicon');
 const { spellingSuggestions, autocompleteSuggestions, warmSpellingIndex } = require('./lib/spelling');
 const { voiceMetadata } = require('./lib/voice-labels');
 const { createTranslationService } = require('./lib/translation');
@@ -114,8 +115,8 @@ app.post('/api/speech',async(req,res)=>{
   catch(error) {res.status(error.status || 503).json({error:error.message || 'Chưa nhận diện được. Hãy thử lại hoặc gõ từ.',code:error.code || 'SPEECH_SERVICE'});}
 });
 const buildVersion=process.env.RENDER_GIT_COMMIT?.replace(/[^a-zA-Z0-9]/g,'').slice(0,12) || 'mobile-v1';
-const appPages={'/':'dictionary','/study':'study','/words':'words','/history':'history','/offline':'offline'};
-const pageTitles={dictionary:'Dictionary',study:'Study',words:'My words',history:'History',offline:'Offline'};
+const appPages={'/':'dictionary','/study':'study','/topics':'topics','/words':'words','/history':'history','/offline':'offline'};
+const pageTitles={dictionary:'Dictionary',study:'Study',topics:'Topics',words:'My words',history:'History',offline:'Offline'};
 app.get(Object.keys(appPages), (req, res) => {
   const page=appPages[req.path.toLowerCase().replace(/\/$/,'') || '/'];
   const html=require('fs').readFileSync(path.join(__dirname,'index.html'),'utf8');
@@ -438,10 +439,11 @@ app.get('/api/voices', async (req, res) => {
 app.post('/api/pronunciation',async(req,res)=>{
   const text=typeof req.body.text==='string'?req.body.text.trim():'',word=typeof req.body.word==='string'?req.body.word.trim().toLowerCase():'';
   if(!text || text.length>2000 || !word || word.length>100)return res.status(400).json({error:'Hãy tra từ trước khi nghe.'});
-  const durable=cache.has(`d|${word}`)?null:await database.get(`dictionary-v${REVISION}`,word);
+  const topic=topicEntry(word);
+  const durable=cache.has(`d|${word}`) || topic?null:await database.get(`dictionary-v${REVISION}`,word);
   const meanings=studyMeanings(word);
   const entries=cache.get(`d|${word}`) || durable?.value || (meanings.length?[{word,meanings}]:[]);
-  let allowed=pronunciation.texts({entries}).includes(text);
+  let allowed=pronunciation.texts({entries}).includes(text) || Boolean(topic && pronunciation.texts({entries:[topic]}).includes(text));
   const context=req.body.context;
   if(!allowed && context && typeof context.pos==='string' && context.pos.length<=80 && typeof context.definition==='string' && context.definition.length<=2000 && typeof context.language==='string' && Object.hasOwn(contextLanguages,context.language)){
     const lesson=await contexts.cached({word,pos:context.pos,definition:context.definition,language:context.language});if(lesson)allowed=pronunciation.texts(lesson).includes(text);

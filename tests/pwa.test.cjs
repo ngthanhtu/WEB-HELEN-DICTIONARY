@@ -25,7 +25,7 @@ test('a slow reload uses the installed page promptly without caching server erro
 });
 test('every app destination opens the installed shell offline but API and unknown URLs remain untouched',async()=>{
   const w=worker(async()=>{throw Error('offline');}),cache=await w.caches.open('helen-test-shell');await cache.put('/',new Response('complete app shell'));
-  for(const path of ['/study','/study/','/words','/history','/offline']){
+  for(const path of ['/study','/study/','/topics','/words','/history','/offline']){
     let response;w.events.fetch({request:{...w.request(path),mode:'navigate'},waitUntil(){},respondWith:value=>response=value});
     assert.equal(await (await response).text(),'complete app shell',path);
   }
@@ -139,4 +139,12 @@ test('new lexical revision refreshes old empty relation lists while preserving t
   await cache.put(key,new Response(JSON.stringify(entry('drawback',{lexicalRevision:1})),{headers:{'X-Helen-Saved-At':String(Date.now())}}));
   assert.deepEqual((await (await w.get('/api/lookup?word=drawback')).json()).entries[0].meanings[0].senses[0].synonyms,['hindrance']);assert.equal(calls,1);
   online=false;assert.deepEqual((await (await w.get('/api/lookup?word=drawback')).json()).entries[0].meanings[0].senses[0].synonyms,['hindrance']);assert.equal(calls,1);
+});
+
+test('downloaded topic packs survive build activation and open offline without displacing personal caches',async()=>{
+  const w=worker(async()=>{throw Error('offline');}),url='https://helen.test/assets/topics/v1/education.json',cache=await w.caches.open('helen-topic-packs-v1');await cache.put(url,Response.json({version:1,id:'education',entries:['saved pack']}));
+  let done;w.events.activate({waitUntil:value=>done=value});await done;assert.ok((await w.caches.keys()).includes('helen-topic-packs-v1'));let response;w.events.fetch({request:w.request('/assets/topics/v1/education.json'),respondWith:value=>response=value});assert.equal((await (await response).json()).id,'education');assert.equal((await (await w.caches.open('helen-words-v1')).keys()).length,0);
+});
+test('browsing a topic does not silently download every topic or add it to the personal offline word cache',async()=>{
+  const w=worker(async()=>Response.json({id:'money'}));let response;w.events.fetch({request:w.request('/assets/topics/v1/money.json'),respondWith:value=>response=value});assert.equal((await (await response).json()).id,'money');assert.equal((await (await w.caches.open('helen-topic-packs-v1')).keys()).length,0);assert.ok(vm.runInContext("shell.includes('/assets/topics/manifest.json') && !shell.some(x=>x.includes('/topics/v1/'))",w.context));
 });

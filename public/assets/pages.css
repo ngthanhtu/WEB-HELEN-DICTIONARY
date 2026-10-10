@@ -1,6 +1,6 @@
 /* Destinations must be visually isolated, including before scripts initialize. */
 .app-page{display:none}
-html[data-page=dictionary] [data-app-page=dictionary],html[data-page=study] [data-app-page=study],html[data-page=words] [data-app-page=words],html[data-page=history] [data-app-page=history],html[data-page=offline] [data-app-page=offline]{display:block}
+html[data-page=dictionary] [data-app-page=dictionary],html[data-page=study] [data-app-page=study],html[data-page=topics] [data-app-page=topics],html[data-page=words] [data-app-page=words],html[data-page=history] [data-app-page=history],html[data-page=offline] [data-app-page=offline]{display:block}
 #app-content{max-width:none;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;min-height:65dvh}
 .brand>a{color:var(--text-inverse);text-decoration:none}
 .main-nav a[aria-current=page]{background:var(--accent);color:var(--surface-strong);font-weight:700}
@@ -27,4 +27,4 @@ html[data-page=dictionary] [data-app-page=dictionary],html[data-page=study] [dat
 #app-status-tools:not(:has(#connection-status:not([hidden]),#app-update:not([hidden]))){display:none}
 #page-offline .app-tools{display:flex}
 @media(max-width:1050px){.bar{flex-wrap:wrap}.brand{flex:1}.main-nav{order:3;width:100%;margin-left:0;justify-content:center;flex-wrap:wrap}}
-@media(max-width:760px){.page-intro{margin:var(--space-5) auto}.main-nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--space-1)}.main-nav a{justify-content:center;padding:var(--space-2) var(--space-1);font-size:var(--font-small);min-width:0;text-align:center;line-height:1.3}.nav-full{display:none}.nav-short{display:inline}.app-page .learning-tools>details,#offline-content>.offline-library,#offline-content>.offline-audio{padding:var(--space-4)}.preferences{margin-left:auto}.brand{font-size:1.05rem;flex:1 1 auto;white-space:normal}}
+@media(max-width:760px){.page-intro{margin:var(--space-5) auto}.main-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-1)}.main-nav a{justify-content:center;padding:var(--space-2) var(--space-1);font-size:var(--font-small);min-width:0;text-align:center;line-height:1.3}.nav-full{display:none}.nav-short{display:inline}.app-page .learning-tools>details,#offline-content>.offline-library,#offline-content>.offline-audio{padding:var(--space-4)}.preferences{margin-left:auto}.brand{font-size:1.05rem;flex:1 1 auto;white-space:normal}}

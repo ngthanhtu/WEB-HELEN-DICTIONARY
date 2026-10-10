@@ -14,7 +14,7 @@ async function translate(text, to) {
 }
 test('app destinations support direct links and refreshes with the correct page and versioned assets',async()=>{
   await ready;
-  for(const [path,page,title] of [['/','dictionary','Dictionary'],['/study','study','Study'],['/words','words','My words'],['/history','history','History'],['/offline','offline','Offline'],['/study/','study','Study'],['/Study','study','Study']]){
+  for(const [path,page,title] of [['/','dictionary','Dictionary'],['/study','study','Study'],['/topics','topics','Topics'],['/words','words','My words'],['/history','history','History'],['/offline','offline','Offline'],['/study/','study','Study'],['/Study','study','Study']]){
     const response=await fetch(`${base}${path}`),html=await response.text();assert.equal(response.status,200,path);
     assert.match(html,new RegExp(`data-page="${page}"`));assert.ok(html.includes(`<title>${title} · Helen Dictionary</title>`));
     assert.match(html,/\/assets\/navigation.js\?v=/);assert.match(html,/\/assets\/pages.css\?v=/);assert.equal(response.headers.get('cache-control'),'no-cache');
@@ -161,6 +161,7 @@ test('redirects missing local backgrounds to the current branch after history cl
   fs.cpSync(path.join(__dirname,'..','lib'),path.join(tmp,'lib'),{recursive:true});
   fs.cpSync(path.join(__dirname,'..','data'),path.join(tmp,'data'),{recursive:true});
   fs.mkdirSync(path.join(tmp,'public','assets'),{recursive:true});
+  fs.cpSync(path.join(__dirname,'..','public','assets','topics'),path.join(tmp,'public','assets','topics'),{recursive:true});
   fs.copyFileSync(path.join(__dirname,'..','public','assets','study-core.js'),path.join(tmp,'public','assets','study-core.js'));
   fs.copyFileSync(path.join(__dirname,'..','public','assets','sense-core.js'),path.join(tmp,'public','assets','sense-core.js'));
   const child = spawn(process.execPath, [path.join(tmp, 'server.js')], {
@@ -331,4 +332,11 @@ test('an unavailable default Gemini model is replaced by an available Flash Lite
   assert.equal(response.status,200);
   assert.equal((await response.json()).model,'gemini-3.1-flash-lite');
   assert.equal((await (await fetch(`${base}/api/context/status`)).json()).model,'gemini-3.1-flash-lite');
+});
+
+test('topic pronunciation approves published modern words and examples but refuses arbitrary unrelated text',async()=>{
+  await ready;const response=await fetch(`${base}/assets/topics/v1/technology.json`);assert.equal(response.status,200);const pack=await response.json(),entry=pack.entries.find(e=>e.word==='smartphone');assert.ok(entry);
+  const request=text=>fetch(`${base}/api/pronunciation`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word:entry.word,text})});
+  const approved=await request(entry.word);assert.equal(approved.status,200);assert.ok((await approved.json()).proof);assert.equal((await request('An arbitrary unrelated passage.')).status,403);
+  const sports=await (await fetch(`${base}/assets/topics/v1/sports.json`)).json(),match=sports.entries.find(e=>e.word==='match');const example=await fetch(`${base}/api/pronunciation`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word:match.word,text:match.examples[0]})});assert.equal(example.status,200);
 });

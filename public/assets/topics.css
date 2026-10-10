@@ -1,0 +1,26 @@
+.topic-library{max-width:var(--content-width);margin:0 auto var(--space-6);padding:0 var(--space-4);box-sizing:border-box}
+.topic-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3);margin:var(--space-4) 0}
+.topic-toolbar label{display:flex;flex:1;flex-direction:column;gap:var(--space-2);min-width:0;font-weight:600}
+.topic-toolbar input{box-sizing:border-box;width:100%;min-height:48px;padding:var(--space-3);border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-base);color:var(--text-primary);font:inherit}
+.topic-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-4)}
+.topic-card{display:flex;flex-direction:column;align-items:flex-start;gap:var(--space-3);padding:var(--space-5);text-align:left;border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-1);background:var(--surface-base);color:var(--text-primary);font:inherit;cursor:pointer;transition:transform var(--motion),border-color var(--motion),box-shadow var(--motion);overflow-wrap:anywhere}
+.topic-card strong{font-size:var(--font-title);line-height:1.3}.topic-card>span:not(.section-kicker):not(.topic-card-action){color:var(--text-tertiary)}
+.topic-card small{font-size:var(--font-small);color:var(--text-tertiary)}.topic-card-action{font-weight:700;margin-top:auto;color:var(--action)}
+.topic-card:hover{transform:translateY(-3px);border-color:var(--action);box-shadow:var(--shadow-hover)}.topic-card:active{transform:translateY(0)}
+.topic-card:focus-visible,.topic-toolbar input:focus-visible{outline:3px solid var(--focus);outline-offset:4px}
+.topic-card:disabled{opacity:.65;cursor:wait;transform:none}
+.topic-detail{padding:var(--space-5);border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface-base)}
+.topic-detail h2{font-size:var(--font-title);margin-top:var(--space-4);overflow-wrap:anywhere}.topic-detail-header p{color:var(--text-tertiary)}
+.topic-lessons{display:flex;flex-wrap:wrap;gap:var(--space-2);margin:var(--space-4) 0}.topic-lessons button{min-width:44px;justify-content:center}.topic-lessons [aria-pressed=true]{background:var(--accent);color:var(--surface-strong);border-color:var(--accent)}
+.topic-actions{display:flex;flex-wrap:wrap;gap:var(--space-3)}.topic-actions button{min-height:48px}.topic-actions #practice-topic{background:var(--accent);color:var(--surface-strong)}
+.topic-word-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3)}
+.topic-word{padding:var(--space-4);border:1px solid var(--border);border-radius:var(--radius-sm);min-width:0;overflow-wrap:anywhere}
+.topic-word-head{display:flex;align-items:baseline;gap:var(--space-2);flex-wrap:wrap}.topic-word-head h3{margin:0;font-size:1.2rem}.topic-word-head .study-pos{margin:0}
+.topic-word p{line-height:1.6}.topic-example{font-style:italic;color:var(--text-tertiary)}.topic-word-actions{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2)}
+.topic-word-actions .say,.topic-word-actions .eye{width:44px;height:44px;min-width:44px}
+.topic-translation{background:var(--surface-muted);border-left:3px solid var(--accent);padding:var(--space-3);border-radius:var(--radius-xs)}
+.topic-prompts{margin:var(--space-4) 0;padding:var(--space-4);border:1px solid var(--border);border-radius:var(--radius-sm)}.topic-prompts summary{cursor:pointer;min-height:44px;font-weight:700}.topic-prompts li{margin:var(--space-3) 0}
+.topic-source-note{font-size:var(--font-small);line-height:1.6;color:var(--text-tertiary)}.topic-study-note{padding:var(--space-4);border:1px solid var(--accent);border-radius:var(--radius-sm);background:var(--surface-muted)}
+@media(max-width:1000px){.topic-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.topic-grid,.topic-word-list{grid-template-columns:1fr}.topic-detail,.topic-card{padding:var(--space-4)}.topic-actions{flex-direction:column}.topic-actions button{width:100%;justify-content:center}.topic-word-actions .text-action{font-size:var(--font-small)}}
+@media(prefers-reduced-motion:reduce){.topic-card{transition:none}.topic-card:hover{transform:none}}

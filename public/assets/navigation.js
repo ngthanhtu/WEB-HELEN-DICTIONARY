@@ -2,8 +2,8 @@
    and a dictionary result alive without fetching them again. */
 (()=>{
   'use strict';
-  const pages={'/':'dictionary','/study':'study','/words':'words','/history':'history','/offline':'offline'};
-  const titles={dictionary:'Dictionary',study:'Study',words:'My words',history:'History',offline:'Offline'};
+  const pages={'/':'dictionary','/study':'study','/topics':'topics','/words':'words','/history':'history','/offline':'offline'};
+  const titles={dictionary:'Dictionary',study:'Study',topics:'Topics',words:'My words',history:'History',offline:'Offline'};
   const legacy={'#lookup':'/','#study':'/study','#library':'/words'};
   const path=value=>value==='/'?'/':value.toLowerCase().replace(/\/$/,'');
   const destination=()=>legacy[location.hash] || path(location.pathname);

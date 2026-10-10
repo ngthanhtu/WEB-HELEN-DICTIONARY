@@ -161,13 +161,14 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
 <link rel="stylesheet" href="/assets/workspace.css">
 <link rel="stylesheet" href="/assets/daily-learning.css">
 <link rel="stylesheet" href="/assets/pages.css">
+<link rel="stylesheet" href="/assets/topics.css">
 <script src="/assets/navigation.js"></script>
 </head>
 <body>
 <a class="skip-link" href="#page-dictionary">Skip to content</a>
 <header class="bar">
   <div class="brand"><i aria-hidden="true"></i><a href="/" data-page-link>Helen Dictionary</a><button id="pet-mascot" class="pet-mascot" type="button" aria-label="Change dog picture" hidden><img alt="" draggable="false"></button></div>
-  <nav class="main-nav" aria-label="Main navigation"><a href="/" data-page-link aria-label="Dictionary search"><span class="nav-full">Dictionary</span><span class="nav-short">Search</span></a><a href="/study" data-page-link>Study</a><a href="/words" data-page-link>My words</a><a href="/history" data-page-link>History</a><a href="/offline" data-page-link>Offline</a></nav>
+  <nav class="main-nav" aria-label="Main navigation"><a href="/" data-page-link aria-label="Dictionary search"><span class="nav-full">Dictionary</span><span class="nav-short">Search</span></a><a href="/study" data-page-link>Study</a><a href="/topics" data-page-link>Topics</a><a href="/words" data-page-link>My words</a><a href="/history" data-page-link>History</a><a href="/offline" data-page-link>Offline</a></nav>
   <details class="preferences"><summary>Preferences <span aria-hidden="true">⚙</span></summary><div class="preferences-body">
   <label>Meanings in
     <select id="target" aria-label="Translate meanings into"></select>
@@ -217,6 +218,8 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
 <section id="page-study" class="app-page" data-app-page="study" aria-label="Study">
 <header class="page-intro"><span class="section-kicker">A LITTLE EVERY DAY</span><h1 tabindex="-1">Your learning space.</h1><p>Ôn từ đến hạn, chọn một kiểu luyện tập và theo dõi tiến bộ của bạn.</p></header>
 <section id="study" class="study-panel" aria-label="Review and quiz">
+  <p class="topic-study-note"><a href="/topics" data-page-link>Explore 4,000 words in 20 topics →</a><br>Chọn một nhóm 20 từ để luyện ngay, hoặc lưu từ cần ôn vào kho cá nhân.</p>
+  <p id="topic-practice-note" class="topic-study-note" hidden></p>
   <div class="study-page-heading"><h2>Review & Quiz</h2><span id="study-count"></span></div>
   <p id="study-progress"></p><p id="study-next" class="muted"></p>
   <section id="daily-learning" class="daily-learning" aria-labelledby="daily-title"><div><span class="section-kicker">BUILD YOUR DAILY HABIT</span><h3 id="daily-title">A little practice, every day</h3><strong id="daily-count">0/5 lượt luyện</strong><progress id="daily-meter" value="0" max="5" aria-label="Daily learning progress"></progress><span id="daily-streak">0 ngày liên tiếp</span></div><label for="daily-goal">Daily goal<select id="daily-goal"><option value="5">5 lượt</option><option value="10">10 lượt</option><option value="20">20 lượt</option></select></label><p id="daily-note"></p></section>
@@ -235,6 +238,25 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
   <p class="muted">Review lên lịch ôn từ yêu thích theo mức nhớ. Quiz luyện nghĩa và câu ví dụ; không đổi lịch ôn. Tiến độ, bản dịch và âm thanh đã lưu dùng được ngoại tuyến; bản dịch và giọng đọc mới cần mạng.</p>
 </section>
 <section id="word-of-day" class="word-of-day" aria-label="Word of the day" hidden><div><span class="section-kicker">WORD OF THE DAY · A LITTLE EVERY DAY</span><h2 id="daily-word"></h2><p id="daily-gloss"></p><small>Princeton WordNet · Gợi ý nhẹ từ bộ từ ngoại tuyến</small></div><div class="word-actions"><button id="daily-explore" class="word-link" type="button">Explore word</button><button id="daily-save" class="word-link" type="button">☆ Save word</button></div><p id="daily-word-status" role="status"></p></section>
+</section>
+<section id="page-topics" class="app-page" data-app-page="topics" aria-label="Topic vocabulary library">
+<header class="page-intro"><span class="section-kicker">WORDS FOR REAL LIFE</span><h1 tabindex="-1">One topic. A world of words.</h1><p>4.000 mục từ · 20 chủ đề · 200 từ mỗi chủ đề. Luyện theo ngữ cảnh đời sống và các kỹ năng IELTS, TOEIC, VSTEP.</p></header>
+<section id="topic-library" class="topic-library" aria-label="Explore vocabulary topics">
+  <p class="topic-source-note">Bộ từ do Helen biên soạn để luyện theo chủ đề; không phải danh sách chính thức hay bảng tần suất đề thi. Mỗi mục hiển thị một nghĩa theo ngữ cảnh. Mở Dictionary để xem các nghĩa khác.</p>
+  <p id="topics-status" role="status"></p>
+  <div id="topics-catalog"><div class="topic-toolbar"><label for="topic-filter">Find a topic<input id="topic-filter" type="search" placeholder="Education, work, IELTS…" autocomplete="off"></label></div><div id="topics-grid" class="topic-grid"></div></div>
+  <section id="topic-detail" class="topic-detail" aria-labelledby="topic-title" hidden>
+    <button id="topic-back" class="word-link" type="button">← All topics</button>
+    <header class="topic-detail-header"><h2 id="topic-title" tabindex="-1"></h2><p id="topic-description"></p></header>
+    <div id="topic-lessons" class="topic-lessons" role="group" aria-label="Choose a 20-word lesson"></div>
+    <h3 id="topic-lesson-title"></h3><p id="topic-progress"></p>
+    <div id="topic-actions" class="topic-actions" hidden><button id="practice-topic" class="word-link" type="button">Practice this lesson →</button><button id="save-topic-lesson" class="word-link" type="button">☆ Save these 20 words</button><button id="download-topic" class="word-link" type="button">↓ Save topic offline</button></div>
+    <details id="topic-prompts" class="topic-prompts"></details>
+    <div class="topic-toolbar"><label for="topic-word-filter">Find a word in this topic<input id="topic-word-filter" type="search" autocomplete="off" placeholder="Search all 200 words…"></label></div><p id="topic-word-count" role="status"></p>
+    <div id="topic-words" class="topic-word-list"></div>
+    <p class="topic-source-note">Định nghĩa và ví dụ: Princeton WordNet hoặc Helen editorial, ghi rõ tại từng bài luyện. <a href="/assets/licenses/wordnet.txt">WordNet license</a>. Định nghĩa, quiz và bộ đã tải dùng được ngoại tuyến; dịch mới và giọng AI cần Internet.</p>
+  </section>
+</section>
 </section>
 <section id="page-words" class="app-page" data-app-page="words" aria-label="My words">
 <header class="page-intro"><span class="section-kicker">KEEP WHAT MATTERS</span><h1 tabindex="-1">A collection of your own.</h1><p>Từ đã lưu và bản sao lưu ở một nơi. Bộ từ và bài luyện nằm trong Study.</p></header>
@@ -1034,8 +1056,10 @@ document.addEventListener?.('helen:page-change',event=>{if(event.detail.page==='
 <script src="/assets/study-core.js"></script>
 <script src="/assets/study-library.js"></script>
 <script src="/assets/habit-core.js"></script>
+<script src="/assets/topics-core.js"></script>
 <script src="/assets/backup-core.js"></script>
 <script src="/assets/study.js" defer></script>
+<script src="/assets/topics.js" defer></script>
 <script src="/assets/daily-learning.js" defer></script>
 <script src="/assets/backup.js" defer></script>
 <script src="/assets/metrics.js" defer></script>

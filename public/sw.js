@@ -1,15 +1,15 @@
 // Render's commit replaces this token so each deploy installs a fresh app shell.
 const BUILD='__BUILD_VERSION__',VERSION=`helen-${BUILD}`;
-const SHELL=`${VERSION}-shell`, FILES=`${VERSION}-files`, WORDS='helen-words-v1', AUDIO='helen-audio-v1';
+const SHELL=`${VERSION}-shell`, FILES=`${VERSION}-files`, WORDS='helen-words-v1', AUDIO='helen-audio-v1', TOPICS='helen-topic-packs-v1';
 const TTL=24*60*60*1000, MAX_WORDS=100, MAX_FILES=40;
 const SAVED_WAIT=2400, NETWORK_WAIT=6500;
-const learningAssets=['/assets/navigation.js','/assets/pages.css','/assets/pronunciation.js','/assets/habit-core.js','/assets/daily-learning.js','/assets/daily-learning.css','/assets/backup-core.js','/assets/backup.js','/assets/metrics.js','/assets/sources.html','/assets/licenses/wordnet.txt'];
+const learningAssets=['/assets/navigation.js','/assets/pages.css','/assets/topics-core.js','/assets/topics.js','/assets/topics.css','/assets/topics/manifest.json','/assets/pronunciation.js','/assets/habit-core.js','/assets/daily-learning.js','/assets/daily-learning.css','/assets/backup-core.js','/assets/backup.js','/assets/metrics.js','/assets/sources.html','/assets/licenses/wordnet.txt'];
 const LEXICAL_REVISION=2;
 const shell=['/','/manifest.webmanifest','/assets/pwa.css','/assets/pwa.js','/assets/workspace.css','/assets/workspace.js','/assets/study-library.js','/assets/study-starters.json','/assets/offline-basics.json','/assets/study.css','/assets/study-core.js','/assets/study.js','/assets/sense-core.js','/assets/offline-audio.js','/assets/quiz-sounds.js','/assets/quiz-translation.js','/assets/voice-recorder.js','/assets/history-sync.js','/assets/autocomplete.js','/assets/appearance.json','/assets/hamster.css','/assets/pet-pointer.css','/assets/pet-pointer.js','/assets/icons/icon-180.png','/assets/icons/icon-192.png','/assets/icons/icon-512.png',
   '/assets/mobile/background.webp','/assets/mobile/lookup.webp','/assets/mobile/hero.webp','/assets/mobile/dog-idle.webp','/assets/mobile/dog-pressed.webp',...learningAssets].map(url=>/\.(css|js)$/.test(url)?`${url}?v=${BUILD}`:url);
 self.addEventListener('install',event=>{event.waitUntil(caches.open(SHELL).then(cache=>cache.addAll(shell)));});
 self.addEventListener('activate',event=>{event.waitUntil((async()=>{
-  for(const name of await caches.keys())if(name.startsWith('helen-') && ![SHELL,FILES,WORDS,AUDIO].includes(name))await caches.delete(name);
+  for(const name of await caches.keys())if(name.startsWith('helen-') && ![SHELL,FILES,WORDS,AUDIO,TOPICS].includes(name))await caches.delete(name);
   await normalizeWords();await self.clients.claim();
 })());});
 function lookupKey(input) {
@@ -153,12 +153,16 @@ self.addEventListener('fetch',event=>{
   if(request.method!=='GET' || url.origin!==self.location.origin)return;
   // Every app destination can boot from the same installed shell while offline.
   // API, health and unknown paths must keep their own responses.
-  if(request.mode==='navigate' && ['/','/study','/words','/history','/offline'].includes(url.pathname.toLowerCase().replace(/\/$/,'') || '/')) {event.respondWith(appPage(request,event));return;}
+  if(request.mode==='navigate' && ['/','/study','/topics','/words','/history','/offline'].includes(url.pathname.toLowerCase().replace(/\/$/,'') || '/')) {event.respondWith(appPage(request,event));return;}
   if(url.pathname==='/api/lookup') {event.respondWith(word(request,event));return;}
   // Account status, voice lists and AI calls always use the live server.
   // Exact-voice audio is managed separately by the page, not by this fetch handler.
   if(url.pathname.startsWith('/api/') || url.pathname==='/healthz' || url.pathname==='/sw.js')return;
   if(!url.pathname.startsWith('/assets/') && url.pathname!=='/manifest.webmanifest')return;
+  // Explicitly downloaded topics survive app updates and never displace personal lookups/audio.
+  if(/^\/assets\/topics\/v1\/[a-z]+\.json$/.test(url.pathname)){
+    event.respondWith((async()=>{const cache=await caches.open(TOPICS),saved=await cache.match(request);if(saved)return saved;return fetch(request);})());return;
+  }
   event.respondWith((async()=>{
     const shellCache=await caches.open(SHELL), fileCache=await caches.open(FILES);
     const cached=await shellCache.match(request) || await fileCache.match(request);if(cached)return cached;
