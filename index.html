@@ -251,6 +251,7 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
     <div id="topic-lessons" class="topic-lessons" role="group" aria-label="Choose a 20-word lesson"></div>
     <h3 id="topic-lesson-title"></h3><p id="topic-progress"></p>
     <div id="topic-actions" class="topic-actions" hidden><button id="practice-topic" class="word-link" type="button">Practice this lesson →</button><button id="save-topic-lesson" class="word-link" type="button">☆ Save these 20 words</button><button id="download-topic" class="word-link" type="button">↓ Save topic offline</button></div>
+    <div class="topic-audio-control"><label for="topic-audio-mode">Topic audio</label><select id="topic-audio-mode" aria-describedby="topic-audio-note"><option value="device">⚡ Fast device voice</option><option value="selected">Selected ElevenLabs voice</option></select><p id="topic-audio-note">Giọng tiếng Anh trên thiết bị, không dùng quota ElevenLabs. Giọng AI lần đầu có thể cần chờ.</p></div>
     <details id="topic-prompts" class="topic-prompts"></details>
     <div class="topic-toolbar"><label for="topic-word-filter">Find a word in this topic<input id="topic-word-filter" type="search" autocomplete="off" placeholder="Search all 200 words…"></label></div><p id="topic-word-count" role="status"></p>
     <div id="topic-words" class="topic-word-list"></div>
@@ -289,6 +290,8 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
 <script src="/assets/quiz-sounds.js"></script>
 <script src="/assets/quiz-translation.js"></script>
 <script src="/assets/pronunciation.js"></script>
+<script src="/assets/device-speech.js"></script>
+<script src="/assets/translation-warmup.js"></script>
 <script>
 // ===== CONFIG =====
 const API = ''; // '' = same server. Set e.g. 'https://yourdomain.com' if hosted separately.
@@ -382,7 +385,7 @@ async function loadVoices() {
   } finally {sel.removeAttribute('aria-busy');document.dispatchEvent?.(new CustomEvent('helen:voices'));}
 }
 $('#voice').addEventListener('change', () => {
-  selectedVoice = $('#voice').value; remember('helen-voice', selectedVoice); speakRequest++;audio?.pause();
+  selectedVoice = $('#voice').value; remember('helen-voice', selectedVoice); speakRequest++;audio?.pause();globalThis.HelenDeviceSpeech?.stop();
   $('#audio-status').hidden=true;$('#audio-status').replaceChildren();$('#audio-status').removeAttribute('aria-busy');
 });
 loadVoices();
@@ -452,12 +455,19 @@ let audio, audioURL, lastResult, speakRequest=0;
 let targetRequest = 0;
 async function speak(text, btn,options={}) {
   if(btn.getAttribute('aria-busy')==='true') return;
-  btn.setAttribute('title','AI pronunciation · elevenlabs.io');
+  const device=options.device===true;
+  btn.setAttribute('title',device?'English device voice':'AI pronunciation · elevenlabs.io');
   const original=btn.innerHTML, request=++speakRequest;
+  audio?.pause();globalThis.HelenDeviceSpeech?.stop();
   btn.setAttribute('aria-busy', 'true');
   btn.disabled=true;btn.innerHTML=HAMSTER;
   $('#audio-status').hidden=false;showLoading($('#audio-status'),'Preparing audio…');
   try {
+    if(device){
+      await globalThis.HelenDeviceSpeech.speak(text,{accent:options.accent || 'Ame'});
+      if(request===speakRequest)finishLoading($('#voice-status'),'Đang nghe giọng tiếng Anh trên thiết bị. Giọng ElevenLabs đã chọn vẫn được giữ.');
+      return;
+    }
     const voice=selectedVoice;
     let r=await globalThis.HelenOfflineAudio?.get(text,voice),cached=Boolean(r);
     if(!r){
@@ -474,7 +484,7 @@ async function speak(text, btn,options={}) {
     if(request===speakRequest)finishLoading($('#voice-status'),cached?'Đang nghe âm thanh đã lưu · elevenlabs.io.':'Đang nghe bằng giọng đã chọn · elevenlabs.io.');
   } catch (e) {
     const message=/^(?:Failed to fetch|fetch failed|Load failed|NetworkError)/i.test(e.message || '')?'Chưa kết nối được giọng đọc; âm thanh này chưa được lưu cho giọng đã chọn.':e.message || 'Selected voice is unavailable.';
-    if(request===speakRequest) finishLoading($('#voice-status'),`${message} Your selection has been kept.`);
+    if(request===speakRequest) finishLoading($('#voice-status'),device?message:`${message} Your selection has been kept.`);
   } finally {
     btn.removeAttribute('aria-busy');btn.disabled=false;btn.innerHTML=original;
     if(request===speakRequest) {$('#audio-status').hidden=true;$('#audio-status').replaceChildren();$('#audio-status').removeAttribute('aria-busy');}
@@ -483,27 +493,46 @@ async function speak(text, btn,options={}) {
 const translations=new Map(), translationJobs=new Map();
 try {
   const saved=JSON.parse(stored('helen-translations') || '[]');
-  if(Array.isArray(saved))saved.slice(-100).forEach(item=>{if(typeof item?.key==='string' && Number.isFinite(item.at) && Date.now()>=item.at && Array.isArray(item.values) && item.values.every(value=>typeof value==='string' && value.trim()))translations.set(item.key,item);});
+  if(Array.isArray(saved))saved.slice(-5000).forEach(item=>{
+    if(typeof item?.key!=='string' || !Number.isFinite(item.at) || Date.now()<item.at || !Array.isArray(item.values) || !item.values.every(value=>typeof value==='string' && value.trim()))return;
+    try {const parts=JSON.parse(item.key);if(!Array.isArray(parts[0]) || parts[0].length!==item.values.length)return;parts[0].forEach((text,i)=>{const key=JSON.stringify([[text],...parts.slice(1)]);translations.set(key,{key,at:item.at,values:[item.values[i]]});});}catch{}
+  });
 } catch {}
+function translationKey(texts,from,to,context={}) {return JSON.stringify([texts,from,to,context.kind==='headword'?'headword-v4':context.kind || '',context.definition || '',...(context.kind==='headword'?[context.senses || []]:[])]);}
+function rememberTranslations(){
+  while(translations.size>5000)translations.delete(translations.keys().next().value);
+  const items=[...translations.values()],kept=[];let bytes=2;
+  for(const item of items.reverse()){const length=JSON.stringify(item).length+1;if(bytes+length>1000000){translations.delete(item.key);continue;}kept.push(item);bytes+=length;}
+  remember('helen-translations',JSON.stringify(kept.reverse()));
+}
 async function tr(texts, from, to, context = {}) {
+  if(from===to)return texts.slice();
   if(context.kind==='headword' && from==='en' && to==='vi' && texts.length===1 && lastResult?.offlineGloss && lastResult.word.toLowerCase()===String(texts[0]).toLowerCase())return [lastResult.offlineGloss];
-  const key=JSON.stringify([texts,from,to,context.kind==='headword'?'headword-v4':context.kind || '',context.definition || '',...(context.kind==='headword'?[context.senses || []]:[])]), saved=translations.get(key) || (offline() && context.kind==='headword'?(translations.get(JSON.stringify([texts,from,to,'headword-v3',context.definition || ''])) || translations.get(JSON.stringify([texts,from,to,'headword',context.definition || '']))):undefined) || (offline() && context.kind==='definition'?translations.get(JSON.stringify([texts,from,to,'',''])):undefined);
-  const savedValues=saved?.values.length===texts.length?saved.values:null;
-  if(savedValues && (Date.now()-saved.at<86400000 || offline()))return savedValues.slice();
+  const keys=texts.map(text=>translationKey([text],from,to,context));
+  const results=keys.map((key,i)=>{
+    const saved=translations.get(key) || (offline() && context.kind==='headword'?(translations.get(JSON.stringify([[texts[i]],from,to,'headword-v3',context.definition || ''])) || translations.get(JSON.stringify([[texts[i]],from,to,'headword',context.definition || '']))):undefined) || (offline() && context.kind==='definition'?translations.get(JSON.stringify([[texts[i]],from,to,'',''])):undefined);
+    // The content and sense are part of the key. A valid translation need not
+    // become a network request again every day, even while online.
+    if(saved?.values.length===1){translations.delete(key);translations.set(key,{...saved,key});return saved.values[0];}
+    return translationJobs.get(key);
+  });
+  const missing=[...new Set(keys.filter((key,i)=>results[i]===undefined))];
+  if(!missing.length)return Promise.all(results);
   if(offline())throw new Error('Bản dịch này chưa được lưu. Kết nối mạng để tải.');
-  if(translationJobs.has(key))return translationJobs.get(key);
+  const needed=missing.map(key=>texts[keys.indexOf(key)]);
   const job=(async()=>{
     try {
-      const r = await apiFetch(`${API}/api/translate`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({texts, from, to, ...context})});
+      const r = await apiFetch(`${API}/api/translate`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({texts:needed, from, to, ...context,partial:true})});
       const data=await r.json().catch(()=>({}));
       if(!r.ok)throw Object.assign(new Error(data.error || 'Chưa dịch được. Bấm mắt để thử lại.'),{code:data.code});
       const values=data.translations;
-      if(!Array.isArray(values) || values.length!==texts.length || !values.every(value=>typeof value==='string' && value.trim()))throw new Error('Chưa nhận được bản dịch. Hãy thử lại.');
-      translations.set(key,{key,at:Date.now(),values});if(translations.size>100)translations.delete(translations.keys().next().value);
-      remember('helen-translations',JSON.stringify([...translations.values()]));return values.slice();
-    } catch(error) {if(savedValues)return savedValues.slice();throw error;}
+      if(!Array.isArray(values) || values.length!==needed.length)throw new Error('Chưa nhận được bản dịch. Hãy thử lại.');
+      const results=values.map((value,i)=>typeof value==='string' && value.trim()?{value}:{error:data.errors?.[i]?.error || 'Chưa nhận được bản dịch. Hãy thử lại.',code:data.errors?.[i]?.code});
+      missing.forEach((key,i)=>{if(results[i].value)translations.set(key,{key,at:Date.now(),values:[results[i].value]});});rememberTranslations();return results;
+    } finally {missing.forEach(key=>translationJobs.delete(key));}
   })();
-  translationJobs.set(key,job);try{return await job;}finally{translationJobs.delete(key);}
+  missing.forEach((key,i)=>{const single=job.then(values=>{if(values[i].error)throw Object.assign(Error(values[i].error),{code:values[i].code});return values[i].value;});single.catch(()=>{});translationJobs.set(key,single);});
+  return Promise.all(keys.map((key,i)=>results[i]===undefined?translationJobs.get(key):results[i]));
 }
 function msg(t, err, variant = '', loading=false) { $('#out').innerHTML = `<div class="status ${err?'error':variant}" role="${err?'alert':'status'}">${loading?loadingHTML(t,'default'):esc(t)}</div>`; }
 
@@ -629,7 +658,7 @@ function setupSpeechSearch() {
     const session={abort:()=>capture.cancel(),finishListening:()=>capture.stop()};
     speech=session;speechCanceled=false;speechActive=true;
     button.setAttribute('aria-pressed','true');button.setAttribute('aria-label','Dừng micro');button.title='Dừng micro';
-    audio?.pause();showLoading(status,'Đang mở micro…');
+    audio?.pause();globalThis.HelenDeviceSpeech?.stop();showLoading(status,'Đang mở micro…');
     const fail=error=>{
       if(speech!==session || speechCanceled) return;
       resetMic();speech=null;finishLoading(status,error.name==='AbortError'?'Đã dừng micro.':error.message || 'Chưa nhận diện được. Bấm micro để thử lại.');
@@ -687,7 +716,7 @@ function setupSpeechSearch() {
       clearTimeout(speechTimer);speechTimer=setTimeout(expire,700);stop();
     };
     button.setAttribute('aria-pressed','true'); button.setAttribute('aria-label','Dừng micro'); button.title='Dừng micro';
-    audio?.pause();showLoading(status,'Đang mở micro…');
+    audio?.pause();globalThis.HelenDeviceSpeech?.stop();showLoading(status,'Đang mở micro…');
     // Some phones never fire onstart/onend after a permission or service failure.
     speechTimer=setTimeout(expire,8000);
     current.onstart=()=>{if(isCurrent()) {clearTimeout(speechTimer);speechTimer=setTimeout(expire,8000);showLoading(status,'Đang nghe… Nói rõ từ, bấm micro để dừng.');}};
@@ -906,6 +935,8 @@ function render(d, scroll = true) {
         row.querySelector('.definition-say').onclick = ev => speak(s.definition, ev.currentTarget);
         if (examples.length) row.querySelectorAll('.ex .example-say').forEach((button, i) => { button.onclick = ev => speak(examples[i], ev.currentTarget); });
         const eye = row.querySelector('.eye'), box = row.querySelector('.tr');
+        const definitionParts=globalThis.HelenQuizTranslation?.chunks(s.definition) || [s.definition];
+        globalThis.HelenTranslationWarmup?.observe(eye,definitionParts,{kind:'definition'});
         let lang = null, translating=false;
         eye.onclick = async () => {
           if(translating) return;
@@ -914,7 +945,7 @@ function render(d, scroll = true) {
           const to = $('#target').value;
           if (lang !== to) {
             translating=true;showLoading(box,'Translating…');box.hidden=false;eye.setAttribute('aria-busy','true');eye.setAttribute('data-target',to);eye.disabled=true;eye.innerHTML=HAMSTER;
-            try {const translated=(await tr([s.definition],'en',to,{kind:'definition'}))[0];if($('#target').value!==to){box.hidden=true;return;}finishLoading(box,translated);lang=to;}
+            try {const translated=(await tr(definitionParts,'en',to,{kind:'definition'})).join(' ');if($('#target').value!==to){box.hidden=true;return;}finishLoading(box,translated);lang=to;}
             catch(error) {if($('#target').value!==to){box.hidden=true;return;}finishLoading(box,shortError(error,'Chưa dịch được câu này. Bấm mắt để thử lại.'));return;}
             finally {translating=false;eye.disabled=false;eye.removeAttribute('aria-busy');eye.textContent='👁';box.removeAttribute('aria-busy');}
           }
@@ -1047,6 +1078,7 @@ $('#target').addEventListener('change', () => {
   document.querySelectorAll('.eye').forEach(b => { b.setAttribute('aria-pressed', 'false'); b.setAttribute('aria-label', 'Show translation'); b.textContent = '👁'; });
   updateWordTranslation();
   aiPanels.forEach(panel=>panel.draw());
+  globalThis.HelenTranslationWarmup?.refresh();
 });
 // Restore the saved lookup only when Dictionary is visible.
 function restoreDictionary(){if(!lastResult && !searchPending && $('#q').value.trim())searchWord({scroll:false,recordHistory:false});}

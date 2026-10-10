@@ -69,6 +69,34 @@ test('saved translations survive reload, separate languages and stay usable offl
   assert.equal(reloaded.requests.filter(request=>request.url.includes('/api/translate')).length,0);
   await assert.rejects(vm.runInContext("tr(['hello'],'en','ja')",reloaded.context),/offline/);
 });
+test('prepared batches share their individual translations with a click, reload and older online cache',async()=>{
+  let finish,calls=0;
+  const p=page({},null,{},(url,options)=>url.includes('/api/translate')?(calls++,new Promise(resolve=>finish=resolve)):undefined);
+  const preparing=vm.runInContext("tr(['Money lent temporarily.','A male sibling.'],'en','vi',{kind:'definition'})",p.context);
+  const clicked=vm.runInContext("tr(['Money lent temporarily.'],'en','vi',{kind:'definition'})",p.context);
+  finish({ok:true,json:async()=>({translations:['Số tiền được cho vay tạm thời.','Anh hoặc em trai.']})});
+  assert.equal((await clicked)[0],'Số tiền được cho vay tạm thời.');assert.equal((await preparing).length,2);assert.equal(calls,1);
+  const old=JSON.parse(p.saved['helen-translations']);old.forEach(item=>item.at-=172800000);p.saved['helen-translations']=JSON.stringify(old);
+  const reload=page(p.saved,null,{},url=>url.includes('/api/translate')?Promise.reject(Error('must not fetch')):undefined);
+  const start=performance.now();assert.equal((await vm.runInContext("tr(['A male sibling.'],'en','vi',{kind:'definition'})",reload.context))[0],'Anh hoặc em trai.');assert.ok(performance.now()-start<1000);
+  assert.equal(reload.requests.filter(r=>r.url.includes('/api/translate')).length,0);
+});
+test('a partly prepared translation batch requests only missing content and respects meaning contexts',async()=>{
+  const bodies=[],p=page({},null,{},(url,options)=>{if(!url.includes('/api/translate'))return;const body=JSON.parse(options.body);bodies.push(body);return {ok:true,json:async()=>({translations:body.texts.map(text=>`Dịch: ${text}`)})};});
+  await vm.runInContext("tr(['a bank account'],'en','vi',{kind:'definition'})",p.context);
+  await vm.runInContext("tr(['a bank account','a river bank'],'en','vi',{kind:'definition'})",p.context);
+  assert.deepEqual(bodies.map(body=>body.texts),[['a bank account'],['a river bank']]);
+  await vm.runInContext("tr(['a bank account'],'en','fr',{kind:'definition'})",p.context);assert.equal(bodies[2].to,'fr');
+  await vm.runInContext("tr(['a bank account'],'en','vi',{kind:'headword',definition:'a financial service'})",p.context);assert.equal(bodies[3].kind,'headword');
+});
+test('one failed prepared translation does not discard or delay cached healthy definitions',async()=>{
+  let finish,calls=0;const p=page({},null,{},url=>url.includes('/api/translate')?(calls++,new Promise(resolve=>finish=resolve)):undefined);
+  const preparing=vm.runInContext("tr(['healthy definition','failed definition'],'en','vi',{kind:'definition'})",p.context);const rejected=assert.rejects(preparing,/hạn mức/);
+  const click=vm.runInContext("tr(['healthy definition'],'en','vi',{kind:'definition'})",p.context);
+  finish({ok:true,json:async()=>({translations:['Định nghĩa chính xác.',null],errors:[null,{error:'Dịch nghĩa tạm hết hạn mức.',code:'TRANSLATION_QUOTA'}]})});
+  await rejected;assert.equal((await click)[0],'Định nghĩa chính xác.');assert.equal(calls,1);
+  assert.equal((await vm.runInContext("tr(['healthy definition'],'en','vi',{kind:'definition'})",p.context))[0],'Định nghĩa chính xác.');assert.equal(calls,1);assert.ok(!p.saved['helen-translations'].includes('failed definition'));
+});
 test('online semantic glosses replace old literal headword cache while offline access is retained',async()=>{
   const oldKey=JSON.stringify([['name after'],'en','vi','headword','to name in honour of']);
   const saved={'helen-translations':JSON.stringify([{key:oldKey,at:Date.now(),values:['tên sau']}])};

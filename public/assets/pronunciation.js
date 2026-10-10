@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const grants=new Map(),pending=new Map();let volatileDevice;
+  const grants=new Map(),pending=new Map(),wordPreparations=new Map();let volatileDevice;
   function device(){try{const old=localStorage.getItem('helen-history-device');if(/^[a-f0-9]{64}$/.test(old || ''))return old;}catch{}
     volatileDevice ||= Array.from(crypto.getRandomValues(new Uint8Array(32)),value=>value.toString(16).padStart(2,'0')).join('');
     try{localStorage.setItem('helen-history-device',volatileDevice);}catch{}return volatileDevice;
@@ -24,5 +24,12 @@
     if(!renew && response.status===403 && (await response.clone().json().catch(()=>({}))).code==='PRONUNCIATION_REQUIRED')return request(text,voice,{word,signal,api,context,renew:true});
     return response;
   }
-  window.HelenPronunciation={register,request};
+  async function prepareWords(words,{api=''}={}){
+    const needed=[...new Set(words)].filter(word=>{const grant=grants.get(word);return !grant || Number(grant.proof.split('.')[0])*1000<Date.now()+60000;}).slice(0,20);
+    if(!needed.length)return;
+    const key=JSON.stringify(needed);if(wordPreparations.has(key))return wordPreparations.get(key);
+    const task=(async()=>{const response=await apiFetch(`${api}/api/pronunciation`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({words:needed})});if(!response.ok)return;register(await response.json());})();
+    wordPreparations.set(key,task);try{await task;}finally{wordPreparations.delete(key);}
+  }
+  window.HelenPronunciation={register,request,prepareWords};
 })();

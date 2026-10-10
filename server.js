@@ -415,7 +415,7 @@ app.post('/api/translate', async (req, res) => {
     const { texts = [], from = 'en', to = 'vi', kind, definition, senses } = req.body;
     const deadline=Date.now()+6500;
     if (!Array.isArray(texts) || texts.length > 40 || !texts.every(text=>typeof text==='string' && text.trim() && text.length<=450)) return res.status(400).json({ error: 'Nội dung dịch không hợp lệ.', code:'TRANSLATION_INVALID' });
-    res.json({ translations: await Promise.all(texts.map(async t => {
+    const tasks=texts.map(async t => {
       const dictionarySenses=Array.isArray(senses)?senses:kind==='headword' && from==='en'?(cache.get(`d|${t.toLowerCase().trim()}`) || []).flatMap(entry=>(entry.meanings || []).flatMap(meaning=>(meaning.senses || []).slice(0,3).map(sense=>({pos:meaning.pos,definition:sense.definition})))):undefined;
       try { return await translations.translate(t,from,to,{deadline,kind,definition:typeof definition==='string'?definition.slice(0,450):undefined,senses:dictionarySenses}); }
       catch(error) {
@@ -423,7 +423,12 @@ app.post('/api/translate', async (req, res) => {
         if(error.code==='TRANSLATION_UNAVAILABLE' && kind==='headword' && from==='en' && to==='vi' && typeof definition==='string' && definition.trim()) return `Giải nghĩa: ${await translate(definition.slice(0,450),from,to,deadline)}`;
         throw error;
       }
-    })) });
+    });
+    if(req.body.partial===true){
+      const results=await Promise.allSettled(tasks);
+      return res.json({translations:results.map(item=>item.status==='fulfilled'?item.value:null),errors:results.map(item=>item.status==='rejected'?{error:item.reason.code?item.reason.message:'Chưa kết nối được dịch nghĩa. Hãy thử lại.',code:item.reason.code || 'TRANSLATION_UNAVAILABLE'}:null)});
+    }
+    res.json({translations:await Promise.all(tasks)});
   } catch (e) { res.status(e.status||503).json({ error: e.code ? e.message : 'Chưa kết nối được dịch nghĩa. Hãy thử lại.', code:e.code || 'TRANSLATION_UNAVAILABLE' }); }
 });
 
@@ -437,6 +442,11 @@ app.get('/api/voices', async (req, res) => {
 });
 
 app.post('/api/pronunciation',async(req,res)=>{
+  if(Array.isArray(req.body.words)){
+    const words=req.body.words;
+    if(!words.length || words.length>20 || !words.every(word=>typeof word==='string' && word.length<=100 && topicEntry(word)))return res.status(400).json({error:'Chỉ chuẩn bị tối đa 20 từ đã có trong Topics.'});
+    return res.set('Cache-Control','no-store').json({pronunciation:[...new Set(words)].map(word=>({text:word,word,proof:pronunciation.issue(word)}))});
+  }
   const text=typeof req.body.text==='string'?req.body.text.trim():'',word=typeof req.body.word==='string'?req.body.word.trim().toLowerCase():'';
   if(!text || text.length>2000 || !word || word.length>100)return res.status(400).json({error:'Hãy tra từ trước khi nghe.'});
   const topic=topicEntry(word);
@@ -484,6 +494,6 @@ const server = app.listen(PORT, () => {
   // Read the spelling index during startup so the first typo does not pay its loading cost.
   warmSpellingIndex().catch(error=>console.warn(`Spelling index unavailable: ${error.code || error.name}`));
   void translations.prepare();
-  void database.initialize().then(ok => {if(database.status().configured) console.log(`Database: ${ok ? 'connected' : 'unavailable — local history and RAM cache remain active'}`);});
+  void database.initialize().then(ok => {if(database.status().configured) console.log(`Database: ${ok ? 'connected' : 'unavailable — local history and RAM cache remain active'}`);if(ok)void translations.prepareCache().catch(()=>{});});
 });
 for (const signal of ['SIGINT','SIGTERM']) process.once(signal,() => {server.close();void database.close().finally(() => process.exit(0));});

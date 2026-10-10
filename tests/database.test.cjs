@@ -22,6 +22,10 @@ test('slow cache read does not disable subsequent durable writes',async()=>{
     assert.equal(db.status().persistence.vocabularyWrites,1);
   } finally {await db.close();}
 });
+test('translation cache startup scan is bounded and skips malformed payloads without reading audio namespaces',async()=>{
+  const queries=[],hash='a'.repeat(64);const db=createDatabase({MYSQL_HOST:'127.0.0.1',MYSQL_USER:'test',MYSQL_DATABASE:'test',MYSQL_SSL:'false'},{createPool:()=>({end:async()=>{},getConnection:async()=>({release(){},destroy(){},execute:async(sql)=>{if(!sql.startsWith('SELECT namespace'))return [[]];queries.push(sql);return [[{namespace:'translation-v2',cache_key:hash,payload:JSON.stringify('Khoản tiền cho vay.')},{namespace:'translation-v2',cache_key:hash,payload:'invalid json'},{namespace:'translation-v2',cache_key:hash,payload:'null'}]];}})})});
+  try{assert.equal(await db.initialize(),true);assert.deepEqual(await db.translationCache(20000),[{namespace:'translation-v2',key:hash,value:'Khoản tiền cho vay.'}]);assert.match(queries[0],/LIMIT 10000$/);assert.match(queries[0],/namespace IN \('translation-v2','translation-semantic-v4'\)/);assert.equal(db.status().connected,true);}finally{await db.close();}
+});
 test('completed RAM entries are persisted and successful writes are deduplicated',async()=>{
   const {createDictionaryPersistence}=require('../lib/persist-dictionary');
   const writes=[];

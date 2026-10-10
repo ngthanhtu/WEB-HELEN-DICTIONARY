@@ -104,6 +104,15 @@ test('serves an installable manifest, icons and a service worker with root scope
 test('uses each requested language and isolates cached translations', async () => {
   for (const to of ['fr', 'ja', 'es', 'zh-CN']) assert.deepEqual((await (await translate('hello', to)).json()).translations, [`${to}:hello`]);
 });
+test('topic pronunciation preparation accepts at most twenty published headwords and never arbitrary text',async()=>{
+  await ready;const prepare=words=>fetch(`${base}/api/pronunciation`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({words})});
+  const good=await prepare(['education','learning']);assert.equal(good.status,200);const data=await good.json();assert.equal(data.pronunciation.length,2);assert.ok(data.pronunciation.every(item=>item.proof && item.text===item.word));
+  for(const words of [[],Array(21).fill('education'),['arbitrary unsupported input'],[null]])assert.equal((await prepare(words)).status,400);
+});
+test('partial preparation returns healthy translations even if another provider request fails',async()=>{
+  await ready;const response=await fetch(`${base}/api/translate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({texts:['hello','quota-every-provider'],from:'en',to:'fr',partial:true})});
+  assert.equal(response.status,200);const data=await response.json();assert.equal(data.translations[0],'fr:hello');assert.equal(data.errors[0],null);assert.equal(data.translations[1],null);assert.ok(data.errors[1].code.startsWith('TRANSLATION_'));
+});
 test('rejects provider errors delivered with HTTP 200 and does not cache them', async () => {
   assert.equal((await translate('quota', 'fr')).status, 429);
   assert.equal((await translate('quota', 'fr')).status, 200);

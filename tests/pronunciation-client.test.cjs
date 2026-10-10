@@ -7,6 +7,12 @@ test('speech grants survive lesson restoration without another authorization cal
   api.register({word:'loan',pronunciation:[{text:'We need a loan.',proof:proof(),word:'loan'}]});
   await api.request('We need a loan.','Sarah',{word:'loan'});assert.equal(requests.length,1);assert.match(requests[0].url,/voice=Sarah/);assert.match(requests[0].options.headers['X-Helen-Device'],/^[a-f0-9]{64}$/);
 });
+test('preparing published topic grants batches words without generating audio and a click reuses the proof',async()=>{
+  const calls=[],api=fixture(async(url,options)=>{calls.push(url);if(url.includes('/api/pronunciation')){const body=JSON.parse(options.body);return Response.json({pronunciation:body.words.map(word=>({text:word,word,proof:proof()}))});}return new Response('audio');});
+  await api.prepareWords(['education','learning','education']);assert.equal(calls.length,1);assert.ok(!calls[0].includes('/api/tts'));
+  await api.prepareWords(['education']);assert.equal(calls.length,1);
+  await api.request('education','Sarah',{word:'education'});assert.equal(calls.length,2);assert.match(calls[1],/voice=Sarah/);
+});
 test('rotated-key proof retries authorization once, preserves voice and sends exact lesson sense',async()=>{
   let attempts=0;const requests=[],api=fixture(async(url,options)=>{requests.push({url,options});
     if(url.includes('/api/pronunciation'))return Response.json({word:'loan',text:'We need a loan.',proof:proof()});

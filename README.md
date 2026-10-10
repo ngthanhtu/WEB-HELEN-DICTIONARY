@@ -267,4 +267,14 @@ Mở **Topics** (`/topics`) → chọn chủ đề → chọn một nhóm 20 t�
 
 Có thể luyện ngay mà không tự thêm toàn bộ thư viện vào Favorites. Lưu từng từ hoặc nhóm 20 từ để ôn theo lịch; từ đã lưu giữ nguyên các nghĩa và lịch ôn. Kết quả hoàn thành nhóm được lưu trên thiết bị và đi cùng JSON backup. **Save topic offline** tải 200 từ của chủ đề vào cache riêng, giữ qua cập nhật app; dịch mới và giọng AI cần mạng.
 
+### Giọng nhanh và bản dịch đã chuẩn bị
+
+**Topics → Topic audio → Fast device voice** là chế độ mặc định trên trình duyệt hỗ trợ Speech Synthesis. Lệnh đọc chạy ngay trong thao tác bấm để tương thích Safari; ưu tiên giọng tiếng Anh có sẵn trên thiết bị, không gửi nội dung tới Render hay dùng quota ElevenLabs. Quiz mở từ Topics dùng cùng chế độ này. Chọn **Selected ElevenLabs voice** để nghe đúng giọng AI trong Preferences; lựa chọn AI vẫn được giữ. Giọng máy cần trình duyệt và giọng tiếng Anh được hỗ trợ; chỉ giọng cài trên thiết bị mới bảo đảm không cần mạng. Chưa kiểm thử trên iPhone vật lý trong môi trường này.
+
+Mắt dịch nghĩa ở Dictionary và Topics chuẩn bị các định nghĩa đang hiện trên màn hình; Study chuẩn bị câu hiện tại và kế tiếp. Các nhóm tối đa 4 nội dung, tối đa 2 nhóm đang chạy, dùng chung cache theo từng nội dung/ngôn ngữ/mục đích/nghĩa. Không dịch trước cả thư viện 4.000 từ và không tạo giọng AI tự động. Bản dịch hợp lệ giữ qua reload, ngoại tuyến và qua ngày, giới hạn 5.000 mục hoặc 1 triệu ký tự trên thiết bị. Dữ liệu cũ theo nhóm được chuyển sang từng mục; cache từ, giọng, bộ từ và lịch ôn không bị xóa. Nội dung dài được chia đủ phần, không cắt nghĩa.
+
+Server chuẩn bị lại tối đa 5.000 bản dịch đã lưu trong TiDB khi kết nối database lúc khởi động, tránh đọc riêng từng mục. Không đổi schema và không cần thêm API key. Chế độ giọng AI chuẩn bị quyền đọc 20 đầu mục Topics trong một request; âm thanh vẫn lấy từ cache đúng giọng hoặc tạo khi người dùng bấm, giữ giới hạn quota.
+
+Mục tiêu dưới 1 giây áp dụng cho giọng máy đã sẵn sàng, bản dịch đã chuẩn bị và âm thanh AI đã cache. **Lượt dịch hoặc tạo giọng AI mới hoàn toàn vẫn phụ thuộc nguồn bên ngoài và mạng; không có cam kết dưới 1 giây.** Kiểm thử trình duyệt desktop và kích thước iPhone với nguồn dịch/giọng mô phỏng chậm 1,2 giây cho thấy thao tác dùng cache/giọng máy khoảng 33–100 ms; kết quả này kiểm tra luồng UI, không đo độ trễ giọng thực trên điện thoại.
+
 Chỉ tải dữ liệu chủ đề đang mở, không gọi AI khi tạo quiz. Kiểm tra và tái tạo bằng `npm run build:topics` / `npm run audit:topics`. Xem [quy trình biên soạn và kiểm tra](docs/topics.md).

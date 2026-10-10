@@ -12,6 +12,7 @@
   function favorites(){try{const values=JSON.parse(storage.getItem('helen-favorites')||'[]');return Array.isArray(values)?[...new Set(values.filter(v=>typeof v==='string').map(core.answer))].slice(0,500):[];}catch{return [];}}
   const active=()=>{const selected=new Set(favorites());return cards.filter(item=>selected.has(item.word));};
   const usingTopic=()=>Boolean(topicSource && $('#study-scope').value==='topic');
+  const audioOptions=word=>({word,device:usingTopic() && document.querySelector('#topic-audio-mode')?.value==='device'});
   function scoped(){if(usingTopic())return topicSource.cards;const deck=learning.decks.find(item=>item.id===$('#study-scope').value);return active().filter(item=>!deck || deck.words.includes(item.word));}
   function saveLibrary(){if(!library.write(storage,learning)){volatile=true;$('#study-status').textContent='Bộ nhớ đầy. Thay đổi bộ từ và kết quả chỉ giữ trong phiên này.';}}
   function save(){volatile=!core.write(storage,cards);if(volatile)$('#study-status').textContent='Bộ nhớ thiết bị đầy. Tiến độ chỉ giữ trong phiên này; hãy giải phóng dung lượng.';}
@@ -89,9 +90,10 @@
           session.index++;session.answered=false;showCard();refresh();
         });panel.querySelector('button')?.focus({preventScroll:true});
       };
-      $('.study-audio').onclick=event=>window.speak?.(item.word,event.currentTarget,{word:item.word});
+      $('.study-audio').onclick=event=>window.speak?.(item.word,event.currentTarget,audioOptions(item.word));
     }else{
       const q=session.questions[session.index];
+      for(const question of [q,session.questions[session.index+1]].filter(Boolean))for(const item of window.HelenQuizTranslation.items(question))window.HelenTranslationWarmup?.prepare(window.HelenQuizTranslation.chunks(item.text),item.kind==='definition'?{kind:'definition'}:{});
       $('#study-stage').innerHTML=`<p class="study-eyebrow">Quiz · ${session.index+1}/${session.items.length}</p><p>${q.type==='cloze'?'Điền từ đã lưu vào chỗ trống.':'Từ đã lưu nào phù hợp với nghĩa này?'}</p><span class="study-pos">${esc(q.pos)}</span><h3 class="study-prompt">${esc(q.prompt)}</h3>${q.type==='cloze'?`<p class="muted">${esc(q.definition)}</p>`:q.context?`<p class="quiz-context">${esc(q.context)}</p>`:''}${q.type==='choice'?`<div class="quiz-options">${q.choices.map(word=>`<button class="word-link" data-choice="${esc(word)}" type="button">${esc(word)}</button>`).join('')}</div>`:'<form id="quiz-form"><label for="quiz-answer">Your answer</label><input id="quiz-answer" autocomplete="off" autocapitalize="none" spellcheck="false" required maxlength="100"><button class="word-link" type="submit">Check answer</button></form>'}<div id="quiz-feedback" role="status"></div>`;
       const respond=value=>{
         if(session?.answered)return;session.answered=true;
@@ -116,7 +118,7 @@
     const tools=document.createElement('div');tools.className='feedback-tools';
     tools.innerHTML=`<button class="say" type="button" data-hear="word" aria-label="Hear ${esc(q.word)}">🔊</button>${q.original?'<button class="word-link" type="button" data-hear="sentence">Hear example</button>':''}<button class="word-link" type="button" data-open-word>View dictionary</button><button class="word-link" type="button" data-difficult>Mark for review</button>`;
     panel.append(tools);
-    tools.querySelectorAll('[data-hear]').forEach(button=>button.onclick=()=>window.speak?.(button.dataset.hear==='word'?q.word:q.original,button,{word:q.word}));
+    tools.querySelectorAll('[data-hear]').forEach(button=>button.onclick=()=>window.speak?.(button.dataset.hear==='word'?q.word:q.original,button,audioOptions(q.word)));
     tools.querySelector('[data-open-word]').onclick=()=>{endSession();$('#study-stage').hidden=true;$('#end-study').hidden=true;refresh();window.HelenDictionary?.lookup(q.word);};
     tools.querySelector('[data-difficult]').onclick=event=>{
       if(!favorites().includes(q.word)){
@@ -130,6 +132,7 @@
     };
   }
   function showMatching(){
+    for(const q of session.questions)window.HelenTranslationWarmup?.prepare(window.HelenQuizTranslation.chunks(q.definition),{kind:'definition'});
     const order=[...session.questions];for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}
     if(order.every((item,index)=>item.word===session.questions[index].word))order.reverse();
     $('#study-stage').hidden=false;

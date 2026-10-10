@@ -25,6 +25,17 @@ test('premium retains reward, extra payment, insurance and quality senses withou
   const gloss=await service.translate('premium','en','vi',{kind:'headword',definition:'a payment for insurance'});
   for(const meaning of ['phần thưởng','khoản trả thêm','phí bảo hiểm','cao cấp'])assert.ok(gloss.includes(meaning));
 });
+test('an exact cached definition remains instant after a day, without a new provider or database request',async()=>{
+  let now=1000,calls=0;const service=createTranslationService({now:()=>now,fetchImpl:async()=>{calls++;return Response.json({responseStatus:200,responseData:{translatedText:'một khoản tiền được cho vay tạm thời'}});}});
+  const options={kind:'definition'};await service.translate('money lent temporarily','en','vi',options);now+=172800000;
+  const start=performance.now();assert.equal(await service.translate('money lent temporarily','en','vi',options),'một khoản tiền được cho vay tạm thời');assert.equal(calls,1);assert.ok(performance.now()-start<1000);
+});
+test('startup restores persistent translations once and validates purpose before serving warmed data',async()=>{
+  const text='money lent temporarily',key=JSON.stringify([text,'en','vi','dictionaryDefinition']),hash=require('node:crypto').createHash('sha256').update(key).digest('hex');let reads=0;
+  const service=createTranslationService({store:{translationCache:async()=>[{namespace:'translation-v2',key:hash,value:'số tiền được cho vay tạm thời'},{namespace:'tts-v1',key:hash,value:'wrong namespace'}],get:async()=>{reads++;return null;},set:async()=>true},fetchImpl:async()=>Response.json({responseStatus:200,responseData:{translatedText:'un montant prêté temporairement'}})});
+  await service.prepareCache();assert.equal(await service.translate(text,'en','vi',{kind:'definition'}),'số tiền được cho vay tạm thời');assert.equal(reads,0);
+  assert.equal(await service.translate(text,'en','fr',{kind:'definition'}),'un montant prêté temporairement');assert.equal(reads,1);
+});
 test('startup preparation resolves the Lite model and applies its fast generation settings',async()=>{
   let listed=0;
   const service=createTranslationService({apiKey:'test-only',fetchImpl:async(url,request)=>{
