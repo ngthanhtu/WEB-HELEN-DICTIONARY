@@ -53,3 +53,22 @@ test('an unavailable explicit device voice or absent Audio API fails clearly wit
 test('quota denial reports the backend explanation without playback, fallback or repeated attempts',async()=>{
   let requests=0;const f=fixture({pronunciation:{request:async()=>{requests++;return new Response(JSON.stringify({error:'Đã hết hạn mức giọng đọc hôm nay.'}),{status:429,headers:{'Content-Type':'application/json'}});}}});const result=await f.play();assert.equal(result.state,'error');assert.match(result.message,/hạn mức/);assert.equal(requests,1);assert.equal(f.audio.calls.filter(call=>call==='play').length,0);
 });
+
+test('opted-in quota fallback reads the same reply with the device voice, announces the switch, and makes no second provider request',async()=>{
+ for(const code of ['VOICE_QUOTA','USAGE_LIMIT']){
+  let utterance,switched=0,calls=0;
+  const f=fixture({pronunciation:{request:async()=>{calls++;return Response.json({error:'Quota used',code},{status:429});}},synthesis:{getVoices:()=>[{voiceURI:'Samantha',name:'Samantha',lang:'en-US',localService:true}],speak:value=>utterance=value,resume(){},cancel(){}},Utterance:class{constructor(text){this.text=text;}}});
+  const job=f.play('The same reply.',{fallbackOnQuota:true,onQuota:()=>switched++});await tick();
+  assert.equal(switched,1);assert.equal(calls,1);assert.equal(utterance.text,'The same reply.');assert.equal(utterance.voice.name,'Samantha');assert.match(f.states.at(-1).message,/hết quota/);
+  utterance.onstart();assert.equal(f.states.at(-1).method,'device');utterance.onend();assert.equal((await job).state,'idle');assert.equal(f.audio.calls.filter(call=>call==='play').length,0);
+ }
+});
+test('fallback never hides authentication, proof, unavailable voice, rate limit or general provider failures',async()=>{
+ for(const [status,code] of [[401,'VOICE_AUTH'],[403,'PRONUNCIATION_REQUIRED'],[403,'VOICE_ACCESS'],[429,undefined],[503,'SERVICE']]){
+  const f=fixture({pronunciation:{request:async()=>Response.json({error:'Failure',code},{status})},synthesis:{speak:()=>assert.fail('must not substitute a voice')},Utterance:class{}});
+  assert.equal((await f.play('Hello',{fallbackOnQuota:true,onQuota:()=>assert.fail('not a quota failure')})).state,'error');
+ }
+});
+test('cached selected-voice audio remains first choice with fallback enabled and no quota lookup',async()=>{
+ const f=fixture({offlineAudio:{get:async()=>sound()},synthesis:{speak:()=>assert.fail('cached voice must remain selected')},Utterance:class{}}),job=f.play('Cached',{fallbackOnQuota:true});await tick();assert.equal(f.requests.length,0);f.audio.onplaying();f.audio.onended();assert.equal((await job).state,'idle');
+});

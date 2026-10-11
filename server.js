@@ -54,7 +54,7 @@ const persistDictionary = require('./lib/persist-dictionary').createDictionaryPe
 const contexts=createContextService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,store:database,beforeGenerate});
 const translations=createTranslationService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,store:database,beforeGenerate});
 const speech=createSpeechService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,beforeGenerate});
-const practical=require('./lib/practical-ai').createPracticalService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,beforeGenerate});
+const practical=require('./lib/practical-ai').createPracticalService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,beforeGenerate:({stage,device})=>usage.reserve(stage==='transcribe'?'practical-speech':'practical',1,device)});
 const cache = new Map(); // successful results only
 const audioPending=new Map();
 const memo = async (k, fn) => {
@@ -118,11 +118,13 @@ app.post('/api/speech',async(req,res)=>{
   catch(error) {res.status(error.status || 503).json({error:error.message || 'Chưa nhận diện được. Hãy thử lại hoặc gõ từ.',code:error.code || 'SPEECH_SERVICE'});}
 });
 const buildVersion=process.env.RENDER_GIT_COMMIT?.replace(/[^a-zA-Z0-9]/g,'').slice(0,12) || 'mobile-v1';
-app.get('/api/practical/status',(req,res)=>res.json({configured:practical.configured,provider:'Gemini',pronunciation:require('./public/assets/practical-core').scenarios.map(item=>({text:item.opening,proof:pronunciation.issue(item.opening)}))}));
+app.get('/api/practical/status',(req,res)=>res.json({configured:practical.configured,provider:'Gemini',dailyReplyLimit:usage.limits.practicalDeviceDay,transcriptConfirmation:true,pronunciation:require('./public/assets/practical-core').scenarios.map(item=>({text:item.opening,proof:pronunciation.issue(item.opening)}))}));
 app.post('/api/practical',async(req,res)=>{
   try{
-    const value=await practical.reply(req.body);
-    res.json({...value,pronunciation:[value.reply,value.improved,value.phrase.text].map(text=>({text,proof:pronunciation.issue(text)}))});
+    const device=req.get('X-Helen-Device') || '';
+    if(process.env.NODE_ENV==='production' && !/^[a-f0-9]{64}$/.test(device))return res.status(400).json({error:'Tải lại trang để cập nhật luyện nói rồi thử lại.',code:'PRACTICAL_DEVICE'});
+    const value=await practical.reply(req.body,{device});
+    res.json(value.stage==='transcribe'?value:{...value,pronunciation:[value.reply,value.improved,value.phrase.text].map(text=>({text,proof:pronunciation.issue(text)}))});
   }catch(error){res.status(error.status || 503).json({error:error.code?error.message:'Chưa kết nối được AI. Hãy thử lại.',code:error.code || 'PRACTICAL_SERVICE'});}
 });
 const appPages={'/':'dictionary','/study':'study','/topics':'topics','/practical-ai':'practical','/words':'words','/history':'history','/offline':'offline'};
@@ -501,6 +503,8 @@ app.get('/api/tts', async (req, res) => {
       }, 15000);
       if (!r || !r.ok) {
         console.error(`TTS failed: voice=${voice} status=${r ? r.status : 'no response'}`);
+        const detail=await r?.json().catch(()=>({})),reason=detail?.detail?.status;
+        if(['quota_exceeded','insufficient_credits','insufficient_credit_balance'].includes(reason))throw Object.assign(new Error('Giọng ElevenLabs đã hết quota. Giọng máy vẫn dùng được.'),{status:429,code:'VOICE_QUOTA',upstreamStatus:r.status});
         const error = new Error(r ? `ElevenLabs rejected the selected voice (HTTP ${r.status}). Check key permissions, voice access and quota.` : 'Cannot connect to ElevenLabs.');
         error.upstreamStatus = r?.status;
         throw error;

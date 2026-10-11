@@ -41,10 +41,16 @@ global.fetch = async (input, opts = {}) => {
     if(!opts.body) return Response.json({models:[{name:'models/gemini-3.1-flash-lite',supportedGenerationMethods:['generateContent']},{name:'models/gemini-3-pro',supportedGenerationMethods:['generateContent']}]});
     const request=JSON.parse(opts.body), recording=request.contents?.[0]?.parts?.find(part=>part.inlineData)?.inlineData;
     let conversation;try{conversation=JSON.parse(request.contents?.[0]?.parts?.[0]?.text || '{}');}catch{}
+    if(conversation?.task==='faithful-practical-transcription'){
+      const marker=Buffer.from(recording.data,'base64').toString('utf8');
+      const transcript=marker.includes('SPEECH_SILENT')?'':marker.includes('SPEECH_UNCLEAR')?'I want [unclear], please.':'I has a coffee, please.';
+      return Response.json({candidates:[{content:{role:'model',parts:[{text:JSON.stringify({transcript,audibility:marker.includes('SPEECH_UNCLEAR')?'uncertain':'clear'})}]},finishReason:'STOP'}]});
+    }
     if(conversation?.partnerRole){
       const text=conversation.learnerSentence || 'Can I have an iced coffee, please?';
       if(text==='PRACTICAL_QUOTA')return Response.json({error:{code:429,message:'PRIVATE_PROVIDER_DETAILS',status:'RESOURCE_EXHAUSTED'}},{status:429});
-      return Response.json({candidates:[{content:{role:'model',parts:[{text:JSON.stringify({transcript:text,reply:'Of course! Would you like milk in your coffee?',translation:'Tất nhiên! Bạn muốn thêm sữa vào cà phê không?',improved:text,feedback:'Bạn đã gọi món lịch sự và rõ ràng.',phrase:{text:'Could I have…?',translation:'Tôi có thể gọi… không?'}})}]},finishReason:'STOP'}]});
+      const corrections=text.includes('I has a coffee')?[{original:'I has',replacement:'I have',reason:'Dùng have với chủ ngữ I.'}]:[];
+      return Response.json({candidates:[{content:{role:'model',parts:[{text:JSON.stringify({transcript:text,reply:'Of course! Would you like milk in your coffee?',translation:'Tất nhiên! Bạn muốn thêm sữa vào cà phê không?',improved:text.replace('I has a coffee','I have a coffee'),feedback:corrections.length?'Dùng have với chủ ngữ I.':'Bạn đã gọi món lịch sự và rõ ràng.',corrections,phrase:{text:'Could I have…?',translation:'Tôi có thể gọi… không?'}})}]},finishReason:'STOP'}]});
     }
     if(recording) {
       const marker=Buffer.from(recording.data,'base64').toString('utf8');
@@ -93,6 +99,8 @@ global.fetch = async (input, opts = {}) => {
       {name:'Australian voice',voice_id:'auVoice',labels:{accent:'Australian English'}}
     ]});
     const voice = url.pathname.split('/').pop();
+    if(voice==='quotaVoice')return Response.json({detail:{status:'quota_exceeded',message:'Private upstream details'}},{status:401});
+    if(voice==='invalidKeyVoice')return Response.json({detail:{status:'invalid_api_key',message:'Private key details'}},{status:401});
     const payload=JSON.parse(opts.body || '{}');if(payload.model_id!=='eleven_flash_v2_5')throw Error('Expected the fast TTS model');
     const text = payload.text;
     return new Response(text?.length > 200 ? text : voice, {status:voice === 'unavailable' ? 403 : 200});

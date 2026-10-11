@@ -8,7 +8,7 @@
   try{if(AudioCtor){audio=new AudioCtor();audio.preload='auto';audio.playsInline=true;audio.setAttribute?.('playsinline','');audio.setAttribute?.('webkit-playsinline','');}}catch{}
   function revoke(url){if(url)try{URL.revokeObjectURL(url);}catch{}}
   function releaseMedia(unload=true){if(!audio)return;audio.onplaying=audio.onended=audio.onerror=null;try{audio.pause();if(unload){audio.removeAttribute?.('src');audio.load?.();}}catch{}revoke(clipUrl);clipUrl=null;}
-  function notify(job,state,message){try{job.onState?.({state,text:job.text,voiceId:job.voiceId,message});}catch{}}
+  function notify(job,state,message){try{job.onState?.({state,text:job.text,voiceId:job.voiceId,method:job.method,message});}catch{}}
   function emit(job,state,message){if(!job.done && current===job)notify(job,state,message);}
   function settle(job,state,message,unload=true){if(job.done)return;job.done=true;clearTimeout(job.requestTimer);clearTimeout(job.startTimer);clearTimeout(job.endTimer);job.controller.abort();if(current===job){current=null;releaseMedia(unload);notify(job,state,message);}job.resolve({state,...(message?{message}:{})});}
   function cancel(unload){sequence++;const job=current;if(job){settle(job,'cancelled',undefined,unload);if(job.utterance)try{synthesis.cancel();}catch{}}else releaseMedia(unload);}
@@ -54,7 +54,7 @@
       if(!response){
         if(!pronunciation?.request)throw Error(messages.unsupported);
         response=await pronunciation.request(job.text,job.voiceId,{api,signal:job.controller.signal});if(job.done || current!==job)return;
-        if(!response?.ok){const failure=await response?.json?.().catch(()=>({}));throw Error(failure?.error || messages.failed);}
+        if(!response?.ok){const failure=await response?.json?.().catch(()=>({}));throw Object.assign(Error(failure?.error || messages.failed),{code:failure?.code,status:response?.status});}
         // Saving should never delay audible playback. Retain only this exact
         // voice/text response, using the existing bounded offline audio cache.
         try{Promise.resolve(offlineAudio?.save?.(job.text,job.voiceId,response.clone())).catch(()=>{});}catch{}
@@ -68,14 +68,21 @@
       job.startTimer=setTimeout(()=>settle(job,'error',messages.timeout),startTimeout);
       job.endTimer=setTimeout(()=>settle(job,'error',messages.timeout),playbackTimeout);
       try{await audio.play();}catch(error){if(job.done)return;settle(job,error?.name==='NotAllowedError'?'blocked':'error',error?.name==='NotAllowedError'?messages.blocked:messages.failed);}
-    }catch(error){if(!job.done && current===job)settle(job,'error',error?.message || messages.failed);}
+    }catch(error){
+      if(job.done || current!==job)return;
+      if(job.fallbackOnQuota && ['USAGE_LIMIT','VOICE_QUOTA'].includes(error?.code) && error.status===429){
+        clearTimeout(job.requestTimer);job.method='device';try{job.onQuota?.();}catch{}
+        emit(job,'loading','Giọng ElevenLabs hết quota. Đang dùng giọng máy.');device(job,job.deviceVoiceId);return;
+      }
+      settle(job,'error',error?.message || messages.failed);
+    }
   }
-  function play(text,{voiceId='',method='elevenlabs',deviceVoiceId='',onState}={}){
+  function play(text,{voiceId='',method='elevenlabs',deviceVoiceId='',fallbackOnQuota=false,onQuota,onState}={}){
     // Reuse the gesture-unlocked element; cancellation removes the preceding
     // source but does not replace the Audio instance or its playback permission.
     cancel(false);text=typeof text==='string'?text.trim():'';
     return new Promise(resolve=>{
-      const job={text,voiceId,onState,resolve,controller:new AbortController(),done:false};current=job;
+      const job={text,voiceId,method,deviceVoiceId,fallbackOnQuota,onQuota,onState,resolve,controller:new AbortController(),done:false};current=job;
       if(!text || text.length>2000){settle(job,'error','Chưa có câu trả lời để nghe.');return;}
       if(method!=='device' && !/^[A-Za-z0-9_-]{1,100}$/.test(voiceId)){settle(job,'error','Hãy chọn giọng cho bạn luyện nói.');return;}
       emit(job,'loading');if(job.done || current!==job)return;

@@ -27,8 +27,13 @@ Mặc định, các giới hạn sau đã hoạt động trong code, **không c�
 | TTS_DAILY_CHARACTER_LIMIT | 2000 | Tổng ký tự mới/ngày UTC cho website |
 | TTS_MONTHLY_CHARACTER_LIMIT | 9000 | Tổng ký tự mới/tháng UTC cho website |
 | TTS_DEVICE_DAILY_CHARACTER_LIMIT | 750 | Ký tự mới/ngày cho mã thiết bị |
-| AI_DAILY_REQUEST_LIMIT | 100 | Tổng calls generateContent, gồm context/translation/micro và retries |
+| AI_DAILY_REQUEST_LIMIT | 100 | Context/translation/micro Dictionary và retries; tách khỏi Practical AI |
+| PRACTICAL_DEVICE_DAILY_REPLY_LIMIT | 100 | Attempts tạo câu đáp/thiết bị/ngày UTC |
+| PRACTICAL_DEVICE_DAILY_TRANSCRIPTION_LIMIT | 150 | Attempts nhận diện câu nói/thiết bị/ngày UTC, không trừ lượt đáp |
+| PRACTICAL_DAILY_GENERATION_LIMIT | 600 | Tổng generation Practical AI, cả nhận diện và câu đáp, trên toàn website |
 | MW_DAILY_REQUEST_LIMIT | 950 | Tổng queries reference Learner’s nếu có key |
+
+Practical AI dùng ngân sách riêng; hai bucket tổng/thiết bị được khóa và trừ cùng transaction qua pool AI đã làm nóng. Giọng thiết bị không dùng quota API, nhưng không tăng quota Free ElevenLabs/Gemini; hạn mức provider vẫn áp dụng.
 
 Ledger `helen_usage_budget` reserve atomically trong transaction; dữ liệu giữ qua restart/deploy. Giới hạn tổng bảo vệ trước việc tự đổi device ID. Device ID là mã ngẫu nhiên, không phải account hoặc bằng chứng nhận diện người dùng. Đây là đơn vị **request/character reservation**, không phải số credit hoặc số tiền thực ElevenLabs/Google báo. Provider có thể đổi cách tính, billing cycle khác tháng UTC; việc dùng cùng key ngoài Helen không nằm trong ledger. Failed calls có thể vẫn giữ reservation để không mở đường retry vô hạn. Rate limit theo IP vẫn giữ như trước.
 

@@ -31,5 +31,5 @@
     const task=(async()=>{const response=await apiFetch(`${api}/api/pronunciation`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({words:needed})});if(!response.ok)return;register(await response.json());})();
     wordPreparations.set(key,task);try{await task;}finally{wordPreparations.delete(key);}
   }
-  window.HelenPronunciation={register,request,prepareWords};
+  window.HelenPronunciation={register,request,prepareWords,device};
 })();

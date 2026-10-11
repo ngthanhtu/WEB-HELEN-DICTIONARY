@@ -47,3 +47,23 @@ test('production TTS uses one atomic reservation without losing configured limit
  db.reserveTTS=async()=>false;await assert.rejects(()=>policy.reserve('tts',1,'a'.repeat(64)),{code:'USAGE_LIMIT'});
  db.reserveTTS=async()=>{throw Object.assign(Error('unavailable'),{code:'USAGE_UNAVAILABLE'});};await assert.rejects(()=>policy.reserve('tts',1,'a'.repeat(64)),{code:'USAGE_UNAVAILABLE'});
 });
+
+test('100 daily conversation attempts are separate from translation and transcription with durable hashed buckets and one UTC reset',async()=>{
+ const counts=new Map(),seen=[];let now=Date.UTC(2026,9,11,8);
+ const database={reserveUsage:async rules=>{seen.push(rules);if(rules.some(rule=>(counts.get(rule.bucket+rule.key)||0)+rule.units>rule.limit))return false;for(const rule of rules)counts.set(rule.bucket+rule.key,(counts.get(rule.bucket+rule.key)||0)+rule.units);return true;}};
+ const policy=createUsagePolicy({database,env:{NODE_ENV:'production'},now:()=>now}),device='a'.repeat(64);
+ await policy.reserve('ai',100);
+ const accepted=await Promise.allSettled(Array.from({length:101},()=>policy.reserve('practical',1,device)));
+ assert.equal(accepted.filter(item=>item.status==='fulfilled').length,100);assert.equal(accepted.at(-1).reason.code,'USAGE_LIMIT');
+ await policy.reserve('practical-speech',1,device);await policy.reserve('practical',1,'b'.repeat(64));
+ assert.ok(seen.flat().every(rule=>/^[a-f0-9]{64}$/.test(rule.key)));
+ const last=seen.at(-1);assert.equal(last.length,2);assert.ok(last.every(rule=>rule.expiresAt===Date.UTC(2026,9,12)));
+ assert.equal(policy.limits.practicalDeviceDay,100);assert.equal(policy.limits.ttsMonth,9000);
+ now+=86400000;await policy.reserve('practical',1,device);
+ // Recreating the policy does not reset ledger counts on the same day.
+ const restarted=createUsagePolicy({database,env:{NODE_ENV:'production'},now:()=>now});await restarted.reserve('practical',99,device);await assert.rejects(restarted.reserve('practical',1,device),{code:'USAGE_LIMIT'});
+});
+test('shared speaking cost cap fails closed across devices and includes transcription without changing existing Gemini allowance',async()=>{
+ let total=0;const policy=createUsagePolicy({database:{reserveUsage:async rules=>{const global=rules.find(rule=>rule.bucket==='practical-day');if(total+global.units>global.limit)return false;total+=global.units;return true;}},env:{NODE_ENV:'production',PRACTICAL_DAILY_GENERATION_LIMIT:'2'}});
+ await policy.reserve('practical',1,'a');await policy.reserve('practical-speech',1,'b');await assert.rejects(policy.reserve('practical',1,'c'),{code:'USAGE_LIMIT'});assert.equal(policy.limits.aiDay,100);
+});

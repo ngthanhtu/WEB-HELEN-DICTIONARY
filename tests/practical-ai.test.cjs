@@ -55,3 +55,40 @@ test('conversation storage preserves complete turns and retains a bounded cohere
  const context=core.context(state);assert.equal(context.length,11);assert.equal(context[0].role,'assistant');assert.equal(context.at(-1).role,'assistant');assert.equal(context.at(-2).text,'My answer 19');
  assert.equal(core.restore({...state,level:'guess'}),null);assert.equal(core.restore({...state,messages:[{role:'user',text:'unanswered'}]}),null);
 });
+
+test('faithful speech recognition receives no conversation hints and returns an editable draft, never coaching or playback grants',async()=>{
+ let reservations=[],calls=0;const recorded={...body(),...audio(),stage:'transcribe'};delete recorded.text;
+ const service=createPracticalService({apiKey:'test-only',beforeGenerate:async value=>reservations.push(value),fetchImpl:async(url,options)=>{
+  calls++;const request=JSON.parse(options.body),data=JSON.parse(request.contents[0].parts[0].text);
+  assert.deepEqual(data,{task:'faithful-practical-transcription',language:'English'});assert.equal(request.generationConfig.temperature,0);
+  assert.match(request.systemInstruction.parts[0].text,/Preserve mistakes/);assert.match(request.systemInstruction.parts[0].text,/\[unclear\]/);
+  return generated({transcript:'I has [unclear], please.',audibility:'uncertain'});
+ }});
+ const value=await service.reply(recorded,{device:'a'.repeat(64)});
+ assert.deepEqual(value,{stage:'transcribe',transcript:'I has [unclear], please.',uncertain:true,requiresConfirmation:true,provider:'Gemini'});assert.equal(calls,1);
+ assert.deepEqual(reservations,[{stage:'transcribe',device:'a'.repeat(64)}]);assert.equal(value.reply,undefined);assert.equal(value.pronunciation,undefined);
+ assert.throws(()=>validateInput(body(value.transcript)),{code:'PRACTICAL_CONFIRM'});
+});
+test('uncertain speech is not reconstructed from a scenario, and silence has no successful draft',async()=>{
+ const recorded={...body(),...audio(),stage:'transcribe'};delete recorded.text;
+ for(const value of [{transcript:'',audibility:'uncertain'},{transcript:'hello',audibility:'guess'}]){
+  const service=createPracticalService({apiKey:'test-only',fetchImpl:async()=>generated(value)});await assert.rejects(service.reply(recorded),{code:'SPEECH_NO_VOICE'});
+ }
+ assert.throws(()=>validateInput({...body(),stage:'transcribe'}),{code:'PRACTICAL_INPUT'});
+});
+test('coaching edits only exact grounded spans and rejects unquoted rewrites, partial words, ambiguous repeats and overlapping edits',async()=>{
+ const input=body('I has coffee in Paris at 7.'),valid={...output(input.text),improved:'I have coffee in Paris at 7.',corrections:[{original:'I has',replacement:'I have',reason:'Dùng have với I.'}]};
+ const service=createPracticalService({apiKey:'test-only',fetchImpl:async()=>generated(valid)});
+ const value=await service.reply(input);assert.equal(value.improved,valid.improved);assert.deepEqual(value.corrections,valid.corrections);
+ for(const invalid of [
+  {...valid,improved:'I have tea in London at 8.'},
+  {...valid,corrections:[{original:'I had',replacement:'I have',reason:'Guess'}]},
+  {...valid,corrections:[{original:'has',replacement:'have',reason:'One'},{original:'I has',replacement:'I have',reason:'Two'}]},
+  {...valid,corrections:[{original:'aris',replacement:'London',reason:'Partial word'}]},
+ ])await assert.rejects(createPracticalService({apiKey:'test-only',fetchImpl:async()=>generated(invalid)}).reply(input),{code:'PRACTICAL_OUTPUT'});
+ const repeated=body('I has coffee and has tea.');await assert.rejects(createPracticalService({apiKey:'test-only',fetchImpl:async()=>generated({...output(repeated.text),improved:'I have coffee and have tea.',corrections:[{original:'has',replacement:'have',reason:'Ambiguous'}]})}).reply(repeated),{code:'PRACTICAL_OUTPUT'});
+});
+test('private retry cache remains scoped to the device when request ID and contents coincide',async()=>{
+ let calls=0;const input=body(),service=createPracticalService({apiKey:'test-only',fetchImpl:async()=>{calls++;return generated(output(input.text));}});
+ await service.reply(input,{device:'a'.repeat(64)});await service.reply(input,{device:'a'.repeat(64)});await service.reply(input,{device:'b'.repeat(64)});assert.equal(calls,2);
+});

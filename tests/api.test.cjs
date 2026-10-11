@@ -61,14 +61,22 @@ const recordedClip=(marker='SPEECH_INTERMEDIATE',bytes=48)=>({
 });
 const speechRequest=async body=>{await ready;return fetch(`${base}/api/speech`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});};
 test('speaking page status and text/audio turns return safe coaching with approved pronunciation proofs',async()=>{
-  await ready;const status=await fetch(`${base}/api/practical/status`),capability=await status.json();assert.equal(capability.configured,true);assert.equal(capability.pronunciation.length,6);assert.ok(capability.pronunciation.every(item=>item.proof));
+  await ready;const status=await fetch(`${base}/api/practical/status`),capability=await status.json();assert.equal(capability.configured,true);assert.equal(capability.pronunciation.length,6);assert.ok(capability.pronunciation.every(item=>item.proof));assert.equal(capability.dailyReplyLimit,100);assert.equal(capability.transcriptConfirmation,true);
   const ask=body=>fetch(`${base}/api/practical`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({scenario:'coffee',level:'B1',history:[{role:'assistant',text:'What would you like to order?'}],requestId:require('node:crypto').randomUUID(),...body})});
   for(const body of [{text:'I would like an iced latte, please.'},{...recordedClip('PRACTICAL_COFFEE',110000),durationMs:25000}]){
     const response=await ask(body);assert.equal(response.status,200);const data=await response.json();assert.ok(data.transcript && data.reply && data.translation && data.feedback && data.improved);assert.equal(data.pronunciation.length,3);assert.ok(data.pronunciation.every(item=>item.proof));
   }
+  const draftResponse=await ask({...recordedClip('SPEECH_UNCLEAR'),stage:'transcribe'}),draft=await draftResponse.json();assert.equal(draftResponse.status,200);assert.equal(draft.requiresConfirmation,true);assert.equal(draft.uncertain,true);assert.match(draft.transcript,/\[unclear\]/);assert.equal(draft.pronunciation,undefined);assert.equal(draft.reply,undefined);
+  const unconfirmed=await ask({text:draft.transcript});assert.equal(unconfirmed.status,422);assert.equal((await unconfirmed.json()).code,'PRACTICAL_CONFIRM');
+  const confirmed=await ask({text:'I has a coffee, please.'}),coaching=await confirmed.json();assert.equal(confirmed.status,200);assert.equal(coaching.transcript,'I has a coffee, please.');assert.equal(coaching.improved,'I have a coffee, please.');assert.equal(coaching.corrections[0].original,'I has');
   const invalid=await ask({text:' '});assert.equal(invalid.status,400);assert.equal((await invalid.json()).code,'PRACTICAL_INPUT');
   const quota=await ask({text:'PRACTICAL_QUOTA'});assert.equal(quota.status,429);assert.doesNotMatch(await quota.text(),/PRIVATE_PROVIDER_DETAILS/);
   for(const [body,code] of [['{"audio":',400],[JSON.stringify({audio:'A'.repeat(2*1024*1024)}),413]]){const response=await fetch(`${base}/api/practical`,{method:'POST',headers:{'Content-Type':'application/json'},body});assert.equal(response.status,code);const data=await response.json();assert.equal(data.code,'SPEECH_AUDIO');assert.doesNotMatch(data.error,/SyntaxError|PayloadTooLargeError|stack/);}
+});
+test('ElevenLabs exhausted credits allow explicit device fallback without hiding invalid credentials',async()=>{
+ await ready;
+ const quota=await fetch(`${base}/api/tts?${new URLSearchParams({text:'A quota test',voice:'quotaVoice'})}`);assert.equal(quota.status,429);const value=await quota.json();assert.equal(value.code,'VOICE_QUOTA');assert.equal(value.upstream_status,401);assert.doesNotMatch(JSON.stringify(value),/Private upstream/);
+ const auth=await fetch(`${base}/api/tts?${new URLSearchParams({text:'An authentication test',voice:'invalidKeyVoice'})}`);assert.equal(auth.status,502);assert.equal((await auth.json()).code,undefined);
 });
 test('speech exposes only configuration status and transcribes MP4 recordings beyond the default 100KB parser limit',async()=>{
   await ready;
