@@ -54,3 +54,12 @@ CREATE TABLE IF NOT EXISTS helen_metric_events (
   PRIMARY KEY (event_id),
   INDEX expired_metric (created_at)
 );
+-- Single atomic TTS reservation avoids multiple remote transaction round trips.
+CREATE TABLE IF NOT EXISTS helen_tts_usage (
+  id TINYINT UNSIGNED NOT NULL PRIMARY KEY,
+  day_key CHAR(10) CHARACTER SET ascii NOT NULL,
+  month_key CHAR(7) CHARACTER SET ascii NOT NULL,
+  day_units BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  month_units BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  devices JSON NOT NULL
+);

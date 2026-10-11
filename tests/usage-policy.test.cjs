@@ -41,3 +41,9 @@ test('production public TTS refuses arbitrary text before contacting the provide
   const unavailable=await fetch(`http://127.0.0.1:3219/api/tts?${new URLSearchParams({text:'loan',proof:data.proof})}`,{headers:{'X-Helen-Device':'a'.repeat(64)}});assert.equal(unavailable.status,503);assert.equal((await unavailable.json()).code,'USAGE_UNAVAILABLE');
   const wrong=await fetch('http://127.0.0.1:3219/api/pronunciation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word:'loan',text:'a private document'})});assert.equal(wrong.status,403);
 });
+test('production TTS uses one atomic reservation without losing configured limits or error protection',async()=>{
+ const calls=[],db={reserveTTS:async options=>{calls.push(options);return true;},reserveUsage(){throw Error('must not use multi-query legacy path');}},policy=createUsagePolicy({database:db,env:{NODE_ENV:'production',TTS_DAILY_CHARACTER_LIMIT:'1500'},now:()=>Date.UTC(2026,9,11)});
+ await policy.reserve('tts',20,'a'.repeat(64));assert.equal(calls.length,1);assert.equal(calls[0].units,20);assert.equal(calls[0].limits.ttsDay,1500);assert.equal(calls[0].device,'a'.repeat(64));
+ db.reserveTTS=async()=>false;await assert.rejects(()=>policy.reserve('tts',1,'a'.repeat(64)),{code:'USAGE_LIMIT'});
+ db.reserveTTS=async()=>{throw Object.assign(Error('unavailable'),{code:'USAGE_UNAVAILABLE'});};await assert.rejects(()=>policy.reserve('tts',1,'a'.repeat(64)),{code:'USAGE_UNAVAILABLE'});
+});

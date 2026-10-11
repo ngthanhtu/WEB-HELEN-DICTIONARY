@@ -501,6 +501,6 @@ const server = app.listen(PORT, () => {
   // Read the spelling index during startup so the first typo does not pay its loading cost.
   warmSpellingIndex().catch(error=>console.warn(`Spelling index unavailable: ${error.code || error.name}`));
   void translations.prepare();
-  void database.initialize().then(ok => {if(database.status().configured) console.log(`Database: ${ok ? 'connected' : 'unavailable — local history and RAM cache remain active'}`);if(ok)void translations.prepareCache().catch(()=>{});});
+  void database.initialize().then(ok => {if(database.status().configured) console.log(`Database: ${ok ? 'connected' : 'unavailable — local history and RAM cache remain active'}`);if(ok){void database.prepareTTS().catch(()=>{});void translations.prepareCache().catch(()=>{});}});
 });
 for (const signal of ['SIGINT','SIGTERM']) process.once(signal,() => {server.close();void database.close().finally(() => process.exit(0));});
