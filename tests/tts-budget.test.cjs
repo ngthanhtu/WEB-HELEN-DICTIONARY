@@ -9,7 +9,7 @@ test('legacy TTS usage is preserved including opaque per-device hashes; other bu
 });
 test('single SQL TTS reservation is atomic under concurrency, preserves migration and resets day/month correctly',async()=>{
  let row,updates=0,oldReads=0;const at=Date.now(),window=budget.windowAt(at),old=[{bucket:'tts-day',key_hash:budget.hash(window.day),units:2},{bucket:'tts-month',key_hash:budget.hash(window.month),units:2}];
- const pool={end:async()=>{},getConnection:async()=>({release(){},destroy(){},beginTransaction(){throw Error('no extra transaction round trip');},execute:async(sql,p)=>{
+ const pool={end:async()=>{},getConnection:async()=>({release(){},destroy(){},beginTransaction(){throw Error('no extra transaction round trip');},execute:async()=>[[]],query:async(sql,p)=>{
   if(sql.startsWith('SELECT id FROM helen_tts_usage'))return [row?[{id:1}]:[]];
   if(sql.startsWith('SELECT bucket,key_hash,units,expires_at')){oldReads++;return [old];}
   if(sql.startsWith('INSERT IGNORE INTO helen_tts_usage')){row ||= {day:p[0],month:p[1],dayUnits:p[2],monthUnits:p[3],devices:JSON.parse(p[4])};return [{affectedRows:1}];}
@@ -31,4 +31,17 @@ test('single SQL TTS reservation is atomic under concurrency, preserves migratio
 });
 test('missing or failed quota storage cannot permit cloud speech',async()=>{
  const db=createDatabase({});await assert.rejects(db.reserveTTS({at:Date.now(),units:1,device,limits}),{code:'USAGE_UNAVAILABLE'});await db.close();
+});
+test('speech quota reuses a separate warmed pool when cache deadlines destroy general connections',async()=>{
+ let cacheDestroyed=0,speechDestroyed=0,speechQueries=0,speechCreated=0,closed=0;
+ const db=createDatabase({MYSQL_HOST:'127.0.0.1',MYSQL_USER:'test',MYSQL_DATABASE:'test',MYSQL_SSL:'false'},{
+  createPool:()=>({end:async()=>{closed++;},getConnection:async()=>({release(){},destroy(){cacheDestroyed++;},execute:async sql=>{if(sql.startsWith('SELECT CAST(payload'))await new Promise(resolve=>setTimeout(resolve,300));return [[]];}})}),
+  createSpeechPool:options=>{speechCreated++;assert.equal(options.connectionLimit,1);assert.equal(options.idleTimeout,600000);assert.equal(options.multipleStatements,false);return {end:async()=>{closed++;},getConnection:async()=>({release(){},destroy(){speechDestroyed++;},execute(){throw Error('speech must not prepare statements over the network');},query:async(sql,params)=>{speechQueries++;if(sql.startsWith('SELECT id'))return [[{id:1}]];assert.equal(sql,budget.SQL);assert.equal(params.length,23);return [{affectedRows:1}];}})};}
+ });
+ try{
+  await db.initialize();await db.prepareTTS();await db.get('dictionary-v2','unseen');assert.equal(cacheDestroyed,1);
+  assert.equal(await db.reserveTTS({at:Date.now(),units:1,device,limits}),true);
+  assert.equal(await db.reserveTTS({at:Date.now(),units:1,device,limits}),true);
+  assert.equal(speechCreated,1);assert.equal(speechQueries,3);assert.equal(speechDestroyed,0);
+ }finally{await db.close();assert.equal(closed,2);}
 });
