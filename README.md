@@ -349,3 +349,5 @@ QA: 311 tests passed, 3 real MySQL integration tests skipped because this worksp
 
 
 Practical conversation QA (11/10/2026): 365 kiểm thử đạt, 3 MySQL integration chưa chạy vì môi trường local không có cấu hình database. Browser QA mô phỏng ở 320/390/768/1440 px: tự gửi câu nghe rõ, tự đọc đáp, yêu cầu sửa câu chưa rõ, bộ đếm/gửi khi hết 180 giây, đủ bốn thẻ đánh giá, lưu báo cáo qua reload và đọc ngoại tuyến; không tràn ngang và không có vi phạm Axe WCAG AA ở light/dark. Web Audio có kiểm thử kích hoạt từ thao tác chạm, phát cùng clip khi media bị Safari chặn và bỏ decode đến muộn sau Cancel. Bản ghi/giọng browser là fixture; không coi đây là kiểm chứng nhận diện iPhone thực tế hoặc độ chính xác band với giám khảo.
+
+Quota đánh giá dùng bucket `practical-assess-device`, vừa `VARCHAR(24)` của bảng hiện có; kiểm thử budget kiểm tra giới hạn tên này để tránh lỗi TiDB ở bước chấm. Không cần migration hoặc nhập SQL.
