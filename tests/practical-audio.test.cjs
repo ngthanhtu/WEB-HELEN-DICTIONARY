@@ -72,3 +72,15 @@ test('fallback never hides authentication, proof, unavailable voice, rate limit 
 test('cached selected-voice audio remains first choice with fallback enabled and no quota lookup',async()=>{
  const f=fixture({offlineAudio:{get:async()=>sound()},synthesis:{speak:()=>assert.fail('cached voice must remain selected')},Utterance:class{}}),job=f.play('Cached',{fallbackOnQuota:true});await tick();assert.equal(f.requests.length,0);f.audio.onplaying();f.audio.onended();assert.equal((await job).state,'idle');
 });
+test('gesture-unlocked Web Audio plays the same AI clip automatically when Safari blocks delayed media playback',async()=>{
+ let context,source;const calls=[];
+ class Context{constructor(){context=this;this.state='suspended';this.destination={};}resume(){calls.push('resume');this.state='running';return Promise.resolve();}decodeAudioData(bytes){assert.ok(bytes.byteLength);return Promise.resolve({duration:1});}createBufferSource(){source={connect(destination){assert.equal(destination,context.destination);},start(){calls.push('start');},stop(){calls.push('stop');}};return source;}close(){calls.push('close');return Promise.resolve();}}
+ const f=fixture({AudioContextCtor:Context});const warm=f.api.unlock();assert.equal(calls[0],'resume');await warm;
+ f.audio.playImpl=()=>Promise.reject(new DOMException('Gesture expired','NotAllowedError'));
+ const job=f.play('A real automatic reply.');await tick();await tick();assert.equal(f.states.at(-1).state,'speaking');assert.equal(f.requests.length,1);assert.equal(calls.at(-1),'start');source.onended();assert.equal((await job).state,'idle');f.api.destroy();assert.ok(calls.includes('close'));
+});
+test('cancel during Web Audio decode cannot start a late reply',async()=>{
+ let decode,started=0;
+ class Context{constructor(){this.state='running';}resume(){return Promise.resolve();}decodeAudioData(){return new Promise(resolve=>decode=resolve);}createBufferSource(){return {connect(){},start(){started++;},stop(){}};}close(){}}
+ const f=fixture({AudioContextCtor:Context});await f.api.unlock();f.audio.playImpl=()=>Promise.reject(new DOMException('blocked','NotAllowedError'));const job=f.play('Late reply');await tick();f.api.stop();assert.equal((await job).state,'cancelled');decode({duration:1});await tick();assert.equal(started,0);f.api.destroy();
+});

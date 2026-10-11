@@ -43,14 +43,15 @@ global.fetch = async (input, opts = {}) => {
     let conversation;try{conversation=JSON.parse(request.contents?.[0]?.parts?.[0]?.text || '{}');}catch{}
     if(conversation?.task==='faithful-practical-transcription'){
       const marker=Buffer.from(recording.data,'base64').toString('utf8');
-      const transcript=marker.includes('SPEECH_SILENT')?'':marker.includes('SPEECH_UNCLEAR')?'I want [unclear], please.':'I has a coffee, please.';
-      return Response.json({candidates:[{content:{role:'model',parts:[{text:JSON.stringify({transcript,audibility:marker.includes('SPEECH_UNCLEAR')?'uncertain':'clear'})}]},finishReason:'STOP'}]});
+      const transcript=marker.includes('SPEECH_SILENT')?'':marker.includes('SPEECH_UNCLEAR')?'I want [unclear], please.':marker.includes('PRACTICAL_LONG')?'I has a coffee, please. '+Array.from({length:16},()=> 'I enjoy meeting my friends after work.').join(' '):'I has a coffee, please.';
+      return Response.json({candidates:[{content:{role:'model',parts:[{text:JSON.stringify({transcript,audibility:marker.includes('SPEECH_UNCLEAR')?'uncertain':'clear',speech:{fluency:{band:6,note:'Nói rõ, đôi chỗ ngập ngừng.'},pronunciation:{band:6.5,note:'Âm dễ hiểu, cần luyện trọng âm.'}}})}]},finishReason:'STOP'}]});
     }
+    if(conversation?.task==='ielts-speaking-assessment'){const quote=conversation.session.turns[0].answer.slice(0,80);return Response.json({candidates:[{content:{role:'model',parts:[{text:JSON.stringify({summary:'Bạn thể hiện được ý chính và có thể phát triển ý rõ hơn.',criteria:Object.fromEntries(['fluency','vocabulary','grammar','pronunciation'].map((key,i)=>[key,{band:6+i*.5,feedback:'Luyện thêm cách phát triển ý và sử dụng cụm từ tự nhiên.',quote}])),nextSteps:['Luyện nói một phút, đưa ví dụ cụ thể.','Dùng collocation tự nhiên trong câu của bạn.']})}]},finishReason:'STOP'}]});}
     if(conversation?.partnerRole){
       const text=conversation.learnerSentence || 'Can I have an iced coffee, please?';
       if(text==='PRACTICAL_QUOTA')return Response.json({error:{code:429,message:'PRIVATE_PROVIDER_DETAILS',status:'RESOURCE_EXHAUSTED'}},{status:429});
       const corrections=text.includes('I has a coffee')?[{original:'I has',replacement:'I have',reason:'Dùng have với chủ ngữ I.'}]:[];
-      return Response.json({candidates:[{content:{role:'model',parts:[{text:JSON.stringify({transcript:text,reply:'Of course! Would you like milk in your coffee?',translation:'Tất nhiên! Bạn muốn thêm sữa vào cà phê không?',improved:text.replace('I has a coffee','I have a coffee'),feedback:corrections.length?'Dùng have với chủ ngữ I.':'Bạn đã gọi món lịch sự và rõ ràng.',corrections,phrase:{text:'Could I have…?',translation:'Tôi có thể gọi… không?'}})}]},finishReason:'STOP'}]});
+      return Response.json({candidates:[{content:{role:'model',parts:[{text:JSON.stringify({transcript:text,reply:'Of course! Would you like milk in your coffee?',translation:'Tất nhiên! Bạn muốn thêm sữa vào cà phê không?',improved:text.replace('I has a coffee','I have a coffee'),feedback:corrections.length?'Dùng have với chủ ngữ I.':'Bạn đã gọi món lịch sự và rõ ràng.',corrections,collocations:[{text:'place an order',translation:'gọi món / đặt hàng',example:'I would like to place an order.'},{text:'freshly brewed coffee',translation:'cà phê mới pha',example:'I enjoy freshly brewed coffee.'}],phrase:{text:'Could I have…?',translation:'Tôi có thể gọi… không?'}})}]},finishReason:'STOP'}]});
     }
     if(recording) {
       const marker=Buffer.from(recording.data,'base64').toString('utf8');

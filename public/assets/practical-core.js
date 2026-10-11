@@ -12,7 +12,7 @@
  ];
  const levels=['A2','B1','B2'];
  function scenario(id){return scenarios.find(item=>item.id===id);}
- function validTurn(turn){return turn && ['user','assistant'].includes(turn.role) && typeof turn.text==='string' && turn.text.trim() && turn.text.length<=800;}
+ function validTurn(turn){return turn && ['user','assistant'].includes(turn.role) && typeof turn.text==='string' && turn.text.trim() && turn.text.length<=(turn.role==='user'?6000:800);}
  function restore(value){
   if(!value || !scenario(value.scenario) || !levels.includes(value.level) || !Array.isArray(value.messages) || value.messages.length>25 || !value.messages.every(validTurn))return null;
   if(!value.messages.length || value.messages[0].role!=='assistant' || value.messages.at(-1).role!=='assistant' || value.messages.some((item,i)=>item.role!==(i%2?'user':'assistant')))return null;
@@ -24,9 +24,17 @@
  function context(state){return state.messages.slice(-11).map(({role,text})=>({role,text}));}
  function add(state,response){
   if(!response || typeof response.transcript!=='string' || !response.transcript.trim() || typeof response.reply!=='string' || !response.reply.trim())throw Error('Chưa nhận được phản hồi. Hãy thử lại.');
-  const messages=[...state.messages,{role:'user',text:response.transcript,feedback:{improved:response.improved,note:response.feedback,phrase:response.phrase,corrections:response.corrections || []}},{role:'assistant',text:response.reply,translation:response.translation,pronunciation:response.pronunciation}];
+  const messages=[...state.messages,{role:'user',text:response.transcript,feedback:{improved:response.improved,note:response.feedback,phrase:response.phrase,corrections:response.corrections || [],collocations:response.collocations || []}},{role:'assistant',text:response.reply,translation:response.translation,pronunciation:response.pronunciation}];
   // Keep the opening and the latest twelve complete exchanges, never half a turn.
   return {...state,messages:messages.length>25?[messages[0],...messages.slice(-24)]:messages};
  }
- return {scenarios,levels,scenario,restore,fresh,context,add};
+ function sessionFrom(state){return {scenario:state.scenario,level:state.level,turns:state.messages.filter(turn=>turn.role==='user').map((turn,i)=>({text:turn.text,question:state.messages[i*2].text})),report:null};}
+ function restoreSession(value,state){
+  if(!value || value.scenario!==state.scenario || value.level!==state.level || !Array.isArray(value.turns) || value.turns.length>100 || !value.turns.every(turn=>validTurn({role:'user',text:turn.text}) && validTurn({role:'assistant',text:turn.question}) && (!turn.speechReceipt || typeof turn.speechReceipt==='string' && turn.speechReceipt.length<=18000)))return sessionFrom(state);
+  const last=state.messages.at(-2);if(last && value.turns.at(-1)?.text!==last.text)return sessionFrom(state);
+  return {...value,report:value.report?.stage==='assess'?value.report:null};
+ }
+ function sessionWords(session){return session.turns.reduce((sum,turn)=>sum+turn.text.trim().split(/\s+/).length,0);}
+ function canSend(session,text){return !session.report && session.turns.length<100 && session.turns.reduce((sum,turn)=>sum+turn.text.length+turn.question.length,0)+text.length+800<=60000;}
+ return {scenarios,levels,scenario,restore,fresh,context,add,sessionFrom,restoreSession,sessionWords,canSend};
 });

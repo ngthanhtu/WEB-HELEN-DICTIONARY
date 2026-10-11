@@ -1,26 +1,27 @@
 (()=>{
  'use strict';
  const core=globalThis.HelenPracticalCore,page=document.getElementById('page-practical');if(!core || !page)return;
- const $=id=>document.getElementById(id),KEY='helen-practical-ai-v1',VOICE='helen-practical-voice-v1',AI_VOICE='helen-practical-ai-voice-v1',DEVICE_VOICE='helen-practical-device-voice-v1',AUTO='helen-practical-autoplay-v1',DRAFT='helen-practical-draft-v1',FALLBACK='helen-practical-quota-fallback-v1',QUOTA_UNTIL='helen-practical-voice-quota-until-v1';
- const input=$('practical-input'),status=$('practical-status'),mic=$('practical-mic'),voice=$('practical-voice'),aiVoice=$('practical-ai-voice'),deviceVoice=$('practical-device-voice'),autoplay=$('practical-autoplay'),fallback=$('practical-quota-fallback');
+ const $=id=>document.getElementById(id),KEY='helen-practical-ai-v1',VOICE='helen-practical-voice-v1',AI_VOICE='helen-practical-ai-voice-v1',DEVICE_VOICE='helen-practical-device-voice-v1',AUTO='helen-practical-autoplay-v1',DRAFT='helen-practical-draft-v1',FALLBACK='helen-practical-quota-fallback-v1',QUOTA_UNTIL='helen-practical-voice-quota-until-v1',AUTO_SEND='helen-practical-auto-send-v1',SESSION='helen-practical-session-v1';
+ const input=$('practical-input'),status=$('practical-status'),mic=$('practical-mic'),voice=$('practical-voice'),aiVoice=$('practical-ai-voice'),deviceVoice=$('practical-device-voice'),autoplay=$('practical-autoplay'),fallback=$('practical-quota-fallback'),autoSend=$('practical-auto-send');
  const partnerCache=globalThis.HelenOfflineAudio?.create({cacheName:'helen-practical-audio-v1',maxClips:30,maxBytes:5*1024*1024});
  const partnerAudio=globalThis.HelenPracticalAudio?.create({pronunciation:globalThis.HelenPronunciation,offlineAudio:partnerCache});
- let state,draft=null,configured=null,checking,busy=false,phase='idle',run=0,controller,attempt,recording=false,storageFailed=false,partnerConfig=null,partnerLoading,speechPhase='idle',speechRun=0;
+ let state,session,draft=null,configured=null,checking,busy=false,phase='idle',run=0,controller,attempt,recording=false,storageFailed=false,partnerConfig=null,partnerLoading,speechPhase='idle',speechRun=0;
  const get=key=>{try{return localStorage.getItem(key);}catch{return null;}},put=(key,value)=>{try{localStorage.setItem(key,value);}catch{message('Lựa chọn chỉ giữ trong phiên này.');}};
  let chosenAI=get(AI_VOICE),chosenDevice=get(DEVICE_VOICE) || '';
  try{state=core.restore(JSON.parse(localStorage.getItem(KEY) || 'null'));const saved=get(VOICE);if(['device','elevenlabs'].includes(saved))voice.value=saved;autoplay.checked=get(AUTO)!=='0';}catch{}
  state ||= core.fresh();
+ try{session=core.restoreSession(JSON.parse(get(SESSION) || 'null'),state);}catch{}session ||= core.sessionFrom(state);autoSend.checked=get(AUTO_SEND)!=='0';
  fallback.checked=get(FALLBACK)!=='0';let quotaUntil=Number(get(QUOTA_UNTIL)) || 0;
- try{const saved=JSON.parse(get(DRAFT) || 'null');if(saved?.scenario===state.scenario && saved.level===state.level && typeof saved.text==='string' && saved.text.length<=800 && saved.text.trim()){draft=saved;input.value=saved.text;}}catch{}
+ try{const saved=JSON.parse(get(DRAFT) || 'null');if(saved?.scenario===state.scenario && saved.level===state.level && typeof saved.text==='string' && saved.text.length<=6000 && saved.text.trim()){draft=saved;input.value=saved.text;}}catch{}
  const mobileSettings=matchMedia('(max-width:760px)');$('practical-settings-details').open=!mobileSettings.matches;
  mobileSettings.addEventListener?.('change',event=>{$('practical-settings-details').open=!event.matches;});
  function node(tag,text,className){const element=document.createElement(tag);if(text!==undefined)element.textContent=text;if(className)element.className=className;return element;}
  function travelIcon(){const element=document.createElementNS('http://www.w3.org/2000/svg','svg'),path=document.createElementNS(element.namespaceURI,'path');element.setAttribute('viewBox','0 0 24 24');element.setAttribute('aria-hidden','true');path.setAttribute('d','M5 19 19 5M5 5h14v14');element.append(path);return element;}
  function message(text,error=false,loading=false){status.classList.toggle('error',error);status.setAttribute('role',error?'alert':'status');if(loading)showLoading(status,text);else finishLoading(status,text);}
- function save(){try{localStorage.setItem(KEY,JSON.stringify(state));storageFailed=false;}catch{storageFailed=true;}}
+ function save(){try{localStorage.setItem(SESSION,JSON.stringify(session));localStorage.setItem(KEY,JSON.stringify(state));storageFailed=false;}catch{storageFailed=true;}}
  function saveDraft(){try{if(draft)localStorage.setItem(DRAFT,JSON.stringify({...draft,text:input.value}));else localStorage.removeItem(DRAFT);}catch{}}
  function reviewTranscript(data){
-  draft={scenario:state.scenario,level:state.level,text:data.transcript,uncertain:data.uncertain===true};input.value=data.transcript;saveDraft();
+  draft={scenario:state.scenario,level:state.level,text:data.transcript,uncertain:data.uncertain===true,...(data.speechReceipt?{speechReceipt:data.speechReceipt}:{})};input.value=data.transcript;saveDraft();
   message(draft.uncertain?'Có chỗ chưa nghe rõ. Sửa [unclear] hoặc thu âm lại; AI chưa tự đoán từ.':'Kiểm tra câu vừa nghe, sửa nếu cần rồi bấm Confirm & send.');
  }
  function quotaActive(){return voice.value==='elevenlabs' && fallback.checked && quotaUntil>Date.now();}
@@ -86,48 +87,73 @@
   }finally{if(button){button.removeAttribute('aria-busy');button.setAttribute('aria-pressed','false');}controls();}
  }
  function controls(){
-  const offline=navigator.onLine===false,disabled=busy || offline || configured===false;
-  $('practical-send').disabled=disabled || !input.value.trim() || /\[unclear\]/i.test(input.value);input.disabled=busy;
+  const offline=navigator.onLine===false,ended=Boolean(session.report),disabled=busy || offline || configured===false || ended;
+  $('practical-send').disabled=disabled || !input.value.trim() || /\[unclear\]/i.test(input.value);input.disabled=busy || ended;
   $('practical-transcript-review').hidden=!draft;$('practical-input-label').textContent=draft?'Your words · edit if needed':'Your reply';
   $('practical-send').firstChild.textContent=draft?'Confirm & send ':'Send reply ';
   $('practical-transcript-note').textContent=draft?.uncertain?'Có chỗ chưa rõ. Sửa [unclear] hoặc thu âm lại, rồi bấm Confirm & send. AI chưa đoán từ hay trả lời.':'Kiểm tra câu bên dưới, sửa từ nghe nhầm rồi bấm Confirm & send. AI chưa trả lời ở bước này.';
-  mic.disabled=offline || configured===false || !globalThis.HelenVoiceRecorder?.available() || (busy && !['requesting','recording'].includes(phase));
+  mic.disabled=ended || !core.canSend(session,'') || offline || configured===false || !globalThis.HelenVoiceRecorder?.available() || (busy && !['requesting','recording'].includes(phase));
   mic.setAttribute('aria-pressed',String(recording));mic.setAttribute('aria-label',recording?'Stop recording and send reply':'Record a speaking reply');mic.querySelector('span').textContent=recording?'Send recording':'Speak';
   $('practical-cancel').hidden=!busy;$('practical-reset').disabled=busy;$('practical-level').disabled=busy;
   $('practical-scenarios').querySelectorAll('button').forEach(button=>button.disabled=busy);
   $('practical-messages').querySelectorAll('.say').forEach(button=>button.disabled=busy || button.getAttribute('aria-busy')==='true');
-  $('practical-use-hint').disabled=busy;
+  $('practical-use-hint').disabled=busy || ended;
+  $('practical-end').disabled=busy || offline || configured===false || !session.turns.length || ended;
+  $('practical-session-count').textContent=ended?'Session complete · bắt đầu New session để luyện tiếp.':`${session.turns.length} replies · ${core.sessionWords(session)} words · cần ít nhất 80 từ để ước lượng band.`;
+  $('practical-recording-time').hidden=phase!=='recording';
   $('practical-messages').setAttribute('aria-busy',String(busy));
   $('practical-replay').disabled=busy || ['loading','speaking'].includes(speechPhase);$('practical-stop-voice').disabled=!['loading','speaking'].includes(speechPhase);
-  aiVoice.disabled=busy;deviceVoice.disabled=busy;voice.disabled=busy;fallback.disabled=busy;$('practical-retry-voice').disabled=busy;voiceStatus();
+  aiVoice.disabled=busy;deviceVoice.disabled=busy;voice.disabled=busy;fallback.disabled=busy;autoSend.disabled=busy;$('practical-retry-voice').disabled=busy;voiceStatus();
  }
- function listen(text){const button=node('button','🔊','say');button.type='button';button.setAttribute('aria-label','Listen to this sentence');button.setAttribute('aria-pressed','false');button.onclick=()=>{void partnerAudio?.unlock();void playReply(text,button);};return button;}
+ function listen(text){const button=node('button','🔊','say');button.type='button';button.setAttribute('aria-label','Listen to this sentence');button.setAttribute('aria-pressed','false');button.onclick=()=>{void partnerAudio?.unlock({device:voice.value==='device' || quotaActive()});void playReply(text,button);};return button;}
  function render(){
   const item=core.scenario(state.scenario);$('practical-level').value=state.level;$('practical-chat-title').textContent=item.title;$('practical-goal').textContent=item.goal;$('practical-hint').textContent=item.hint;$('practical-settings-summary').textContent=`Conversation settings · ${state.level}`;
   $('practical-scenarios').replaceChildren(...core.scenarios.map(item=>{const button=node('button');button.type='button';button.dataset.scenario=item.id;button.setAttribute('aria-pressed',String(item.id===state.scenario));const icon=node('span',item.id==='travel'?undefined:item.icon);icon.setAttribute('aria-hidden','true');if(item.id==='travel')icon.append(travelIcon());button.append(icon,node('strong',item.title));button.onclick=()=>reset(item.id,state.level);return button;}));
   const cards=state.messages.map(turn=>{
    const card=node('article',undefined,'practical-message '+turn.role),head=node('div',undefined,'practical-message-header');head.append(node('strong',turn.role==='user'?'You':'Speaking partner'));
-   if(turn.role==='assistant')head.append(listen(turn.text));card.append(head,node('p',turn.text));
+   if(turn.role==='assistant')head.append(listen(turn.text));card.append(head);
+   if(turn.text.length>600){const full=node('details');full.append(node('summary','Read full answer'),node('p',turn.text));card.append(node('p',turn.text.slice(0,240)+'…'),full);}else card.append(node('p',turn.text));
    if(turn.translation){const detail=node('details');detail.append(node('summary','Translation'),node('p',turn.translation));card.append(detail);}
    if(turn.feedback && typeof turn.feedback.note==='string'){
     const feedback=node('div',undefined,'practical-feedback');feedback.append(node('h3','A little coaching'),node('p',turn.feedback.note));
-    if(typeof turn.feedback.improved==='string'){feedback.append(node('strong','Try saying'),node('blockquote',turn.feedback.improved));}
+    if(typeof turn.feedback.improved==='string'){
+     if(turn.feedback.improved.length>600){const full=node('details');full.append(node('summary','Full suggested answer'),node('blockquote',turn.feedback.improved));feedback.append(full);}
+     else feedback.append(node('strong','Try saying'),node('blockquote',turn.feedback.improved));
+    }
     if(Array.isArray(turn.feedback.corrections) && turn.feedback.corrections.length){
      const list=node('ul');for(const item of turn.feedback.corrections.slice(0,4))if(typeof item?.original==='string' && typeof item.replacement==='string' && typeof item.reason==='string'){
       const edit=node('li');edit.append(node('strong',item.original+' → '+(item.replacement || '(remove)')),node('p',item.reason));list.append(edit);
      }feedback.append(list);
     }
     if(turn.feedback.phrase && typeof turn.feedback.phrase.text==='string')feedback.append(node('p','Useful phrase · '+turn.feedback.phrase.text),node('p',typeof turn.feedback.phrase.translation==='string'?turn.feedback.phrase.translation:''));
+    if(Array.isArray(turn.feedback.collocations) && turn.feedback.collocations.length){const detail=node('details');detail.append(node('summary','Vocabulary & collocations'));for(const item of turn.feedback.collocations.slice(0,3))if(typeof item?.text==='string' && typeof item.translation==='string' && typeof item.example==='string'){detail.append(node('strong',item.text),node('p',item.translation),node('blockquote',item.example));}feedback.append(detail);}
     card.append(feedback);
    }
    globalThis.HelenPronunciation?.register(turn);return card;
-  });$('practical-messages').replaceChildren(...cards);controls();
+  });$('practical-messages').replaceChildren(...cards);renderReport();controls();
+ }
+ function renderReport(){
+  const box=$('practical-report'),report=session.report;box.hidden=!report;box.replaceChildren();if(!report)return;
+  box.append(node('span','SESSION COMPLETE','section-kicker'),node('h3','Your IELTS speaking estimate'),node('strong',report.overall===null?'Partial assessment':`Estimated band · ${report.overall.toFixed(1)}`,'practical-band'),node('p',report.notice),node('p',report.summary));
+  const grid=node('div',undefined,'practical-score-grid'),labels={fluency:'Fluency & coherence',vocabulary:'Lexical resource',grammar:'Grammar range & accuracy',pronunciation:'Pronunciation'};
+  for(const [key,label] of Object.entries(labels)){const item=report.criteria?.[key];if(!item)continue;const card=node('article');card.append(node('h4',label),node('strong',typeof item.band==='number'?`Band ${item.band.toFixed(1)}`:'Not enough audio'),node('p',item.feedback));if(item.quote)card.append(node('blockquote',item.quote));grid.append(card);}box.append(grid,node('h4','What to practise next'));
+  const steps=node('ol');for(const step of report.nextSteps || [])steps.append(node('li',step));box.append(steps,node('p',`${report.coverage?.turns || 0} replies · ${report.coverage?.words || 0} original words · ${report.coverage?.audioSeconds || 0}s audio`));
+ }
+ async function endSession(){
+  if(busy || session.report)return;
+  if(draft || input.value.trim()){message('Gửi hoặc xóa câu đang soạn trước khi kết thúc phiên.',true);input.focus();return;}
+  if(core.sessionWords(session)<80){message('Hãy nói thêm để đủ ít nhất 80 từ rồi kết thúc phiên.',true);return;}
+  if(navigator.onLine===false){message('Cần Internet để chấm phiên mới. Hội thoại vẫn được giữ.',true);return;}
+  stopPartner();const ticket=++run;busy=true;phase='assessing';controller=new AbortController();partnerState('thinking');controls();message('Đang đánh giá 4 tiêu chí IELTS từ lời bạn đã nói…',false,true);
+  try{const report=await request({stage:'assess',turns:session.turns},controller.signal);if(ticket===run){session.report=report;save();renderReport();message(storageFailed?'Bộ nhớ đầy. Đánh giá chỉ giữ trong phiên này.':'Đã có đánh giá. Đây là band ước lượng để luyện tập.');$('practical-report').focus();}}
+  catch(error){if(ticket===run)message(shortError(error,'Chưa đánh giá được. Hội thoại vẫn giữ nguyên; hãy thử lại.'),true);}
+  finally{finish(ticket);}
  }
  function reset(id=state.scenario,level=state.level){
   if(busy)return;
   if((state.messages.length>1 || draft) && !confirm('Bắt đầu phiên mới? Cuộc hội thoại và câu đang soạn sẽ được thay thế.')){$('practical-level').value=state.level;return;}
   stopPartner();
-  state=core.fresh(id,level);draft=null;saveDraft();attempt=null;input.value='';save();render();message(navigator.onLine===false?'Đang ngoại tuyến. Xem lại hội thoại; kết nối mạng để luyện với AI.':'Bấm Speak hoặc nhập câu trả lời để bắt đầu.');
+  state=core.fresh(id,level);session=core.sessionFrom(state);draft=null;saveDraft();attempt=null;input.value='';save();render();message(navigator.onLine===false?'Đang ngoại tuyến. Xem lại hội thoại; kết nối mạng để luyện với AI.':'Bấm Speak hoặc nhập câu trả lời để bắt đầu.');
  }
  async function check(){
   void loadPartner();
@@ -142,48 +168,50 @@
  async function request(value,signal){
   const content={scenario:state.scenario,level:state.level,history:core.context(state),...value},fingerprint=JSON.stringify(content);
   const requestId=value.audio?crypto.randomUUID():(attempt && attempt.fingerprint===fingerprint?attempt.id:(attempt={fingerprint,id:crypto.randomUUID()}).id);
-  const response=await apiFetch('/api/practical',{method:'POST',headers:{'Content-Type':'application/json','X-Helen-Device':globalThis.HelenPronunciation.device()},body:JSON.stringify({...content,requestId}),signal});
+  const response=await apiFetch('/api/practical',{method:'POST',headers:{'Content-Type':'application/json','X-Helen-Device':globalThis.HelenPronunciation.device()},body:JSON.stringify({...content,requestId}),signal,timeoutMs:value.stage==='transcribe'?35000:value.stage==='assess'?25000:10000});
   const data=await response.json().catch(()=>({}));if(!response.ok)throw Object.assign(Error(data.error || 'Chưa nhận được phản hồi. Hãy thử lại.'),{code:data.code});
   globalThis.HelenPronunciation?.register(data);return data;
  }
- function accept(data){state=core.add(state,data);attempt=null;draft=null;saveDraft();save();input.value='';render();const list=$('practical-messages');list.scrollTop=list.scrollHeight;message(storageFailed?'Bộ nhớ đầy. Hội thoại chỉ giữ trong phiên này.':'Đã có phản hồi. Bạn có thể nghe, xem bản dịch rồi trả lời tiếp.');}
+ function accept(data){session.turns.push({question:state.messages.at(-1).text,text:data.transcript,...(draft?.speechReceipt?{speechReceipt:draft.speechReceipt}:{})});state=core.add(state,data);attempt=null;draft=null;saveDraft();save();input.value='';render();const list=$('practical-messages');list.scrollTop=list.scrollHeight;message(storageFailed?'Bộ nhớ đầy. Hội thoại chỉ giữ trong phiên này.':'Đã có phản hồi. Bạn có thể nghe, xem bản dịch rồi trả lời tiếp.');}
  function finish(ticket,reply){if(ticket!==run)return;busy=false;recording=false;phase='idle';controller=null;partnerState('idle');controls();if(reply && autoplay.checked)void playReply(reply,$('practical-messages').querySelector('.practical-message.assistant:last-child .say'));}
  function cancel(announce=true){
   stopPartner();if(!busy)return;++run;controller?.abort();if(recording)globalThis.HelenVoiceRecorder?.cancel();busy=false;recording=false;phase='idle';controller=null;partnerState('idle');controls();if(announce)message('Đã dừng. Câu của bạn vẫn giữ nguyên.');
  }
  $('practical-form').addEventListener('submit',async event=>{
-  event.preventDefault();if(busy || !input.value.trim())return;
+  event.preventDefault();if(busy || session.report || !input.value.trim())return;
+  if(!core.canSend(session,input.value)){message('Phiên đã đủ dài. Bấm End & see band rồi mở New session.',true);return;}
   if(/\[unclear\]/i.test(input.value)){message('Sửa phần [unclear] hoặc thu âm lại trước khi gửi.',true);input.focus();return;}
   if(navigator.onLine===false){message('Cần Internet để gửi câu trả lời cho AI.',true);return;}
-  stopPartner();void partnerAudio?.unlock();const ticket=++run,value=input.value.trim();let reply;busy=true;phase='replying';controller=new AbortController();globalThis.HelenAudio?.stop();partnerState('thinking');controls();message('AI đang nghe ý của bạn…',false,true);
+  stopPartner();void partnerAudio?.unlock({device:voice.value==='device' || quotaActive()});const ticket=++run,value=input.value.trim();let reply;busy=true;phase='replying';controller=new AbortController();globalThis.HelenAudio?.stop();partnerState('thinking');controls();message('AI đang chuẩn bị câu trả lời và góp ý…',false,true);
   try{const data=await request({text:value},controller.signal);if(ticket===run){accept(data);reply=data.reply;}}
   catch(error){if(ticket===run)message(shortError(error,'Chưa kết nối được AI. Hãy thử lại.'),true);}
   finally{finish(ticket,reply);}
  });
  mic.addEventListener('click',()=>{
-  const recorder=globalThis.HelenVoiceRecorder;if(recording){if(phase==='requesting')cancel();else {void partnerAudio?.unlock();recorder?.stop();}return;}if(busy || !recorder?.available())return;
+  const recorder=globalThis.HelenVoiceRecorder;if(recording){if(phase==='requesting')cancel();else {void partnerAudio?.unlock({device:voice.value==='device' || quotaActive()});recorder?.stop();}return;}if(busy || session.report || !core.canSend(session,'') || !recorder?.available())return;
   stopPartner();const ticket=++run;let reply;busy=true;recording=true;phase='requesting';globalThis.HelenAudio?.stop();partnerState('requesting');controls();
   const task=recorder.start({language:'en-US',mode:'conversation',submit:recorded,onState:info=>{
-   if(ticket!==run)return;phase=info.state;controls();
+   if(ticket!==run)return;phase=info.state;if(info.state==='recording')$('practical-recording-time').textContent=`${Math.floor((info.elapsedMs || 0)/60000)}:${String(Math.floor((info.elapsedMs || 0)/1000)%60).padStart(2,'0')} / 3:00`;controls();
    partnerState(info.state==='recording'?'listening':info.state==='transcribing'?'thinking':'requesting');
    if(info.state==='transcribing')message('Đang chép lại lời bạn nói, chưa sửa câu…',false,true);
    else if(status.textContent!==info.message)message(info.message);
-  }});void partnerAudio?.unlock();
-  task.then(data=>{if(ticket===run)reviewTranscript(data);}).catch(error=>{if(ticket===run)message(shortError(error,'Chưa nghe rõ. Hãy thử lại hoặc nhập câu trả lời.'),true);}).finally(()=>{finish(ticket,reply);if(ticket===run && draft)input.focus();});
+  }});void partnerAudio?.unlock({device:voice.value==='device' || quotaActive()});
+  task.then(async data=>{if(ticket!==run)return;reviewTranscript(data);if(autoSend.checked && !data.uncertain && !/\[unclear\]/i.test(data.transcript)){if(!core.canSend(session,data.transcript)){message('Phiên đã đủ dài. Kết thúc để xem band trước khi luyện tiếp.',true);return;}recording=false;phase='replying';controller=new AbortController();partnerState('thinking');controls();message('Đã nghe câu của bạn. AI đang trả lời và góp ý…',false,true);const result=await request({text:data.transcript},controller.signal);if(ticket===run){accept(result);reply=result.reply;}}}).catch(error=>{if(ticket===run)message(shortError(error,'Chưa nghe rõ. Hãy thử lại hoặc nhập câu trả lời.'),true);}).finally(()=>{finish(ticket,reply);if(ticket===run && draft)input.focus();});
  });
- // Recognition gets audio only. The learner confirms/edits the transcript
- // before a separate conversational request can create coaching or speech.
+ // Recognition still gets audio only. Clear speech proceeds automatically;
+ // uncertain speech waits for an edit, without contextual guesses.
  function recorded(value,{signal}={}){return request({...value,stage:'transcribe'},signal);}
- $('practical-cancel').onclick=()=>cancel();$('practical-reset').onclick=()=>reset();
+ $('practical-cancel').onclick=()=>cancel();$('practical-reset').onclick=()=>reset();$('practical-end').onclick=()=>void endSession();
  $('practical-level').onchange=()=>reset(state.scenario,$('practical-level').value);
  $('practical-use-hint').onclick=()=>{input.value=core.scenario(state.scenario).hint;input.focus();controls();};
  input.addEventListener('input',()=>{if(draft){draft.text=input.value;saveDraft();}controls();});input.addEventListener('keydown',event=>{if(event.key==='Enter' && (event.ctrlKey || event.metaKey)){event.preventDefault();$('practical-form').requestSubmit();}});
  voice.onchange=()=>{stopPartner();put(VOICE,voice.value);voiceChoices();deviceChoices();};
  aiVoice.onchange=()=>{stopPartner();chosenAI=aiVoice.value;put(AI_VOICE,chosenAI);};deviceVoice.onchange=()=>{stopPartner();chosenDevice=deviceVoice.value;put(DEVICE_VOICE,chosenDevice);};
+ autoSend.onchange=()=>put(AUTO_SEND,autoSend.checked?'1':'0');
  autoplay.onchange=()=>{put(AUTO,autoplay.checked?'1':'0');if(!autoplay.checked)stopPartner();};
  fallback.onchange=()=>{stopPartner();put(FALLBACK,fallback.checked?'1':'0');voiceStatus();};
- $('practical-retry-voice').onclick=()=>{stopPartner();quotaUntil=0;put(QUOTA_UNTIL,'0');voiceStatus();void partnerAudio?.unlock();const text=[...state.messages].reverse().find(turn=>turn.role==='assistant')?.text;if(text)void playReply(text,$('practical-retry-voice'));};
- $('practical-replay').onclick=()=>{void partnerAudio?.unlock();const text=[...state.messages].reverse().find(turn=>turn.role==='assistant')?.text;if(text)void playReply(text,$('practical-replay'));};
+ $('practical-retry-voice').onclick=()=>{stopPartner();quotaUntil=0;put(QUOTA_UNTIL,'0');voiceStatus();void partnerAudio?.unlock({device:voice.value==='device' || quotaActive()});const text=[...state.messages].reverse().find(turn=>turn.role==='assistant')?.text;if(text)void playReply(text,$('practical-retry-voice'));};
+ $('practical-replay').onclick=()=>{void partnerAudio?.unlock({device:voice.value==='device' || quotaActive()});const text=[...state.messages].reverse().find(turn=>turn.role==='assistant')?.text;if(text)void playReply(text,$('practical-replay'));};
  $('practical-stop-voice').onclick=()=>{stopPartner();message('Đã dừng giọng. Đến lượt bạn.');};
  document.addEventListener('helen:voices',voiceChoices);globalThis.speechSynthesis?.addEventListener?.('voiceschanged',deviceChoices);
  document.addEventListener('helen:voice-selected',()=>{if(aiVoice.value==='preferences')stopPartner();});
@@ -193,11 +221,11 @@
  globalThis.addEventListener('helen:speech-ready',controls);globalThis.addEventListener('offline',()=>{cancel(false);controls();message('Đang ngoại tuyến. Hội thoại đã lưu vẫn xem được.');});
  globalThis.addEventListener('online',()=>{if(globalThis.HelenPages?.current()==='practical')void check();});
  globalThis.addEventListener('storage',event=>{
-  if([VOICE,AI_VOICE,DEVICE_VOICE,AUTO,FALLBACK,QUOTA_UNTIL].includes(event.key)){
+  if([VOICE,AI_VOICE,DEVICE_VOICE,AUTO,AUTO_SEND,FALLBACK,QUOTA_UNTIL].includes(event.key)){
    stopPartner();if(event.key===VOICE && ['device','elevenlabs'].includes(event.newValue))voice.value=event.newValue;
-   if(event.key===AI_VOICE)chosenAI=event.newValue;if(event.key===DEVICE_VOICE)chosenDevice=event.newValue || '';if(event.key===AUTO)autoplay.checked=event.newValue!=='0';if(event.key===FALLBACK)fallback.checked=event.newValue!=='0';if(event.key===QUOTA_UNTIL)quotaUntil=Number(event.newValue)||0;voiceChoices();deviceChoices();return;
+   if(event.key===AI_VOICE)chosenAI=event.newValue;if(event.key===DEVICE_VOICE)chosenDevice=event.newValue || '';if(event.key===AUTO_SEND)autoSend.checked=event.newValue!=='0';if(event.key===AUTO)autoplay.checked=event.newValue!=='0';if(event.key===FALLBACK)fallback.checked=event.newValue!=='0';if(event.key===QUOTA_UNTIL)quotaUntil=Number(event.newValue)||0;voiceChoices();deviceChoices();return;
   }
-  if(event.key!==KEY)return;cancel(false);try{state=core.restore(JSON.parse(event.newValue || 'null')) || core.fresh();render();message('Hội thoại đã cập nhật từ tab khác.');}catch{}
+  if(event.key!==KEY)return;cancel(false);try{state=core.restore(JSON.parse(event.newValue || 'null')) || core.fresh();session=core.restoreSession(JSON.parse(get(SESSION) || 'null'),state);render();message('Hội thoại đã cập nhật từ tab khác.');}catch{}
  });
  render();voiceChoices();deviceChoices();if(globalThis.HelenPages?.current()==='practical')void check();
 })();

@@ -71,7 +71,7 @@ test('speaking page status and text/audio turns return safe coaching with approv
   const confirmed=await ask({text:'I has a coffee, please.'}),coaching=await confirmed.json();assert.equal(confirmed.status,200);assert.equal(coaching.transcript,'I has a coffee, please.');assert.equal(coaching.improved,'I have a coffee, please.');assert.equal(coaching.corrections[0].original,'I has');
   const invalid=await ask({text:' '});assert.equal(invalid.status,400);assert.equal((await invalid.json()).code,'PRACTICAL_INPUT');
   const quota=await ask({text:'PRACTICAL_QUOTA'});assert.equal(quota.status,429);assert.doesNotMatch(await quota.text(),/PRIVATE_PROVIDER_DETAILS/);
-  for(const [body,code] of [['{"audio":',400],[JSON.stringify({audio:'A'.repeat(2*1024*1024)}),413]]){const response=await fetch(`${base}/api/practical`,{method:'POST',headers:{'Content-Type':'application/json'},body});assert.equal(response.status,code);const data=await response.json();assert.equal(data.code,'SPEECH_AUDIO');assert.doesNotMatch(data.error,/SyntaxError|PayloadTooLargeError|stack/);}
+  for(const [body,code] of [['{"audio":',400],[JSON.stringify({audio:'A'.repeat(10*1024*1024)}),413]]){const response=await fetch(`${base}/api/practical`,{method:'POST',headers:{'Content-Type':'application/json'},body});assert.equal(response.status,code);const data=await response.json();assert.equal(data.code,'SPEECH_AUDIO');assert.doesNotMatch(data.error,/SyntaxError|PayloadTooLargeError|stack/);}
 });
 test('ElevenLabs exhausted credits allow explicit device fallback without hiding invalid credentials',async()=>{
  await ready;
@@ -104,7 +104,7 @@ test('speech distinguishes silence from a busy provider and returns short safe e
 });
 test('speech JSON parser returns actionable JSON for malformed and oversized recordings',async()=>{
   await ready;
-  for(const [body,status] of [['{"audio":',400],[JSON.stringify({audio:'A'.repeat(2*1024*1024)}),413]]) {
+  for(const [body,status] of [['{"audio":',400],[JSON.stringify({audio:'A'.repeat(10*1024*1024)}),413]]) {
     const response=await fetch(`${base}/api/speech`,{method:'POST',headers:{'Content-Type':'application/json'},body});
     assert.equal(response.status,status);assert.match(response.headers.get('content-type'),/application\/json/);
     const error=await response.json();assert.equal(error.code,'SPEECH_AUDIO');assert.ok(error.error.length<180);

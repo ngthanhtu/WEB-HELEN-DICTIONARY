@@ -62,6 +62,18 @@
 .practical-tip{font-size:var(--font-small);background:var(--surface-page);border:1px solid var(--border);border-radius:var(--radius-xs);padding:0 var(--space-3)}
 .practical-tip summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:600}.practical-tip p{color:var(--text-primary)}
 .practical-privacy{font-size:var(--font-small);color:var(--text-tertiary);margin-bottom:0;line-height:1.6}
+.practical-recording-time{display:inline-block;margin-top:var(--space-3);padding:var(--space-2) var(--space-3);background:var(--surface-selected);border:1px solid var(--action);border-radius:var(--radius-pill);font-variant-numeric:tabular-nums;font-weight:600;color:var(--action)}
+.practical-recording-time[hidden],.practical-report[hidden]{display:none}
+.practical-report{padding:var(--space-5);border-block:2px solid var(--accent);background:var(--surface-page);overflow-wrap:anywhere}
+.practical-report h3{font-size:var(--font-title);margin-block:var(--space-2) var(--space-4)}
+.practical-band{display:inline-block;padding:var(--space-3) var(--space-4);background:var(--surface-selected);border:1px solid var(--action);border-radius:var(--radius-pill);color:var(--action);font-size:1.25rem}
+.practical-report>p,.practical-report li{font-size:var(--font-small);line-height:1.6}
+.practical-score-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3);margin-block:var(--space-5)}
+.practical-score-grid article{min-width:0;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-base);padding:var(--space-4)}
+.practical-score-grid h4{margin:0 0 var(--space-3);font-size:var(--font-base)}
+.practical-score-grid p{font-size:var(--font-small);line-height:1.6}
+.practical-score-grid blockquote{margin:var(--space-3) 0 0;padding-left:var(--space-3);border-left:3px solid var(--accent);font-size:var(--font-small)}
+@media(max-width:500px){.practical-score-grid{grid-template-columns:1fr}.practical-report{padding:var(--space-4)}}
 #page-practical :is(button,textarea,select,summary,input):focus-visible{outline:3px solid var(--focus);outline-offset:4px}
 #page-practical :is(button,select,textarea):disabled{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none}
 #page-practical button:active:not(:disabled){transform:translateY(1px)}

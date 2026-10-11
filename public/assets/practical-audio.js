@@ -1,16 +1,16 @@
 (function(root,factory){
   'use strict';
   if(typeof module==='object' && module.exports)module.exports=factory;
-  else root.HelenPracticalAudio={create:options=>factory({AudioCtor:root.Audio,BlobCtor:root.Blob,URL:root.URL,synthesis:root.speechSynthesis,Utterance:root.SpeechSynthesisUtterance,...options})};
-})(typeof globalThis==='undefined'?this:globalThis,function({AudioCtor,BlobCtor=globalThis.Blob,URL=globalThis.URL,synthesis,Utterance,pronunciation,offlineAudio,api='',requestTimeout=8000,startTimeout=5000,playbackTimeout=120000}={}){
+  else root.HelenPracticalAudio={create:options=>factory({AudioCtor:root.Audio,AudioContextCtor:root.AudioContext || root.webkitAudioContext,BlobCtor:root.Blob,URL:root.URL,synthesis:root.speechSynthesis,Utterance:root.SpeechSynthesisUtterance,...options})};
+})(typeof globalThis==='undefined'?this:globalThis,function({AudioCtor,AudioContextCtor,BlobCtor=globalThis.Blob,URL=globalThis.URL,synthesis,Utterance,pronunciation,offlineAudio,api='',requestTimeout=8000,startTimeout=5000,playbackTimeout=120000}={}){
   const messages={blocked:'Bấm nút nghe để phát giọng trên trình duyệt này.',unsupported:'Trình duyệt chưa hỗ trợ giọng đọc này.',failed:'Chưa phát được giọng AI. Bấm nghe để thử lại.',timeout:'Giọng AI chưa sẵn sàng. Bấm nghe để thử lại.'};
-  let audio=null,sequence=0,current=null,clipUrl=null,silentUrl=null;
+  let audio=null,context=null,sequence=0,current=null,clipUrl=null,silentUrl=null;
   try{if(AudioCtor){audio=new AudioCtor();audio.preload='auto';audio.playsInline=true;audio.setAttribute?.('playsinline','');audio.setAttribute?.('webkit-playsinline','');}}catch{}
   function revoke(url){if(url)try{URL.revokeObjectURL(url);}catch{}}
   function releaseMedia(unload=true){if(!audio)return;audio.onplaying=audio.onended=audio.onerror=null;try{audio.pause();if(unload){audio.removeAttribute?.('src');audio.load?.();}}catch{}revoke(clipUrl);clipUrl=null;}
   function notify(job,state,message){try{job.onState?.({state,text:job.text,voiceId:job.voiceId,method:job.method,message});}catch{}}
   function emit(job,state,message){if(!job.done && current===job)notify(job,state,message);}
-  function settle(job,state,message,unload=true){if(job.done)return;job.done=true;clearTimeout(job.requestTimer);clearTimeout(job.startTimer);clearTimeout(job.endTimer);job.controller.abort();if(current===job){current=null;releaseMedia(unload);notify(job,state,message);}job.resolve({state,...(message?{message}:{})});}
+  function settle(job,state,message,unload=true){if(job.done)return;job.done=true;clearTimeout(job.requestTimer);clearTimeout(job.startTimer);clearTimeout(job.endTimer);job.controller.abort();if(job.source){job.source.onended=null;try{job.source.stop();}catch{}}if(current===job){current=null;releaseMedia(unload);notify(job,state,message);}job.resolve({state,...(message?{message}:{})});}
   function cancel(unload){sequence++;const job=current;if(job){settle(job,'cancelled',undefined,unload);if(job.utterance)try{synthesis.cancel();}catch{}}else releaseMedia(unload);}
   function stop(){cancel(true);}
   function silentWave(){
@@ -21,7 +21,13 @@
     write(0,'RIFF');view.setUint32(4,bytes.length-8,true);write(8,'WAVE');write(12,'fmt ');view.setUint32(16,16,true);view.setUint16(20,1,true);view.setUint16(22,1,true);view.setUint32(24,16000,true);view.setUint32(28,32000,true);view.setUint16(32,2,true);view.setUint16(34,16,true);write(36,'data');view.setUint32(40,samples*2,true);
     return new BlobCtor([bytes],{type:'audio/wav'});
   }
-  function unlock(){
+  function unlock({device=false}={}){
+    if(!device && AudioContextCtor){try{context ||= new AudioContextCtor();Promise.resolve(context.resume()).catch(()=>{});}catch{}}
+    if(device && synthesis?.speak && Utterance){
+      // A silent utterance activates device speech in the original tap too.
+      // Browser autoplay policy can still require a later explicit tap.
+      try{const warm=new Utterance(' ');warm.volume=0;warm.lang='en-US';warm.onerror=()=>{};synthesis.resume?.();synthesis.speak(warm);}catch{}
+    }
     if(!audio || !BlobCtor || !URL?.createObjectURL)return Promise.resolve(false);
     stop();const ticket=sequence;
     try{silentUrl ||= URL.createObjectURL(silentWave());audio.src=silentUrl;audio.volume=1;
@@ -67,7 +73,16 @@
       audio.onended=()=>settle(job,'idle');audio.onerror=()=>settle(job,'error',messages.failed);
       job.startTimer=setTimeout(()=>settle(job,'error',messages.timeout),startTimeout);
       job.endTimer=setTimeout(()=>settle(job,'error',messages.timeout),playbackTimeout);
-      try{await audio.play();}catch(error){if(job.done)return;settle(job,error?.name==='NotAllowedError'?'blocked':'error',error?.name==='NotAllowedError'?messages.blocked:messages.failed);}
+      try{await audio.play();}catch(error){
+        if(job.done)return;
+        if(error?.name==='NotAllowedError' && context?.state==='running'){
+          try{
+            const buffer=await context.decodeAudioData(await blob.arrayBuffer());if(job.done || current!==job)return;
+            const source=context.createBufferSource();job.source=source;source.buffer=buffer;source.connect(context.destination);source.onended=()=>settle(job,'idle');source.start();clearTimeout(job.startTimer);emit(job,'speaking');return;
+          }catch{if(job.done)return;}
+        }
+        settle(job,error?.name==='NotAllowedError'?'blocked':'error',error?.name==='NotAllowedError'?messages.blocked:messages.failed);
+      }
     }catch(error){
       if(job.done || current!==job)return;
       if(job.fallbackOnQuota && ['USAGE_LIMIT','VOICE_QUOTA'].includes(error?.code) && error.status===429){
@@ -89,6 +104,6 @@
       if(method==='device')device(job,deviceVoiceId);else void media(job);
     });
   }
-  function destroy(){stop();revoke(silentUrl);silentUrl=null;}
+  function destroy(){stop();revoke(silentUrl);silentUrl=null;if(context)try{Promise.resolve(context.close()).catch(()=>{});}catch{}context=null;}
   return {unlock,play,stop,destroy,listDeviceVoices,available:Boolean(audio || synthesis?.speak && Utterance)};
 });

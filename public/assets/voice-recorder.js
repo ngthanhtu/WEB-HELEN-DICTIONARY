@@ -9,11 +9,11 @@
   function emit(session,state,message,level=0) {
     if(session.done || session!==active) return;
     session.state=state;
-    try {session.onState?.({state,message,level});} catch {}
+    try {session.onState?.({state,message,level,elapsedMs:session.startedAt===undefined?0:Math.min(session.maxDuration,Math.round(root.performance.now()-session.startedAt)),maxDurationMs:session.maxDuration});} catch {}
   }
   function stopTracks(stream) {for(const track of stream?.getTracks?.() || []) {try {track.stop();} catch {}}}
   function clean(session) {
-    root.clearTimeout(session.timer);root.clearInterval(session.levelTimer);
+    root.clearTimeout(session.timer);root.clearInterval(session.levelTimer);root.clearInterval(session.clockTimer);
     stopTracks(session.stream);
     if(session.context) {try {Promise.resolve(session.context.close()).catch(()=>{});} catch {}}
   }
@@ -40,12 +40,12 @@
   async function upload(session) {
     if(session.done || session!==active) return;
     clean(session);
-    const durationMs=Math.round(root.performance.now()-session.startedAt);
+    const durationMs=Math.min(session.maxDuration,Math.round(root.performance.now()-session.startedAt));
     const blob=new root.Blob(session.chunks,{type:session.recorder.mimeType || session.mimeType});
-    if(durationMs<350 || !blob.size || blob.size>MAX_BYTES) {finish(session,issue(session.mode==='conversation'?'Hãy nói một câu ngắn rồi bấm micro để gửi.':'Hãy nói một từ rõ ràng rồi bấm micro để gửi.','SPEECH_AUDIO'));return;}
+    if(durationMs<350 || !blob.size || blob.size>session.maxBytes) {finish(session,issue(session.mode==='conversation'?'Bản thu chưa hợp lệ hoặc vượt 6 MB. Thu lại tối đa 3 phút.':'Hãy nói một từ rõ ràng rồi bấm micro để gửi.','SPEECH_AUDIO'));return;}
     emit(session,'transcribing','Đang nhận diện…');
     session.abort=new root.AbortController();
-    session.timer=root.setTimeout(()=>{session.timedOut=true;session.abort.abort();finish(session,issue('Nhận diện hơi chậm. Hãy thử lại hoặc nhập câu trả lời.','SPEECH_TIMEOUT'));},session.mode==='conversation'?9000:7500);
+    session.timer=root.setTimeout(()=>{session.timedOut=true;session.abort.abort();finish(session,issue('Nhận diện hơi chậm. Hãy thử lại hoặc nhập câu trả lời.','SPEECH_TIMEOUT'));},session.mode==='conversation'?35000:7500);
     try {
       const audio=await encode(blob);
       if(session.done || session!==active) return;
@@ -79,7 +79,7 @@
         const rms=Math.sqrt(energy/samples.length),now=root.performance.now();
         if(rms>0.015) {session.voiceMs+=100;session.lastVoiceAt=now;}
         emit(session,'recording',session.mode==='conversation'?'Đang nghe… bấm micro lần nữa để gửi.':'Đang nghe… nói từ rồi bấm micro để gửi.',Math.min(1,rms*8));
-        if(session.voiceMs>=100 && now-session.startedAt>=600 && now-session.lastVoiceAt>=(session.mode==='conversation'?2500:950)) stop();
+        if(session.mode!=='conversation' && session.voiceMs>=100 && now-session.startedAt>=600 && now-session.lastVoiceAt>=950) stop();
         else if(session.voiceMs===0 && now-session.startedAt>=6000) {cancel(issue('Chưa thu được tiếng. Đưa điện thoại gần hơn rồi thử lại.','SPEECH_NO_VOICE'));}
       },100);
     } catch {}
@@ -88,7 +88,7 @@
     if(active) return Promise.reject(issue('Micro đang hoạt động. Bấm lại để gửi hoặc dừng.','SPEECH_BUSY'));
     if(root.navigator?.onLine===false) return Promise.reject(issue('Đang ngoại tuyến. Hãy gõ từ đã lưu; micro cần Internet.','SPEECH_CONNECTION'));
     if(!supported || !configured) return Promise.reject(issue('Micro thu âm chưa sẵn sàng. Hãy mở Safari hoặc gõ từ.','SPEECH_UNAVAILABLE'));
-    const session={language,onState,mode,submit:typeof submit==='function'?submit:null,chunks:[],done:false,state:'requesting'};
+    const session={language,onState,mode,submit:typeof submit==='function'?submit:null,chunks:[],bytes:0,maxBytes:mode==='conversation'?6000000:MAX_BYTES,maxDuration:mode==='conversation'?180000:MAX_DURATION,done:false,state:'requesting'};
     const result=new Promise((resolve,reject)=>{session.resolve=resolve;session.reject=reject;});
     active=session;
     emit(session,'requesting','Thu âm ngắn và gửi Gemini để nhận diện. Cho phép micro khi Safari hỏi.');
@@ -107,13 +107,14 @@
         session.mimeType=formats.find(type=>root.MediaRecorder.isTypeSupported?.(type)) || '';
         const options=session.mimeType ? {mimeType:session.mimeType,audioBitsPerSecond:48000} : {audioBitsPerSecond:48000};
         try {session.recorder=new root.MediaRecorder(stream,options);} catch {session.recorder=new root.MediaRecorder(stream,session.mimeType ? {mimeType:session.mimeType} : {});}
-        session.recorder.ondataavailable=event=>{if(event.data?.size && !session.done) session.chunks.push(event.data);};
+        session.recorder.ondataavailable=event=>{if(event.data?.size && !session.done){session.bytes+=event.data.size;if(session.bytes>session.maxBytes){cancel(issue('Bản thu vượt giới hạn 6 MB. Thu lại một đoạn ngắn hơn.','SPEECH_AUDIO'));return;}session.chunks.push(event.data);}};
         session.recorder.onerror=()=>finish(session,issue('Micro bị gián đoạn. Hãy bấm micro để thử lại.','SPEECH_RECORDING'));
         session.recorder.onstop=()=>upload(session);
         session.startedAt=root.performance.now();
         session.recorder.start(250);
         emit(session,'recording',mode==='conversation'?'Đang nghe… bấm micro lần nữa để gửi.':'Đang nghe… nói từ rồi bấm micro để gửi.');
-        session.timer=root.setTimeout(stop,mode==='conversation'?30000:MAX_DURATION);
+        session.timer=root.setTimeout(stop,session.maxDuration);
+        if(mode==='conversation')session.clockTimer=root.setInterval(()=>emit(session,'recording','Đang nghe… bấm micro để gửi, tối đa 3 phút.'),1000);
         watchLevel(session);
       } catch(error) {finish(session,issue('Chưa ghi âm được. Hãy mở bằng Safari rồi thử lại.','SPEECH_START'));}
     },error=>{if(!session.done) finish(session,permissionError(error));});
@@ -123,7 +124,7 @@
     const session=active;if(!session) return false;
     if(session.state==='requesting') {cancel();return true;}
     if(session.state!=='recording') return false;
-    root.clearTimeout(session.timer);root.clearInterval(session.levelTimer);
+    root.clearTimeout(session.timer);root.clearInterval(session.levelTimer);root.clearInterval(session.clockTimer);
     try {if(session.recorder.state!=='inactive') session.recorder.stop();} catch {finish(session,issue('Ghi âm bị gián đoạn. Hãy thử lại.','SPEECH_RECORDING'));}
     return true;
   }

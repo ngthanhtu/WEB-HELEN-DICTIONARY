@@ -69,17 +69,23 @@ test('upload cancellation/backgrounding stops tracks and ignores late transcript
   respond();await tick();assert.equal(b.api.isActive(),false);assert.ok(b.stops>=1);
 });
 
-test('conversation recording allows a thirty-second reply and submits audio directly without a second speech API call',async()=>{
+test('conversation recording allows a three-minute reply and submits audio directly without a second speech API call',async()=>{
  const b=browser();await b.api.ready;const uploads=[];
  const pending=b.api.start({mode:'conversation',submit:async(value,options)=>{uploads.push({value,options});return {transcript:'A spoken sentence.',reply:'A natural reply.'};}});
- await tick();b.clock=25000;b.api.stop();const result=await pending;
- assert.equal(result.reply,'A natural reply.');assert.equal(uploads.length,1);assert.equal(uploads[0].value.durationMs,25000);assert.equal(uploads[0].value.mimeType,'audio/mp4');assert.ok(uploads[0].options.signal);
+ await tick();b.clock=175000;b.api.stop();const result=await pending;
+ assert.equal(result.reply,'A natural reply.');assert.equal(uploads.length,1);assert.equal(uploads[0].value.durationMs,175000);assert.equal(uploads[0].value.mimeType,'audio/mp4');assert.ok(uploads[0].options.signal);
  assert.equal(b.calls.filter(call=>call.url==='/api/speech').length,0);assert.ok(b.stops>=1);
 });
 test('conversation gives the learner time to pause while preserving dictionary silence behavior',async()=>{
  let amplitude=144;const b=browser({level:()=>amplitude});await b.api.ready;
- const pending=b.api.start({mode:'conversation',submit:async()=>({reply:'Reply'})});await tick();const check=[...b.intervals.values()][0].fn;
- b.clock=100;check();amplitude=128;b.clock=1250;check();assert.equal(b.api.state,'recording');b.clock=2700;check();await pending;assert.equal(b.api.isActive(),false);
+ const pending=b.api.start({mode:'conversation',submit:async()=>({reply:'Reply'})});await tick();const check=[...b.intervals.values()].find(item=>item.ms===100).fn;
+ b.clock=100;check();amplitude=128;b.clock=1250;check();assert.equal(b.api.state,'recording');b.clock=2700;check();assert.equal(b.api.state,'recording');b.clock=8000;check();assert.equal(b.api.state,'recording');b.api.stop();await pending;assert.equal(b.api.isActive(),false);
+});
+test('the three-minute limit automatically submits the whole clip and clamps scheduling jitter to the advertised cap',async()=>{
+ const b=browser();await b.api.ready;let sent;const states=[];
+ const job=b.api.start({mode:'conversation',onState:info=>states.push(info),submit:async value=>{sent=value;return {transcript:'A long answer.'};}});await tick();
+ assert.ok([...b.timeouts.values()].some(timer=>timer.ms===180000));b.clock=65000;[...b.intervals.values()].find(timer=>timer.ms===1000).fn();assert.equal(states.at(-1).elapsedMs,65000);
+ b.clock=180020;b.runTimer(180000);assert.equal((await job).transcript,'A long answer.');assert.equal(sent.durationMs,180000);assert.ok(b.stops>=1);assert.equal(b.intervals.size,0);
 });
 test('max recording duration submits and provider timeout ends loading cleanly',async()=>{
   const b=browser({upload:()=>new Promise(()=>{})});await b.api.ready;

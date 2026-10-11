@@ -54,7 +54,7 @@ const persistDictionary = require('./lib/persist-dictionary').createDictionaryPe
 const contexts=createContextService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,store:database,beforeGenerate});
 const translations=createTranslationService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,store:database,beforeGenerate});
 const speech=createSpeechService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,beforeGenerate});
-const practical=require('./lib/practical-ai').createPracticalService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,beforeGenerate:({stage,device})=>usage.reserve(stage==='transcribe'?'practical-speech':'practical',1,device)});
+const practical=require('./lib/practical-ai').createPracticalService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,beforeGenerate:({stage,device})=>usage.reserve(stage==='assess'?'practical-assessment':stage==='transcribe'?'practical-speech':'practical',1,device)});
 const cache = new Map(); // successful results only
 const audioPending=new Map();
 const memo = async (k, fn) => {
@@ -76,11 +76,12 @@ const memo = async (k, fn) => {
 };
 
 // Short microphone clips are larger than normal dictionary JSON requests.
-app.use(['/api/speech','/api/practical'],express.json({limit:'2mb'}));
+app.use('/api/speech',express.json({limit:'2mb'}));
+app.use('/api/practical',express.json({limit:'9mb'}));
 app.use(express.json());
 app.use((error,req,res,next)=>{
   if(!req.path.startsWith('/api/speech') && !req.path.startsWith('/api/practical')) return next(error);
-  if(error.type==='entity.too.large') return res.status(413).json({error:req.path.startsWith('/api/practical')?'Bản ghi âm quá dài. Hãy nói trong tối đa 30 giây.':'Bản ghi âm quá dài. Hãy nói một từ hoặc cụm từ ngắn.',code:'SPEECH_AUDIO'});
+  if(error.type==='entity.too.large') return res.status(413).json({error:req.path.startsWith('/api/practical')?'Bản ghi quá lớn. Thu lại tối đa 3 phút (6 MB).':'Bản ghi âm quá dài. Hãy nói một từ hoặc cụm từ ngắn.',code:'SPEECH_AUDIO'});
   if(error.type==='entity.parse.failed') return res.status(400).json({error:'Không đọc được bản ghi âm. Hãy bấm micro để ghi lại.',code:'SPEECH_AUDIO'});
   next(error);
 });
@@ -118,13 +119,13 @@ app.post('/api/speech',async(req,res)=>{
   catch(error) {res.status(error.status || 503).json({error:error.message || 'Chưa nhận diện được. Hãy thử lại hoặc gõ từ.',code:error.code || 'SPEECH_SERVICE'});}
 });
 const buildVersion=process.env.RENDER_GIT_COMMIT?.replace(/[^a-zA-Z0-9]/g,'').slice(0,12) || 'mobile-v1';
-app.get('/api/practical/status',(req,res)=>res.json({configured:practical.configured,provider:'Gemini',dailyReplyLimit:usage.limits.practicalDeviceDay,transcriptConfirmation:true,pronunciation:require('./public/assets/practical-core').scenarios.map(item=>({text:item.opening,proof:pronunciation.issue(item.opening)}))}));
+app.get('/api/practical/status',(req,res)=>res.json({configured:practical.configured,provider:'Gemini',dailyReplyLimit:usage.limits.practicalDeviceDay,transcriptConfirmation:true,automaticClearSpeech:true,maxRecordingSeconds:180,ieltsAssessment:true,dailyAssessmentLimit:usage.limits.practicalAssessmentDay,pronunciation:require('./public/assets/practical-core').scenarios.map(item=>({text:item.opening,proof:pronunciation.issue(item.opening)}))}));
 app.post('/api/practical',async(req,res)=>{
   try{
     const device=req.get('X-Helen-Device') || '';
     if(process.env.NODE_ENV==='production' && !/^[a-f0-9]{64}$/.test(device))return res.status(400).json({error:'Tải lại trang để cập nhật luyện nói rồi thử lại.',code:'PRACTICAL_DEVICE'});
     const value=await practical.reply(req.body,{device});
-    res.json(value.stage==='transcribe'?value:{...value,pronunciation:[value.reply,value.improved,value.phrase.text].map(text=>({text,proof:pronunciation.issue(text)}))});
+    res.json(value.stage?value:{...value,pronunciation:[value.reply,value.improved,value.phrase.text].filter(text=>text.length<=2000).map(text=>({text,proof:pronunciation.issue(text)}))});
   }catch(error){res.status(error.status || 503).json({error:error.code?error.message:'Chưa kết nối được AI. Hãy thử lại.',code:error.code || 'PRACTICAL_SERVICE'});}
 });
 const appPages={'/':'dictionary','/study':'study','/topics':'topics','/practical-ai':'practical','/words':'words','/history':'history','/offline':'offline'};
