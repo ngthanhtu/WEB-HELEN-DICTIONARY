@@ -43,6 +43,20 @@ test('translation storage survives general cache timeouts and reads/writes five 
   assert.equal((await db.translationCache()).length,5);assert.equal(sqlCalls.length,3);await assert.rejects(db.translationValues('tts-v1',['invalid']));
  }finally{await db.close();}
 });
+test('translation cache retries do not postpone database recovery after failed startup',async t=>{
+ let clock=Date.now(),failed=false;
+ t.mock.method(Date,'now',()=>clock);
+ const db=createDatabase({MYSQL_HOST:'127.0.0.1',MYSQL_USER:'test',MYSQL_DATABASE:'test',MYSQL_SSL:'false'},{createPool:()=>({end:async()=>{},getConnection:async()=>({release(){},destroy(){},execute:async sql=>{
+  if(sql.startsWith('CREATE') && !failed){failed=true;throw Object.assign(Error('temporary connection failure'),{code:'ECONNREFUSED'});}return [[]];
+ },query:async()=>[[]]})})});
+ try{
+  assert.equal(await db.initialize(),false);
+  clock+=5000;await assert.rejects(db.translationCache(),error=>error.code==='DATABASE_UNAVAILABLE');
+  clock+=26000;db.status();await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(db.status().connected,true,'cache retry must preserve the original reconnect deadline');
+  assert.deepEqual(await db.translationCache(),[]);
+ }finally{await db.close();}
+});
 test('completed RAM entries are persisted and successful writes are deduplicated',async()=>{
   const {createDictionaryPersistence}=require('../lib/persist-dictionary');
   const writes=[];

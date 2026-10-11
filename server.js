@@ -515,7 +515,14 @@ const server = app.listen(PORT, () => {
   // Read the spelling index during startup so the first typo does not pay its loading cost.
   warmSpellingIndex().catch(error=>console.warn(`Spelling index unavailable: ${error.code || error.name}`));
   void translations.prepare();
-  void database.initialize().then(ok => {if(database.status().configured) console.log(`Database: ${ok ? 'connected' : 'unavailable — local history and RAM cache remain active'}`);if(ok){void database.prepareTTS().catch(()=>{});void translations.prepareCache().catch(()=>{});}});
+  void database.initialize().then(ok => {
+    if(database.status().configured){
+      console.log(`Database: ${ok ? 'connected' : 'unavailable — local history and RAM cache remain active'}`);
+      // Keep restoring shared translations even when the initial connection fails.
+      void translations.prepareCache().catch(()=>{});
+    }
+    if(ok)void database.prepareTTS().catch(()=>{});
+  });
 });
 for (const signal of ['SIGINT','SIGTERM']) process.once(signal,() => {
   setTimeout(()=>process.exit(1),20000).unref();
