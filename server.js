@@ -139,6 +139,7 @@ app.get(Object.keys(appPages), (req, res) => {
     .replace(/(\/assets\/[^"\s]+\.(?:css|js))(?=")/g,`$1?v=${buildVersion}`));
 });
 app.get('/manifest.webmanifest',(req,res)=>res.type('application/manifest+json').sendFile(path.join(__dirname,'public','manifest.webmanifest')));
+app.get('/favicon.ico',(req,res)=>res.type('image/x-icon').sendFile(path.join(__dirname,'public','assets','icons','helen-favicon-v1.ico')));
 app.get('/sw.js',(req,res)=>{
   res.set('Cache-Control','no-cache').type('text/javascript').send(require('fs').readFileSync(path.join(__dirname,'public','sw.js'),'utf8').replace('__BUILD_VERSION__',buildVersion));
 });
