@@ -14,7 +14,7 @@ async function translate(text, to) {
 }
 test('app destinations support direct links and refreshes with the correct page and versioned assets',async()=>{
   await ready;
-  for(const [path,page,title] of [['/','dictionary','Dictionary'],['/study','study','Study'],['/topics','topics','Topics'],['/words','words','My words'],['/history','history','History'],['/offline','offline','Offline'],['/study/','study','Study'],['/Study','study','Study']]){
+  for(const [path,page,title] of [['/','dictionary','Dictionary'],['/study','study','Study'],['/topics','topics','Topics'],['/practical-ai','practical','Practical AI'],['/words','words','My words'],['/history','history','History'],['/offline','offline','Offline'],['/study/','study','Study'],['/Study','study','Study']]){
     const response=await fetch(`${base}${path}`),html=await response.text();assert.equal(response.status,200,path);
     assert.match(html,new RegExp(`data-page="${page}"`));assert.ok(html.includes(`<title>${title} · Helen Dictionary</title>`));
     assert.match(html,/\/assets\/navigation.js\?v=/);assert.match(html,/\/assets\/pages.css\?v=/);assert.equal(response.headers.get('cache-control'),'no-cache');
@@ -60,6 +60,16 @@ const recordedClip=(marker='SPEECH_INTERMEDIATE',bytes=48)=>({
   mimeType:'audio/mp4;codecs=mp4a.40.2',language:'en-US',durationMs:950
 });
 const speechRequest=async body=>{await ready;return fetch(`${base}/api/speech`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});};
+test('speaking page status and text/audio turns return safe coaching with approved pronunciation proofs',async()=>{
+  await ready;const status=await fetch(`${base}/api/practical/status`),capability=await status.json();assert.equal(capability.configured,true);assert.equal(capability.pronunciation.length,6);assert.ok(capability.pronunciation.every(item=>item.proof));
+  const ask=body=>fetch(`${base}/api/practical`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({scenario:'coffee',level:'B1',history:[{role:'assistant',text:'What would you like to order?'}],requestId:require('node:crypto').randomUUID(),...body})});
+  for(const body of [{text:'I would like an iced latte, please.'},{...recordedClip('PRACTICAL_COFFEE',110000),durationMs:25000}]){
+    const response=await ask(body);assert.equal(response.status,200);const data=await response.json();assert.ok(data.transcript && data.reply && data.translation && data.feedback && data.improved);assert.equal(data.pronunciation.length,3);assert.ok(data.pronunciation.every(item=>item.proof));
+  }
+  const invalid=await ask({text:' '});assert.equal(invalid.status,400);assert.equal((await invalid.json()).code,'PRACTICAL_INPUT');
+  const quota=await ask({text:'PRACTICAL_QUOTA'});assert.equal(quota.status,429);assert.doesNotMatch(await quota.text(),/PRIVATE_PROVIDER_DETAILS/);
+  for(const [body,code] of [['{"audio":',400],[JSON.stringify({audio:'A'.repeat(2*1024*1024)}),413]]){const response=await fetch(`${base}/api/practical`,{method:'POST',headers:{'Content-Type':'application/json'},body});assert.equal(response.status,code);const data=await response.json();assert.equal(data.code,'SPEECH_AUDIO');assert.doesNotMatch(data.error,/SyntaxError|PayloadTooLargeError|stack/);}
+});
 test('speech exposes only configuration status and transcribes MP4 recordings beyond the default 100KB parser limit',async()=>{
   await ready;
   const status=await fetch(`${base}/api/speech/status`);assert.equal(status.status,200);
@@ -173,6 +183,7 @@ test('redirects missing local backgrounds to the current branch after history cl
   fs.cpSync(path.join(__dirname,'..','public','assets','topics'),path.join(tmp,'public','assets','topics'),{recursive:true});
   fs.copyFileSync(path.join(__dirname,'..','public','assets','study-core.js'),path.join(tmp,'public','assets','study-core.js'));
   fs.copyFileSync(path.join(__dirname,'..','public','assets','sense-core.js'),path.join(tmp,'public','assets','sense-core.js'));
+  fs.copyFileSync(path.join(__dirname,'..','public','assets','practical-core.js'),path.join(tmp,'public','assets','practical-core.js'));
   const child = spawn(process.execPath, [path.join(tmp, 'server.js')], {
     env: {...process.env, DATABASE_URL:'', MYSQL_HOST:'', PORT:'3201', NODE_PATH:path.join(__dirname,'..','node_modules')}, stdio:['ignore','pipe','pipe']
   });

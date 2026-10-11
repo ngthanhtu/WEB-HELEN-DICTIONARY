@@ -42,13 +42,18 @@
     clean(session);
     const durationMs=Math.round(root.performance.now()-session.startedAt);
     const blob=new root.Blob(session.chunks,{type:session.recorder.mimeType || session.mimeType});
-    if(durationMs<350 || !blob.size || blob.size>MAX_BYTES) {finish(session,issue('Hãy nói một từ rõ ràng rồi bấm micro để gửi.','SPEECH_AUDIO'));return;}
+    if(durationMs<350 || !blob.size || blob.size>MAX_BYTES) {finish(session,issue(session.mode==='conversation'?'Hãy nói một câu ngắn rồi bấm micro để gửi.':'Hãy nói một từ rõ ràng rồi bấm micro để gửi.','SPEECH_AUDIO'));return;}
     emit(session,'transcribing','Đang nhận diện…');
     session.abort=new root.AbortController();
-    session.timer=root.setTimeout(()=>{session.timedOut=true;session.abort.abort();finish(session,issue('Nhận diện hơi chậm. Hãy thử lại hoặc gõ từ.','SPEECH_TIMEOUT'));},7500);
+    session.timer=root.setTimeout(()=>{session.timedOut=true;session.abort.abort();finish(session,issue('Nhận diện hơi chậm. Hãy thử lại hoặc nhập câu trả lời.','SPEECH_TIMEOUT'));},session.mode==='conversation'?9000:7500);
     try {
       const audio=await encode(blob);
       if(session.done || session!==active) return;
+      if(session.submit){
+        const data=await session.submit({audio,mimeType:blob.type,language:session.language,durationMs},{signal:session.abort.signal});
+        if(!session.done && session===active)finish(session,null,data);
+        return;
+      }
       const response=await root.fetch('/api/speech',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({audio,mimeType:blob.type,language:session.language,durationMs}),signal:session.abort.signal,cache:'no-store'});
       const data=await response.json().catch(()=>({}));
       if(session.done || session!==active) return;
@@ -73,17 +78,17 @@
         let energy=0;for(const value of samples) energy+=((value-128)/128)**2;
         const rms=Math.sqrt(energy/samples.length),now=root.performance.now();
         if(rms>0.015) {session.voiceMs+=100;session.lastVoiceAt=now;}
-        emit(session,'recording','Đang nghe… nói từ rồi bấm micro để gửi.',Math.min(1,rms*8));
-        if(session.voiceMs>=100 && now-session.startedAt>=600 && now-session.lastVoiceAt>=950) stop();
+        emit(session,'recording',session.mode==='conversation'?'Đang nghe… bấm micro lần nữa để gửi.':'Đang nghe… nói từ rồi bấm micro để gửi.',Math.min(1,rms*8));
+        if(session.voiceMs>=100 && now-session.startedAt>=600 && now-session.lastVoiceAt>=(session.mode==='conversation'?2500:950)) stop();
         else if(session.voiceMs===0 && now-session.startedAt>=6000) {cancel(issue('Chưa thu được tiếng. Đưa điện thoại gần hơn rồi thử lại.','SPEECH_NO_VOICE'));}
       },100);
     } catch {}
   }
-  function start({language='en-US',onState}={}) {
+  function start({language='en-US',onState,mode='search',submit}={}) {
     if(active) return Promise.reject(issue('Micro đang hoạt động. Bấm lại để gửi hoặc dừng.','SPEECH_BUSY'));
     if(root.navigator?.onLine===false) return Promise.reject(issue('Đang ngoại tuyến. Hãy gõ từ đã lưu; micro cần Internet.','SPEECH_CONNECTION'));
     if(!supported || !configured) return Promise.reject(issue('Micro thu âm chưa sẵn sàng. Hãy mở Safari hoặc gõ từ.','SPEECH_UNAVAILABLE'));
-    const session={language,onState,chunks:[],done:false,state:'requesting'};
+    const session={language,onState,mode,submit:typeof submit==='function'?submit:null,chunks:[],done:false,state:'requesting'};
     const result=new Promise((resolve,reject)=>{session.resolve=resolve;session.reject=reject;});
     active=session;
     emit(session,'requesting','Thu âm ngắn và gửi Gemini để nhận diện. Cho phép micro khi Safari hỏi.');
@@ -107,8 +112,8 @@
         session.recorder.onstop=()=>upload(session);
         session.startedAt=root.performance.now();
         session.recorder.start(250);
-        emit(session,'recording','Đang nghe… nói từ rồi bấm micro để gửi.');
-        session.timer=root.setTimeout(stop,MAX_DURATION);
+        emit(session,'recording',mode==='conversation'?'Đang nghe… bấm micro lần nữa để gửi.':'Đang nghe… nói từ rồi bấm micro để gửi.');
+        session.timer=root.setTimeout(stop,mode==='conversation'?30000:MAX_DURATION);
         watchLevel(session);
       } catch(error) {finish(session,issue('Chưa ghi âm được. Hãy mở bằng Safari rồi thử lại.','SPEECH_START'));}
     },error=>{if(!session.done) finish(session,permissionError(error));});

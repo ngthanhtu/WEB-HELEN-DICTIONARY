@@ -25,14 +25,15 @@ test('a slow reload uses the installed page promptly without caching server erro
 });
 test('every app destination opens the installed shell offline but API and unknown URLs remain untouched',async()=>{
   const w=worker(async()=>{throw Error('offline');}),cache=await w.caches.open('helen-test-shell');await cache.put('/',new Response('complete app shell'));
-  for(const path of ['/study','/study/','/topics','/words','/history','/offline']){
+  for(const path of ['/study','/study/','/topics','/practical-ai','/words','/history','/offline']){
     let response;w.events.fetch({request:{...w.request(path),mode:'navigate'},waitUntil(){},respondWith:value=>response=value});
     assert.equal(await (await response).text(),'complete app shell',path);
   }
-  for(const path of ['/api/history','/healthz','/unknown']){
+  for(const path of ['/api/history','/api/practical','/healthz','/unknown']){
     let intercepted=false;w.events.fetch({request:{...w.request(path),mode:'navigate'},respondWith:()=>intercepted=true});assert.equal(intercepted,false,path);
   }
   assert.ok(vm.runInContext("shell.includes('/assets/navigation.js?v=test') && shell.includes('/assets/pages.css?v=test')",w.context));
+  assert.ok(vm.runInContext("['practical.js','practical-core.js','practical.css'].every(file=>shell.includes('/assets/'+file+'?v=test'))",w.context));
 });
 test('script and stylesheet version queries bypass stale asset caches',async()=>{
   const w=worker(async()=>new Response('new script')),cache=await w.caches.open('helen-test-shell');await cache.put('https://helen.test/assets/study.js?v=old',new Response('old script'));

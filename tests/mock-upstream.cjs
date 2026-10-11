@@ -40,6 +40,12 @@ global.fetch = async (input, opts = {}) => {
   if(url.hostname==='generativelanguage.googleapis.com') {
     if(!opts.body) return Response.json({models:[{name:'models/gemini-3.1-flash-lite',supportedGenerationMethods:['generateContent']},{name:'models/gemini-3-pro',supportedGenerationMethods:['generateContent']}]});
     const request=JSON.parse(opts.body), recording=request.contents?.[0]?.parts?.find(part=>part.inlineData)?.inlineData;
+    let conversation;try{conversation=JSON.parse(request.contents?.[0]?.parts?.[0]?.text || '{}');}catch{}
+    if(conversation?.partnerRole){
+      const text=conversation.learnerSentence || 'Can I have an iced coffee, please?';
+      if(text==='PRACTICAL_QUOTA')return Response.json({error:{code:429,message:'PRIVATE_PROVIDER_DETAILS',status:'RESOURCE_EXHAUSTED'}},{status:429});
+      return Response.json({candidates:[{content:{role:'model',parts:[{text:JSON.stringify({transcript:text,reply:'Of course! Would you like milk in your coffee?',translation:'Tất nhiên! Bạn muốn thêm sữa vào cà phê không?',improved:text,feedback:'Bạn đã gọi món lịch sự và rõ ràng.',phrase:{text:'Could I have…?',translation:'Tôi có thể gọi… không?'}})}]},finishReason:'STOP'}]});
+    }
     if(recording) {
       const marker=Buffer.from(recording.data,'base64').toString('utf8');
       if(marker.includes('SPEECH_QUOTA')) return Response.json({error:{code:429,message:'PRIVATE_PROVIDER_SPEECH_DETAILS',status:'RESOURCE_EXHAUSTED'}},{status:429});

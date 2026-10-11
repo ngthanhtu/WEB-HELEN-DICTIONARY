@@ -1,10 +1,10 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
 function app(start='/study'){
   const listeners={},windowEvents={},events=[],pushes=[];
-  const location=new URL(start,'https://helen.test'),names=['dictionary','study','words','history','offline','topics'];
+  const location=new URL(start,'https://helen.test'),names=['dictionary','study','words','history','offline','topics','practical'];
   const element=(extra={})=>({attributes:{},setAttribute(name,value){this.attributes[name]=value;},removeAttribute(name){delete this.attributes[name];},focus(){this.focused=true;},...extra});
   const sections=names.map(name=>element({dataset:{appPage:name},heading:element(),querySelector(){return this.heading;}}));
-  const links=['/','/study','/words','/history','/offline','/topics'].map(path=>element({href:new URL(path,location).href}));
+  const links=['/','/study','/words','/history','/offline','/topics','/practical-ai'].map(path=>element({href:new URL(path,location).href}));
   const skip=element(),study=element(),preferences={open:true},window={history:{pushState(state,unused,url){pushes.push(url);const next=new URL(url,location);location.pathname=next.pathname;location.search=next.search;location.hash=next.hash;},replaceState(state,unused,url){const next=new URL(url,location);location.pathname=next.pathname;location.hash=next.hash;}},scrollTo(){},addEventListener:(name,fn)=>windowEvents[name]=fn};
   const document={documentElement:{dataset:{}},querySelectorAll(selector){return selector==='[data-app-page]'?sections:links;},getElementById(id){return id==='study'?study:sections[names.indexOf(id.replace('page-',''))];},querySelector(selector){return selector==='.skip-link'?skip:preferences;},addEventListener(name,fn){listeners[name]=fn;},dispatchEvent(event){events.push(event);}};
   const context=vm.createContext({window,document,location,URL,CustomEvent:class{constructor(type,options){this.type=type;Object.assign(this,options);}}});
@@ -43,4 +43,8 @@ test('modified clicks retain native new-tab behavior while a normal link switche
 
 test('topic catalog has its own shareable destination and preserves other page state',()=>{
   const p=app('/topics');assert.equal(p.window.HelenPages.current(),'topics');assert.equal(p.document.title,'Topics · Helen Dictionary');assert.deepEqual(p.sections.filter(item=>!item.hidden).map(item=>item.dataset.appPage),['topics']);p.window.HelenPages.go('/study');assert.equal(p.window.HelenPages.current(),'study');
+});
+test('Practical AI direct links, navigation and Back retain study state and mark the speaking tab',()=>{
+  const p=app('/practical-ai');assert.equal(p.window.HelenPages.current(),'practical');assert.equal(p.document.title,'Practical AI · Helen Dictionary');assert.equal(p.links[6].attributes['aria-current'],'page');assert.deepEqual(p.sections.filter(item=>!item.hidden).map(item=>item.dataset.appPage),['practical']);
+  p.sections[1].quiz={answer:'loan'};p.window.HelenPages.go('/study');p.window.HelenPages.go('/practical-ai',{focus:true});assert.deepEqual(p.sections[1].quiz,{answer:'loan'});assert.equal(p.sections[6].heading.focused,true);
 });

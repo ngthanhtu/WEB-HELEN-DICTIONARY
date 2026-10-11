@@ -162,13 +162,14 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
 <link rel="stylesheet" href="/assets/daily-learning.css">
 <link rel="stylesheet" href="/assets/pages.css">
 <link rel="stylesheet" href="/assets/topics.css">
+<link rel="stylesheet" href="/assets/practical.css">
 <script src="/assets/navigation.js"></script>
 </head>
 <body>
 <a class="skip-link" href="#page-dictionary">Skip to content</a>
 <header class="bar">
   <div class="brand"><i aria-hidden="true"></i><a href="/" data-page-link>Helen Dictionary</a><button id="pet-mascot" class="pet-mascot" type="button" aria-label="Change dog picture" hidden><img alt="" draggable="false"></button></div>
-  <nav class="main-nav" aria-label="Main navigation"><a href="/" data-page-link aria-label="Dictionary search"><span class="nav-full">Dictionary</span><span class="nav-short">Search</span></a><a href="/study" data-page-link>Study</a><a href="/topics" data-page-link>Topics</a><a href="/words" data-page-link>My words</a><a href="/history" data-page-link>History</a><a href="/offline" data-page-link>Offline</a></nav>
+  <nav class="main-nav" aria-label="Main navigation"><a href="/" data-page-link aria-label="Dictionary search"><span class="nav-full">Dictionary</span><span class="nav-short">Search</span></a><a href="/study" data-page-link>Study</a><a href="/topics" data-page-link>Topics</a><a href="/practical-ai" data-page-link class="practical-nav"><span aria-hidden="true">✦</span> Practical AI <span class="nav-sparkle" aria-hidden="true">✧</span></a><a href="/words" data-page-link>My words</a><a href="/history" data-page-link>History</a><a href="/offline" data-page-link>Offline</a></nav>
   <details class="preferences"><summary>Preferences <span aria-hidden="true">⚙</span></summary><div class="preferences-body">
   <label>Meanings in
     <select id="target" aria-label="Translate meanings into"></select>
@@ -268,6 +269,13 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
 </section>
 <p class="page-next"><a href="/study" data-page-link>Practice your saved words →</a></p>
 </section>
+<section id="page-practical" class="app-page" data-app-page="practical" aria-label="Practical AI">
+<header class="page-intro practical-intro"><div><span class="section-kicker">REAL CONVERSATIONS. SMALL STEPS.</span><h1 tabindex="-1">Practical AI <span aria-hidden="true">✦</span></h1><p>Speak a little. Make it real.<br>Luyện hội thoại, thử cách diễn đạt mới và nhận góp ý sau mỗi câu.</p></div><span class="practical-badge">✧ Your speaking space</span></header>
+<div class="practical-layout">
+<aside class="practical-settings" aria-label="Speaking settings"><h2>Pick a situation</h2><p class="muted">Một cuộc hội thoại gần với cuộc sống của bạn.</p><div id="practical-scenarios" class="practical-scenarios"></div><label for="practical-level">Your level</label><select id="practical-level"><option value="A2">A2 · Getting started</option><option value="B1" selected>B1 · Building confidence</option><option value="B2">B2 · Expressing ideas</option></select><label for="practical-voice">Listen with</label><select id="practical-voice"><option value="device">Device voice · nhanh</option><option value="elevenlabs">Selected ElevenLabs voice</option></select><p class="muted">Giọng ElevenLabs dùng lựa chọn trong Preferences. Giọng máy dùng lựa chọn đã lưu trên thiết bị.</p></aside>
+<section class="practical-chat" aria-labelledby="practical-chat-title"><header class="practical-chat-header"><div class="practical-avatar" aria-hidden="true">✦</div><div><h2 id="practical-chat-title">Your speaking partner</h2><p id="practical-goal"></p></div><button id="practical-reset" type="button" class="word-link">New session</button></header><div id="practical-messages" class="practical-messages" aria-label="Conversation"></div>
+<form id="practical-form" class="practical-composer"><label for="practical-input">Your reply</label><textarea id="practical-input" rows="2" maxlength="800" placeholder="Say it with the mic, or type your reply…" aria-describedby="practical-privacy"></textarea><div class="practical-actions"><button id="practical-mic" class="practical-mic" type="button" aria-label="Record a speaking reply" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/></svg><span>Speak</span></button><button id="practical-send" class="btn" type="submit">Send reply <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></button><button id="practical-cancel" type="button" class="word-link" hidden>Cancel</button></div><p id="practical-status" role="status" aria-live="polite"></p><details class="practical-tip"><summary>Need a starting point?</summary><p id="practical-hint"></p><button id="practical-use-hint" type="button" class="word-link">Use this sentence</button></details><p id="practical-privacy" class="practical-privacy">Thu âm tối đa 30 giây và gửi Gemini khi bạn bấm mic. Không lưu file ghi âm; hội thoại lưu trên thiết bị. AI góp ý cách diễn đạt, chưa chấm phát âm hay band thi.</p></form></section>
+</div></section>
 <section id="page-history" class="app-page" data-app-page="history" aria-label="History">
 <header class="page-intro"><span class="section-kicker">PICK UP WHERE YOU LEFT OFF</span><h1 tabindex="-1">Your recent discoveries.</h1><p>Xem lại từ đã tra hoặc mở lại một từ để tiếp tục khám phá.</p></header>
 <section class="learning-tools history-tools" aria-label="Lookup history">
@@ -1119,6 +1127,8 @@ document.addEventListener?.('helen:page-change',event=>{if(event.detail.page==='
 <script src="/assets/backup-core.js"></script>
 <script src="/assets/study.js" defer></script>
 <script src="/assets/topics.js" defer></script>
+<script src="/assets/practical-core.js"></script>
+<script src="/assets/practical.js" defer></script>
 <script src="/assets/daily-learning.js" defer></script>
 <script src="/assets/backup.js" defer></script>
 <script src="/assets/metrics.js" defer></script>

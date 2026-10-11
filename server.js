@@ -39,6 +39,7 @@ if (process.env.NODE_ENV === 'production') {
   app.use('/api/voices',limit(60));
   app.post('/api/context', limit(6));
   app.post('/api/speech', limit(10));
+  app.post('/api/practical',limit(8));
 }
 const PORT = process.env.PORT || 3000;
 const KEY = process.env.ELEVENLABS_API_KEY;
@@ -53,6 +54,7 @@ const persistDictionary = require('./lib/persist-dictionary').createDictionaryPe
 const contexts=createContextService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,store:database,beforeGenerate});
 const translations=createTranslationService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,store:database,beforeGenerate});
 const speech=createSpeechService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,beforeGenerate});
+const practical=require('./lib/practical-ai').createPracticalService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,beforeGenerate});
 const cache = new Map(); // successful results only
 const audioPending=new Map();
 const memo = async (k, fn) => {
@@ -74,11 +76,11 @@ const memo = async (k, fn) => {
 };
 
 // Short microphone clips are larger than normal dictionary JSON requests.
-app.use('/api/speech',express.json({limit:'2mb'}));
+app.use(['/api/speech','/api/practical'],express.json({limit:'2mb'}));
 app.use(express.json());
 app.use((error,req,res,next)=>{
-  if(!req.path.startsWith('/api/speech')) return next(error);
-  if(error.type==='entity.too.large') return res.status(413).json({error:'Bản ghi âm quá dài. Hãy nói một từ hoặc cụm từ ngắn.',code:'SPEECH_AUDIO'});
+  if(!req.path.startsWith('/api/speech') && !req.path.startsWith('/api/practical')) return next(error);
+  if(error.type==='entity.too.large') return res.status(413).json({error:req.path.startsWith('/api/practical')?'Bản ghi âm quá dài. Hãy nói trong tối đa 30 giây.':'Bản ghi âm quá dài. Hãy nói một từ hoặc cụm từ ngắn.',code:'SPEECH_AUDIO'});
   if(error.type==='entity.parse.failed') return res.status(400).json({error:'Không đọc được bản ghi âm. Hãy bấm micro để ghi lại.',code:'SPEECH_AUDIO'});
   next(error);
 });
@@ -116,8 +118,15 @@ app.post('/api/speech',async(req,res)=>{
   catch(error) {res.status(error.status || 503).json({error:error.message || 'Chưa nhận diện được. Hãy thử lại hoặc gõ từ.',code:error.code || 'SPEECH_SERVICE'});}
 });
 const buildVersion=process.env.RENDER_GIT_COMMIT?.replace(/[^a-zA-Z0-9]/g,'').slice(0,12) || 'mobile-v1';
-const appPages={'/':'dictionary','/study':'study','/topics':'topics','/words':'words','/history':'history','/offline':'offline'};
-const pageTitles={dictionary:'Dictionary',study:'Study',topics:'Topics',words:'My words',history:'History',offline:'Offline'};
+app.get('/api/practical/status',(req,res)=>res.json({configured:practical.configured,provider:'Gemini',pronunciation:require('./public/assets/practical-core').scenarios.map(item=>({text:item.opening,proof:pronunciation.issue(item.opening)}))}));
+app.post('/api/practical',async(req,res)=>{
+  try{
+    const value=await practical.reply(req.body);
+    res.json({...value,pronunciation:[value.reply,value.improved,value.phrase.text].map(text=>({text,proof:pronunciation.issue(text)}))});
+  }catch(error){res.status(error.status || 503).json({error:error.code?error.message:'Chưa kết nối được AI. Hãy thử lại.',code:error.code || 'PRACTICAL_SERVICE'});}
+});
+const appPages={'/':'dictionary','/study':'study','/topics':'topics','/practical-ai':'practical','/words':'words','/history':'history','/offline':'offline'};
+const pageTitles={dictionary:'Dictionary',study:'Study',topics:'Topics',practical:'Practical AI',words:'My words',history:'History',offline:'Offline'};
 app.get(Object.keys(appPages), (req, res) => {
   const page=appPages[req.path.toLowerCase().replace(/\/$/,'') || '/'];
   const html=require('fs').readFileSync(path.join(__dirname,'index.html'),'utf8');
@@ -515,6 +524,10 @@ const server = app.listen(PORT, () => {
   // Read the spelling index during startup so the first typo does not pay its loading cost.
   warmSpellingIndex().catch(error=>console.warn(`Spelling index unavailable: ${error.code || error.name}`));
   void translations.prepare();
+  if(process.env.NODE_ENV==='production')void (async function warmAIQuota(){
+    if(!database.status().configured)return;
+    try{await database.prepareAI();}catch{setTimeout(()=>void warmAIQuota(),5000).unref();}
+  })();
   void database.initialize().then(ok => {
     if(database.status().configured){
       console.log(`Database: ${ok ? 'connected' : 'unavailable — local history and RAM cache remain active'}`);

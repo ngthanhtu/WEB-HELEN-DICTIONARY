@@ -3,6 +3,15 @@ const assert = require('node:assert/strict');
 const { createTranslationService } = require('../lib/translation');
 
 const quota = () => Response.json({ responseStatus: 429, responseDetails: 'MYMEMORY WARNING: YOU USED ALL AVAILABLE FREE TRANSLATIONS FOR TODAY.', responseData: { translatedText: 'QUOTA ERROR' } }, { status: 429 });
+test('first single definition bypasses a slow literal provider and pending model discovery',async()=>{
+ let release,generated=0;const service=createTranslationService({apiKey:'test-only',timeoutMs:800,fetchImpl:async(url,request)=>{
+  assert.ok(!String(url).includes('mymemory'),'definitions must not wait for the literal provider');
+  if(!request?.body)return new Promise(resolve=>release=()=>resolve(Response.json({models:[]})));
+  generated++;return gemini(request,()=> 'Một định nghĩa được dịch đầy đủ và chính xác.');
+ }});
+ const warming=service.prepare();await new Promise(resolve=>setImmediate(resolve));
+ try{assert.equal(await service.translate('A dictionary definition to explain one distinct sense.','en','vi',{kind:'definition'}),'Một định nghĩa được dịch đầy đủ và chính xác.');assert.equal(generated,1);}finally{release();await warming;}
+});
 test('five definitions share one provider and durable write; a new instance and another user reuse them without providers',async()=>{
  const rows=new Map();let readCalls=0,writeCalls=0,providerCalls=0;
  const store={status:()=>({configured:true,connected:true}),translationCache:async()=>[...rows.values()],translationValues:async(namespace,keys)=>{readCalls++;return keys.map(key=>rows.get(namespace+'|'+require('node:crypto').createHash('sha256').update(key).digest('hex'))).filter(Boolean);},setTranslations:async items=>{writeCalls++;for(const item of items){const key=require('node:crypto').createHash('sha256').update(item.key).digest('hex');rows.set(item.namespace+'|'+key,{namespace:item.namespace,key,value:item.value});}return true;}};
