@@ -43,7 +43,7 @@ test('selected voice survives a reload and TTS failure',async()=>{
   await vm.runInContext("speak('hello', document.querySelector('#button'))",reloaded.context);
   assert.ok(reloaded.requests.some(r=>r.url.includes('voice=Sarah')));
   assert.equal(reloaded.saved['helen-voice'],'Sarah');
-  assert.match(reloaded.element('#voice-status').textContent,/selection has been kept/);
+  assert.match(reloaded.element('#voice-status').textContent,/Giữ nguyên giọng đã chọn/);
 });
 test('changing target requests and displays the selected language immediately',async()=>{
   const p=page();
@@ -461,4 +461,23 @@ test('background metadata cannot discard a definition translation that is still 
   const updated=p.context.document.querySelectorAll('.eye')[0];assert.notEqual(updated,original);assert.equal(updated.getAttribute('aria-busy'),'true');assert.equal(translations,1);
   finishTranslation({ok:true,json:async()=>({translations:['Nhận một thứ trong thời gian ngắn.']})});await pending;await new Promise(resolve=>setImmediate(resolve));
   assert.equal(updated.getAttribute('aria-pressed'),'true');assert.equal(updated.parentElement.querySelector('.tr').textContent,'Nhận một thứ trong thời gian ngắn.');assert.equal(updated.disabled,false);
+});
+
+
+test('voice list cached on reload remains selectable when the provider is temporarily unavailable',async()=>{
+ const first=page({'helen-voice':'Sarah'});await vm.runInContext('loadVoices()',first.context);
+ assert.ok(JSON.parse(first.saved['helen-voices-v1']).some(v=>v.value==='Rachel'));
+ const reload=page({...first.saved},null,{},url=>url.includes('/api/voices')?Response.json({error:'Temporary outage'},{status:502}):undefined);
+ await vm.runInContext('loadVoices()',reload.context);
+ assert.deepEqual(reload.element('#voice').options.map(v=>v.value),['Sarah','Rachel']);
+ assert.equal(reload.element('#voice').value,'Sarah');assert.match(reload.element('#voice-status').textContent,/Giữ các giọng đã tải/);
+ reload.element('#voice').value='Rachel';reload.element('#voice').events.change();assert.equal(reload.saved['helen-voice'],'Rachel');
+});
+test('late voice lists cannot replace a newer list or an explicit choice',async()=>{
+ const pending=[];const p=page({'helen-voice':'Sarah'},null,{},url=>url.includes('/api/voices')?new Promise(resolve=>pending.push(resolve)):undefined);
+ await new Promise(resolve=>setImmediate(resolve));const latest=vm.runInContext('loadVoices()',p.context);await new Promise(resolve=>setImmediate(resolve));
+ p.element('#voice').value='Bella';p.element('#voice').events.change();
+ pending[1](Response.json({in_use:'Rachel',voices:[{voice_id:'Bella',name:'Bella'},{voice_id:'Sarah',name:'Sarah'}]}));await latest;
+ pending[0](Response.json({in_use:'Rachel',voices:[{voice_id:'Rachel',name:'Old voice'}]}));await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(p.element('#voice').value,'Bella');assert.equal(p.saved['helen-voice'],'Bella');assert.deepEqual(p.element('#voice').options.map(v=>v.value),['Bella','Sarah']);
 });

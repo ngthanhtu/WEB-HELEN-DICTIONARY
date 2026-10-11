@@ -173,7 +173,8 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
   <label>Meanings in
     <select id="target" aria-label="Translate meanings into"></select>
   </label>
-  <label>Voice <select id="voice" aria-label="Pronunciation voice"><option value="">Loading voices…</option></select></label>
+  <label>ElevenLabs voice <select id="voice" aria-label="Pronunciation voice"><option value="">Loading voices…</option></select></label>
+  <button id="retry-voices" class="word-link" type="button">↻ Reload voices</button>
   <!-- Toggle adapted from Uiverse.io by Javierrocadev -->
   <div class="appearance-controls">
   <label class="theme-control">
@@ -251,7 +252,7 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
     <div id="topic-lessons" class="topic-lessons" role="group" aria-label="Choose a 20-word lesson"></div>
     <h3 id="topic-lesson-title"></h3><p id="topic-progress"></p>
     <div id="topic-actions" class="topic-actions" hidden><button id="practice-topic" class="word-link" type="button">Practice this lesson →</button><button id="save-topic-lesson" class="word-link" type="button">☆ Save these 20 words</button><button id="download-topic" class="word-link" type="button">↓ Save topic offline</button></div>
-    <div class="topic-audio-control"><label for="topic-audio-mode">Topic audio</label><select id="topic-audio-mode" aria-describedby="topic-audio-note"><option value="device">⚡ Fast device voice</option><option value="selected">Selected ElevenLabs voice</option></select><p id="topic-audio-note">Giọng tiếng Anh trên thiết bị, không dùng quota ElevenLabs. Giọng AI lần đầu có thể cần chờ.</p></div>
+    <div class="topic-audio-control"><label for="topic-audio-mode">Topic audio</label><select id="topic-audio-mode" aria-describedby="topic-audio-note"><option value="selected">Selected ElevenLabs voice</option><option value="device">⚡ Fast device voice</option></select><label for="topic-voice">ElevenLabs voice</label><select id="topic-voice" aria-describedby="topic-audio-note"><option value="">Loading voices…</option></select><button id="topic-retry-voices" class="word-link" type="button">↻ Reload voices</button><p id="topic-audio-note" role="status">Nghe đúng giọng ElevenLabs đã chọn; âm thanh đã lưu mở lại ngay.</p></div>
     <details id="topic-prompts" class="topic-prompts"></details>
     <div class="topic-toolbar"><label for="topic-word-filter">Find a word in this topic<input id="topic-word-filter" type="search" autocomplete="off" placeholder="Search all 200 words…"></label></div><p id="topic-word-count" role="status"></p>
     <div id="topic-words" class="topic-word-list"></div>
@@ -347,25 +348,38 @@ opt($('#target'), LANGS[stored('helen-target')] ? stored('helen-target') : 'vi')
 $('#q').value = stored('helen-query') || '';
 $('#q').addEventListener('input', () => remember('helen-query', $('#q').value));
 $('#from').addEventListener('change', () => remember('helen-from', $('#from').value));
-let selectedVoice = stored('helen-voice');
+let selectedVoice = stored('helen-voice'),voiceListRequest=0;
+function voiceMessage(message){
+  finishLoading($('#voice-status'),message);
+  if(typeof CustomEvent==='function' && document.dispatchEvent)document.dispatchEvent(new CustomEvent('helen:voice-status',{detail:{message}}));
+}
+function voiceOptionsCache(){
+  try{const data=JSON.parse(stored('helen-voices-v1') || '[]');return Array.isArray(data)?data.filter(v=>typeof v?.text==='string' && v.text.length<=220 && /^[A-Za-z0-9_-]{1,100}$/.test(v.value)).slice(0,200):[];}catch{return [];}
+}
 async function cachedVoiceOptions(sel){
   let names={};try{names=JSON.parse(stored('helen-voice-labels') || '{}') || {};}catch{}
-  const clips=await globalThis.HelenOfflineAudio?.inventory() || [];
-  const voices=[...new Set([selectedVoice,...clips.map(clip=>clip.voice)].filter(Boolean))];
+  let clips=[];try{clips=await globalThis.HelenOfflineAudio?.inventory?.() || [];}catch{}
+  const cached=offline()?[]:voiceOptionsCache();
+  const voices=[...new Set([selectedVoice,...cached.map(v=>v.value),...clips.map(clip=>clip.voice)].filter(Boolean))];
   sel.replaceChildren();
-  for(const id of voices)sel.add(new Option(typeof names[id]==='string'?names[id]:`Saved voice (${id})`,id));
+  for(const id of voices)sel.add(new Option(cached.find(v=>v.value===id)?.text || (typeof names[id]==='string'?names[id]:`Saved voice (${id})`),id));
   if(!voices.length)sel.add(new Option('Chọn và lưu giọng khi có mạng',''));
   sel.value=selectedVoice || '';return clips.length;
 }
 async function loadVoices() {
-  const sel = $('#voice');
+  const sel = $('#voice'),request=++voiceListRequest;
+  $('#retry-voices').disabled=true;
   if(offline()) {
-    await cachedVoiceOptions(sel);finishLoading($('#voice-status'),'Ngoại tuyến: nghe âm thanh đã lưu bằng đúng giọng đã chọn.');sel.removeAttribute('aria-busy');document.dispatchEvent?.(new CustomEvent('helen:voices'));return;
+    await cachedVoiceOptions(sel);voiceMessage('Ngoại tuyến: nghe âm thanh đã lưu bằng đúng giọng đã chọn.');sel.removeAttribute('aria-busy');$('#retry-voices').disabled=false;document.dispatchEvent?.(new CustomEvent('helen:voices'));return;
   }
-  showLoading($('#voice-status'),'Loading voices…');sel.setAttribute('aria-busy','true');
+  await cachedVoiceOptions(sel);
+  if(request!==voiceListRequest)return;
+  showLoading($('#voice-status'),'Loading voices…');sel.setAttribute('aria-busy','true');document.dispatchEvent?.(new CustomEvent('helen:voices'));
   try {
     const r = await apiFetch(`${API}/api/voices`);
     const data = await r.json(); if (!r.ok) throw new Error(data.error);
+    if(request!==voiceListRequest)return;
+    if(!Array.isArray(data.voices) || !data.voices.length)throw Error('Chưa có giọng ElevenLabs khả dụng. Hãy tải lại danh sách.');
     selectedVoice ||= data.in_use;
     sel.replaceChildren();
     const voices = [...data.voices];
@@ -377,17 +391,22 @@ async function loadVoices() {
       if(/^[A-Za-z0-9_-]{1,100}$/.test(v.voice_id))labels[v.voice_id]=label.slice(0,220);
     }
     remember('helen-voice-labels',JSON.stringify(labels));
+    remember('helen-voices-v1',JSON.stringify(Array.from(sel.options,v=>({text:v.text,value:v.value})).filter(v=>Object.hasOwn(labels,v.value))));
     sel.value = selectedVoice; remember('helen-voice', selectedVoice);
-    finishLoading($('#voice-status'),'Choose a voice available on your ElevenLabs plan.');
+    voiceMessage('Chọn giọng ElevenLabs; Topics cũng dùng đúng giọng này.');
   } catch (e) {
+    if(request!==voiceListRequest)return;
     const cached=await cachedVoiceOptions(sel);
-    finishLoading($('#voice-status'),cached?'Chưa tải được danh sách giọng. Bạn vẫn có thể nghe âm thanh đã lưu.':shortError(e,'Chưa tải được danh sách giọng. Hãy thử lại.'));
-  } finally {sel.removeAttribute('aria-busy');document.dispatchEvent?.(new CustomEvent('helen:voices'));}
+    voiceMessage(voiceOptionsCache().length?'Chưa làm mới được danh sách. Giữ các giọng đã tải; bấm Reload voices để thử lại.':cached?'Chưa tải được danh sách giọng. Bạn vẫn có thể nghe âm thanh đã lưu.':shortError(e,'Chưa tải được danh sách giọng. Hãy thử lại.'));
+  } finally {if(request===voiceListRequest){sel.removeAttribute('aria-busy');$('#retry-voices').disabled=false;document.dispatchEvent?.(new CustomEvent('helen:voices'));}}
 }
 $('#voice').addEventListener('change', () => {
   selectedVoice = $('#voice').value; remember('helen-voice', selectedVoice); speakRequest++;audio?.pause();globalThis.HelenDeviceSpeech?.stop();
   $('#audio-status').hidden=true;$('#audio-status').replaceChildren();$('#audio-status').removeAttribute('aria-busy');
+  if(typeof CustomEvent==='function' && document.dispatchEvent)document.dispatchEvent(new CustomEvent('helen:voice-selected',{detail:{voice:selectedVoice}}));
 });
+$('#retry-voices').addEventListener('click',loadVoices);
+globalThis.addEventListener?.('online',loadVoices);
 loadVoices();
 if (IMAGES.hero) {
   const i=new Image(), placeholder=document.createElement('span');placeholder.className='image-loading';
@@ -469,7 +488,7 @@ async function speak(text, btn,options={}) {
   try {
     if(device){
       await globalThis.HelenDeviceSpeech.speak(text,{accent:options.accent || 'Ame'});
-      if(request===speakRequest)finishLoading($('#voice-status'),'Đang nghe giọng tiếng Anh trên thiết bị. Giọng ElevenLabs đã chọn vẫn được giữ.');
+      if(request===speakRequest)voiceMessage('Đang nghe giọng máy. Chọn ElevenLabs voice để nghe giọng AI.');
       return;
     }
     const voice=selectedVoice;
@@ -485,10 +504,10 @@ async function speak(text, btn,options={}) {
     if(request!==speakRequest) return;
     audio?.pause(); if (audioURL) URL.revokeObjectURL(audioURL);
     audioURL = URL.createObjectURL(await r.blob()); audio = new Audio(audioURL); await audio.play();
-    if(request===speakRequest)finishLoading($('#voice-status'),cached?'Đang nghe âm thanh đã lưu · elevenlabs.io.':'Đang nghe bằng giọng đã chọn · elevenlabs.io.');
+    if(request===speakRequest)voiceMessage(cached?'Đang nghe âm thanh đã lưu · elevenlabs.io.':'Đang nghe bằng giọng đã chọn · elevenlabs.io.');
   } catch (e) {
     const message=/^(?:Failed to fetch|fetch failed|Load failed|NetworkError)/i.test(e.message || '')?'Chưa kết nối được giọng đọc; âm thanh này chưa được lưu cho giọng đã chọn.':e.message || 'Selected voice is unavailable.';
-    if(request===speakRequest) finishLoading($('#voice-status'),device?message:`${message} Your selection has been kept.`);
+    if(request===speakRequest) voiceMessage(device?message:`${message} Giữ nguyên giọng đã chọn.`);
   } finally {
     btn.removeAttribute('aria-busy');btn.disabled=false;btn.innerHTML=original;
     if(request===speakRequest) {$('#audio-status').hidden=true;$('#audio-status').replaceChildren();$('#audio-status').removeAttribute('aria-busy');}

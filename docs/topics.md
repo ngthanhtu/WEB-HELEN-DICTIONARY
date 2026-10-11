@@ -51,3 +51,7 @@ Progress keys for new groups include `-v2`; old completion records and schedules
 - Chromium desktop and iPhone-size viewport: every topic's first Vietnamese eye result completed in 59–66 ms; no translation or TTS provider requests. This measures an already-loaded pack, not the initial Render cold start or a physical iPhone.
 - No WCAG A/AA violations reported by axe on the tested topic detail page. Vocabulary may still benefit from review by an IELTS teacher; automated coverage does not establish that every expression is equally useful at every exam level.
 - Saved Vietnamese meanings/examples, JSON restore, review dates, quiz/matching answer separation, edition-specific completion, v2 offline use, archived v1 offline fallback and reconnecting to the new edition were checked.
+
+## Choosing pronunciation
+
+Topics has an inline ElevenLabs picker shared with Preferences. Choosing a voice in either location must select ElevenLabs mode, stop previous playback and persist the choice for topic words and topic quiz feedback. Fresh preferences default to selected ElevenLabs; an explicitly saved device mode stays available until a new ElevenLabs selection. Device speech remains opt-in for speed. Reload voices refreshes the list; cached metadata remains selectable during temporary network errors. Offline audio must retain the exact chosen voice rather than substituting another voice. Initial cloud audio is subject to network latency and provider quota.

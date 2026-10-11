@@ -3,12 +3,33 @@
   const core=window.HelenTopicsCore,host=document.querySelector('#topic-library');if(!core || !host)return;
   const $=selector=>host.querySelector(selector),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let storage;try{storage=localStorage;}catch{}
-  const audioMode=$('#topic-audio-mode');
+  const audioMode=$('#topic-audio-mode'),topicVoice=$('#topic-voice'),globalVoice=document.querySelector('#voice');
   let savedAudioMode;try{savedAudioMode=storage?.getItem('helen-topic-audio-mode-v1');}catch{}
-  audioMode.value=savedAudioMode==='selected' || !window.HelenDeviceSpeech?.available?'selected':'device';
+  // Device speech remains opt-in; selecting any ElevenLabs voice always uses that voice.
+  audioMode.value=savedAudioMode==='device' && window.HelenDeviceSpeech?.available?'device':'selected';
   audioMode.querySelector('[value="device"]').disabled=!window.HelenDeviceSpeech?.available;
-  if(!window.HelenDeviceSpeech?.available)$('#topic-audio-note').textContent='Trình duyệt này chưa hỗ trợ giọng trên thiết bị. Giọng ElevenLabs vẫn dùng được khi có mạng.';
-  audioMode.onchange=()=>{window.HelenAudio?.stop();try{storage?.setItem('helen-topic-audio-mode-v1',audioMode.value);}catch{}prepareAudio();};
+  function audioNote(){
+    $('#topic-audio-note').textContent=audioMode.value==='device'?'Đang dùng giọng máy để đọc nhanh. Chọn một giọng ElevenLabs bên cạnh để nghe giọng AI.':'Nghe đúng giọng ElevenLabs đã chọn; âm thanh đã lưu mở lại ngay. Lần tạo mới có thể cần chờ.';
+  }
+  function syncVoices(){
+    const options=Array.from(globalVoice?.options || []);topicVoice.replaceChildren();
+    for(const option of options)topicVoice.add(new Option(option.text,option.value));
+    topicVoice.value=globalVoice?.value || '';topicVoice.disabled=!options.some(option=>option.value);
+    topicVoice.setAttribute('aria-busy',String(globalVoice?.getAttribute('aria-busy')==='true'));
+    $('#topic-retry-voices').disabled=globalVoice?.getAttribute('aria-busy')==='true';
+  }
+  function selectMode(value){
+    window.HelenAudio?.stop();audioMode.value=value;
+    try{storage?.setItem('helen-topic-audio-mode-v1',value);}catch{}
+    audioNote();prepareAudio();
+  }
+  audioMode.onchange=()=>selectMode(audioMode.value);
+  topicVoice.onchange=()=>{if(!topicVoice.value)return;globalVoice.value=topicVoice.value;globalVoice.dispatchEvent(new Event('change',{bubbles:true}));};
+  $('#topic-retry-voices').onclick=()=>window.loadVoices?.();
+  document.addEventListener('helen:voices',syncVoices);
+  document.addEventListener('helen:voice-selected',()=>{selectMode('selected');syncVoices();});
+  document.addEventListener('helen:voice-status',event=>{$('#topic-audio-note').textContent=event.detail.message;});
+  syncVoices();audioNote();
   let manifest,pack,current,index=0,request=0,loadingManifest,progress=core.read(storage);const packs=new Map(),CACHE='helen-topic-packs-v1';
   const status=message=>{$('#topics-status').removeAttribute('aria-busy');$('#topics-status').textContent=message;};
   async function json(url){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),4500);try{const response=await fetch(url,{signal:controller.signal});if(!response.ok)throw Error('Chưa tải được bộ từ. Kết nối mạng rồi thử lại.');return await response.json();}catch(error){if(error.name==='TypeError')throw Error(navigator.onLine?'Chưa kết nối được thư viện. Thử lại sau nhé.':'Chủ đề này chưa tải trên thiết bị. Kết nối Internet rồi chọn Save topic offline.');if(error.name==='SyntaxError')throw Error('Chưa đọc được bộ từ. Cập nhật app rồi tải lại nhé.');throw error;}finally{clearTimeout(timer);}}
