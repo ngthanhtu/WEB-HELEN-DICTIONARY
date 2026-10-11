@@ -11,6 +11,16 @@
   function audioNote(){
     $('#topic-audio-note').textContent=audioMode.value==='device'?'Đang dùng giọng máy để đọc nhanh. Chọn một giọng ElevenLabs bên cạnh để nghe giọng AI.':'Nghe đúng giọng ElevenLabs đã chọn; âm thanh đã lưu mở lại ngay. Lần tạo mới có thể cần chờ.';
   }
+  const deviceVoice=$('#topic-device-voice');
+  function syncDeviceVoices(){
+    const speech=window.HelenDeviceSpeech,selected=speech?.selected?.() || '',voices=speech?.list?.() || [];
+    deviceVoice.replaceChildren();deviceVoice.add(new Option('Auto · English voice',''));
+    for(const v of voices)deviceVoice.add(new Option(`${v.lang==='en-GB'?'(Eng)':v.lang==='en-US'?'(Ame)':`(${v.lang})`} ${v.name}${v.local?' · on device':' · may need Internet'}`,v.id));
+    if(selected && !voices.some(v=>v.id===selected))deviceVoice.add(new Option('Saved voice · unavailable on this device',selected));
+    deviceVoice.value=selected;deviceVoice.disabled=!speech?.available;
+  }
+  deviceVoice.onchange=()=>{if(window.HelenDeviceSpeech?.select?.(deviceVoice.value)){selectMode('device');syncDeviceVoices();}};
+  window.HelenDeviceSpeech?.subscribe?.(syncDeviceVoices);syncDeviceVoices();
   function syncVoices(){
     const options=Array.from(globalVoice?.options || []);topicVoice.replaceChildren();
     for(const option of options)topicVoice.add(new Option(option.text,option.value));

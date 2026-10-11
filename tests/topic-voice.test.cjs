@@ -1,12 +1,12 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
 const script=fs.readFileSync(require('node:path').join(__dirname,'../public/assets/topics.js'),'utf8');
-function page(saved={},available=true){
+function page(saved={},available=true,speech={}){
  const elements=new Map(),events=new Map();let stops=0,reloads=0;
  const element=id=>{if(!elements.has(id))elements.set(id,{value:'',textContent:'',options:[],attributes:{},add(option){this.options.push(option);},replaceChildren(){this.options=[];},querySelector:element,querySelectorAll:()=>[],addEventListener(){},setAttribute(k,v){this.attributes[k]=v;},getAttribute(k){return this.attributes[k];}});return elements.get(id);};
  const document={querySelector:element,addEventListener(name,fn){events.set(name,fn);},dispatchEvent(e){events.get(e.type)?.(e);}};
  const voice=element('#voice');voice.options=[{text:'(Eng) Sarah',value:'Sarah'},{text:'(Ame) Bella',value:'Bella'}];voice.value='Sarah';
  voice.dispatchEvent=()=>{saved['helen-voice']=voice.value;document.dispatchEvent({type:'helen:voice-selected',detail:{voice:voice.value}});};
- const context=vm.createContext({document,localStorage:{getItem:k=>saved[k],setItem:(k,v)=>saved[k]=v},navigator:{onLine:true},Event:class{constructor(type){this.type=type;}},Option:class{constructor(text,value){this.text=text;this.value=value;}},HelenTopicsCore:{read:()=>({lessons:{}})},HelenDeviceSpeech:{available},HelenAudio:{stop(){stops++;}},HelenPages:{current:()=> 'dictionary'},loadVoices(){reloads++;},addEventListener(){}});context.window=context;
+ const context=vm.createContext({document,localStorage:{getItem:k=>saved[k],setItem:(k,v)=>saved[k]=v},navigator:{onLine:true},Event:class{constructor(type){this.type=type;}},Option:class{constructor(text,value){this.text=text;this.value=value;}},HelenTopicsCore:{read:()=>({lessons:{}})},HelenDeviceSpeech:{available,...speech},HelenAudio:{stop(){stops++;}},HelenPages:{current:()=> 'dictionary'},loadVoices(){reloads++;},addEventListener(){}});context.window=context;
  vm.runInContext(script,context);return {saved,element,document,get stops(){return stops;},get reloads(){return reloads;}};
 }
 test('Topics defaults to the selected ElevenLabs voice while device speech remains an explicit option',()=>{
@@ -28,4 +28,10 @@ test('loading, empty and unsupported-device states do not invent a replacement v
  const p=page({'helen-topic-audio-mode-v1':'device'},false);assert.equal(p.element('#topic-audio-mode').value,'selected');assert.equal(p.element('[value="device"]').disabled,true);
  p.element('#voice').setAttribute('aria-busy','true');p.document.dispatchEvent({type:'helen:voices'});assert.equal(p.element('#topic-retry-voices').disabled,true);assert.equal(p.element('#topic-voice').getAttribute('aria-busy'),'true');
  p.element('#voice').options=[{text:'No voice available',value:''}];p.element('#voice').value='';p.document.dispatchEvent({type:'helen:voices'});assert.equal(p.element('#topic-voice').disabled,true);assert.equal(p.element('#topic-voice').value,'');
+});
+
+test('the device picker switches mode without changing the ElevenLabs voice or selecting an unavailable device voice',()=>{
+ let selected='',subscriber;const p=page({},true,{list:()=>[{id:'UK-local',lang:'en-GB',name:'Natural UK',local:true}],selected:()=>selected,select:id=>{selected=id;return true;},subscribe:fn=>subscriber=fn});
+ assert.equal(p.element('#topic-device-voice').options[1].text,'(Eng) Natural UK · on device');p.element('#topic-device-voice').value='UK-local';p.element('#topic-device-voice').onchange();
+ assert.equal(p.element('#topic-audio-mode').value,'device');assert.equal(p.element('#topic-voice').value,'Sarah');assert.equal(selected,'UK-local');assert.equal(p.saved['helen-topic-audio-mode-v1'],'device');subscriber();assert.equal(p.element('#topic-device-voice').value,'UK-local');
 });

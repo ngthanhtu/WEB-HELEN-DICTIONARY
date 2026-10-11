@@ -474,12 +474,14 @@ app.get('/api/tts', async (req, res) => {
   const production=process.env.NODE_ENV==='production',device=req.get('X-Helen-Device');
   if(production && (!pronunciation.verify(text,req.query.proof) || !/^[a-f0-9]{64}$/.test(device || '') || req.get('Sec-Fetch-Site')==='cross-site' || req.headers.origin && req.headers.origin!==`${req.protocol}://${req.get('host')}`))return res.status(403).json({error:'Hãy tra lại từ trước khi nghe.',code:'PRONUNCIATION_REQUIRED'});
   try {
+    const started=performance.now();let quotaMs=0,providerMs=0;
     const buf = await memo(`v|${voice}|${text}`, async () => { // cache key includes the voice
-      await usage.reserve('tts',text.length,device);
+      const quotaStart=performance.now();await usage.reserve('tts',text.length,device);quotaMs=performance.now()-quotaStart;
+      const providerStart=performance.now();
       const r = await get(`https://api.elevenlabs.io/v1/text-to-speech/${voice}`, {
         method: 'POST',
         headers: { 'xi-api-key': KEY, 'Content-Type': 'application/json', Accept: 'audio/mpeg' },
-        body: JSON.stringify({ text, model_id: 'eleven_multilingual_v2' })
+        body: JSON.stringify({ text, model_id: 'eleven_flash_v2_5' })
       }, 15000);
       if (!r || !r.ok) {
         console.error(`TTS failed: voice=${voice} status=${r ? r.status : 'no response'}`);
@@ -487,8 +489,9 @@ app.get('/api/tts', async (req, res) => {
         error.upstreamStatus = r?.status;
         throw error;
       }
-      return Buffer.from(await r.arrayBuffer());
+      const buffer=Buffer.from(await r.arrayBuffer());providerMs=performance.now()-providerStart;return buffer;
     });
+    res.set('Server-Timing',`tts;dur=${(performance.now()-started).toFixed(1)},quota;dur=${quotaMs.toFixed(1)},provider;dur=${providerMs.toFixed(1)}`);
     res.set('Content-Type', 'audio/mpeg').set('Cache-Control', 'no-store').send(buf);
   } catch (e) { res.status(e.status || 502).json({ error: e.message || 'Voice service is unavailable.',code:e.code, upstream_status: e.upstreamStatus }); }
 });

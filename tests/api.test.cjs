@@ -121,7 +121,7 @@ test('uses the explicit voice, separates audio cache and never falls back', asyn
   await ready;
   for (const voice of ['Rachel', 'Sarah', 'Rachel']) {
     const r = await fetch(`${base}/api/tts?text=hello&voice=${voice}`);
-    assert.equal(r.status, 200); assert.equal(await r.text(), voice);
+    assert.equal(r.status, 200);assert.match(r.headers.get('server-timing'),/quota;dur=[0-9.]+,provider;dur=[0-9.]+/); assert.equal(await r.text(), voice);
   }
   assert.equal((await fetch(`${base}/api/tts?text=hello&voice=unavailable`)).status, 502);
   assert.equal((await fetch(`${base}/api/tts?text=hello&voice=Rachel`)).status, 200);

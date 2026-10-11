@@ -57,17 +57,17 @@ test('missing or invalid databases fail open for cache and use safe actionable h
   }
 });
 test('durable usage reservations lock every bucket and refuse overspending without partial debits',async()=>{
-  const totals=new Map();let lock=Promise.resolve();
+  const totals=new Map(),usageSql=[];let lock=Promise.resolve();
   const db=createDatabase({MYSQL_HOST:'127.0.0.1',MYSQL_USER:'test',MYSQL_DATABASE:'test',MYSQL_SSL:'false'},{createPool:()=>({end:async()=>{},getConnection:async()=>{
     let unlock,previous,snapshot;
     return {async beginTransaction(){previous=lock;lock=new Promise(resolve=>unlock=resolve);await previous;snapshot=new Map(totals);},async commit(){unlock();},async rollback(){totals.clear();for(const [key,value] of snapshot)totals.set(key,value);unlock();},release(){},destroy(){unlock?.();},async execute(sql,params){
-      if(sql.startsWith('INSERT IGNORE INTO helen_usage_budget')){const key=`${params[0]}:${params[1]}`;if(!totals.has(key))totals.set(key,0);}
-      if(sql.startsWith('SELECT units'))return [[{units:totals.get(`${params[0]}:${params[1]}`)}]];
-      if(sql.startsWith('UPDATE helen_usage_budget')){const key=`${params[1]}:${params[2]}`;totals.set(key,totals.get(key)+params[0]);}return [{}];
+      if(sql.startsWith('INSERT IGNORE INTO helen_usage_budget')){usageSql.push('insert');for(let i=0;i<params.length;i+=3){const key=`${params[i]}:${params[i+1]}`;if(!totals.has(key))totals.set(key,0);}}
+      if(sql.startsWith('SELECT bucket,key_hash,units')){usageSql.push('lock');return [Array.from({length:params.length/2},(_,i)=>({bucket:params[i*2],key_hash:params[i*2+1],units:totals.get(`${params[i*2]}:${params[i*2+1]}`)})).reverse()];}
+      if(sql.startsWith('UPDATE helen_usage_budget')){usageSql.push('debit');const count=params.length/5;for(let i=0;i<count;i++){const key=`${params[i*3]}:${params[i*3+1]}`;totals.set(key,totals.get(key)+params[i*3+2]);}}return [{}];
     }};
   }})});
-  try{assert.equal(await db.initialize(),true);const rules=[{bucket:'day',key:'a'.repeat(64),units:2,limit:6,expiresAt:Date.now()+1000},{bucket:'month',key:'b'.repeat(64),units:2,limit:8,expiresAt:Date.now()+1000}];
-    const accepted=await Promise.all(Array.from({length:8},()=>db.reserveUsage(rules)));assert.equal(accepted.filter(Boolean).length,3);assert.deepEqual([...totals.values()],[6,6]);
+  try{assert.equal(await db.initialize(),true);const rules=[{bucket:'day',key:'a'.repeat(64),units:2,limit:6,expiresAt:Date.now()+1000},{bucket:'device',key:'c'.repeat(64),units:1,limit:3,expiresAt:Date.now()+1000},{bucket:'month',key:'b'.repeat(64),units:2,limit:8,expiresAt:Date.now()+1000}];
+    const accepted=await Promise.all(Array.from({length:8},()=>db.reserveUsage(rules)));assert.equal(accepted.filter(Boolean).length,3);assert.deepEqual([...totals.values()],[6,3,6]);assert.equal(usageSql.filter(v=>v==='debit').length,3);assert.equal(usageSql.filter(v=>v==='lock').length,8);assert.deepEqual(usageSql.slice(0,3),['insert','lock','debit']);
   }finally{await db.close();}
 });
 test('durable metrics deduplicate offline retries and store aggregate counts without device identifiers',async()=>{

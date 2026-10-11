@@ -27,3 +27,7 @@
 @media(prefers-reduced-motion:reduce){.topic-card{transition:none}.topic-card:hover{transform:none}}
 
 .topic-audio-control #topic-voice{min-width:0;width:min(100%,30rem);flex:1 1 16rem;box-sizing:border-box}.topic-audio-control select[aria-busy="true"]{cursor:progress}.topic-audio-control select:active{border-color:var(--action)}
+
+.topic-audio-control #topic-device-voice{min-width:0;max-width:100%;flex:1 1 16rem;box-sizing:border-box}
+
+.topic-audio-control label[for="topic-device-voice"]{flex-basis:100%}

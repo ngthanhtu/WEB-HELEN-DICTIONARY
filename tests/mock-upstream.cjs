@@ -87,7 +87,8 @@ global.fetch = async (input, opts = {}) => {
       {name:'Australian voice',voice_id:'auVoice',labels:{accent:'Australian English'}}
     ]});
     const voice = url.pathname.split('/').pop();
-    const text = JSON.parse(opts.body || '{}').text;
+    const payload=JSON.parse(opts.body || '{}');if(payload.model_id!=='eleven_flash_v2_5')throw Error('Expected the fast TTS model');
+    const text = payload.text;
     return new Response(text?.length > 200 ? text : voice, {status:voice === 'unavailable' ? 403 : 200});
   }
   throw new Error(`Unexpected upstream: ${url.hostname}`);
