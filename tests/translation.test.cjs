@@ -3,6 +3,29 @@ const assert = require('node:assert/strict');
 const { createTranslationService } = require('../lib/translation');
 
 const quota = () => Response.json({ responseStatus: 429, responseDetails: 'MYMEMORY WARNING: YOU USED ALL AVAILABLE FREE TRANSLATIONS FOR TODAY.', responseData: { translatedText: 'QUOTA ERROR' } }, { status: 429 });
+test('five definitions share one provider and durable write; a new instance and another user reuse them without providers',async()=>{
+ const rows=new Map();let readCalls=0,writeCalls=0,providerCalls=0;
+ const store={status:()=>({configured:true,connected:true}),translationCache:async()=>[...rows.values()],translationValues:async(namespace,keys)=>{readCalls++;return keys.map(key=>rows.get(namespace+'|'+require('node:crypto').createHash('sha256').update(key).digest('hex'))).filter(Boolean);},setTranslations:async items=>{writeCalls++;for(const item of items){const key=require('node:crypto').createHash('sha256').update(item.key).digest('hex');rows.set(item.namespace+'|'+key,{namespace:item.namespace,key,value:item.value});}return true;}};
+ const fetchImpl=async(url,request)=>{assert.ok(!String(url).includes('mymemory'));providerCalls++;return gemini(request,text=>'Bản dịch đầy đủ: '+text);};
+ const texts=Array.from({length:5},(_,i)=>'A separate dictionary sense '+i),service=createTranslationService({apiKey:'test-only',store,fetchImpl});
+ const first=service.translateMany(texts,'en','vi',{kind:'definition'}),click=service.translate(texts[3],'en','vi',{kind:'definition'});
+ const values=await first;assert.equal(await click,values[3]);assert.equal(readCalls,1);assert.equal(providerCalls,1);
+ await new Promise(resolve=>setTimeout(resolve,45));assert.equal(writeCalls,1);assert.equal(rows.size,5);assert.equal(service.status().cache.pendingWrites,0);
+ const restarted=createTranslationService({store,fetchImpl:()=>{throw Error('providers must not run after restart');}});await restarted.prepareCache();
+ assert.deepEqual(await restarted.translateMany(texts,'en','vi',{kind:'definition'}),values);assert.equal(readCalls,1);assert.equal(restarted.status().preparedTranslations,5);
+ const other=createTranslationService({store,fetchImpl:()=>{throw Error('another user reuses the shared cache');}});
+ assert.deepEqual(await other.translateMany(texts,'en','vi',{kind:'definition'}),values);assert.equal(readCalls,2);
+});
+test('cache read failure cannot be mistaken for a miss and spend more API quota; retry remains available',async()=>{
+ let failed=true,calls=0;const service=createTranslationService({store:{translationValues:async()=>{if(failed)throw Error('timeout');return [];},status:()=>({configured:true,connected:true})},fetchImpl:async()=>{calls++;return Response.json({responseStatus:200,responseData:{translatedText:'một câu được dịch đầy đủ'}});}});
+ await assert.rejects(service.translateMany(['a source sentence'],'en','vi',{kind:'definition'}),{code:'TRANSLATION_CACHE'});assert.equal(calls,0);
+ failed=false;await service.translateMany(['a source sentence'],'en','vi',{kind:'definition'});assert.equal(calls,1);assert.equal(service.status().cache.readError,null);
+});
+test('shutdown drains pending successful translations before closing durable storage',async()=>{
+ const writes=[],service=createTranslationService({store:{status:()=>({configured:true,connected:true}),setTranslations:async items=>{await new Promise(resolve=>setTimeout(resolve,20));writes.push(...items);return true;}},fetchImpl:async()=>Response.json({responseStatus:200,responseData:{translatedText:'một câu được dịch đầy đủ'}})});
+ await service.translate('a source for shutdown','en','vi',{kind:'definition'});assert.equal(service.status().cache.pendingWrites,1);
+ await service.drain();assert.equal(writes.length,1);assert.equal(service.status().cache.pendingWrites,0);
+});
 test('translation diagnostics report provider status without exposing keys, request content or raw error messages',async()=>{
   const service=createTranslationService({apiKey:'private-test-key',fetchImpl:async(url)=>String(url).includes('mymemory')?quota():Response.json({error:{code:400,status:'INVALID_ARGUMENT',message:'unsupported thinking option private-test-key'}},{status:400})});
   await assert.rejects(service.translate('a new sentence','en','vi'));
@@ -72,6 +95,7 @@ test('uncurated headwords use semantic AI before a plausible but literal transla
   const options={kind:'headword',definition:'to joke with someone by making them believe something untrue'};
   assert.equal(await service.translate('pull someone\'s leg','en','vi',options),'trêu chọc, đùa với ai');
   assert.equal(await service.translate('pull someone\'s leg','en','vi',options),'trêu chọc, đùa với ai');
+  await new Promise(resolve=>setTimeout(resolve,40));
   assert.equal(primary,0);assert.equal(ai,1);assert.equal(written[0][0],'translation-semantic-v4');
 });
 test('AI quota uses the dictionary definition instead of falling back to a literal headword',async()=>{

@@ -1,9 +1,9 @@
 (()=>{
   'use strict';
   const grants=new Map(),pending=new Map(),wordPreparations=new Map();let volatileDevice;
-  function device(){try{const old=localStorage.getItem('helen-history-device');if(/^[a-f0-9]{64}$/.test(old || ''))return old;}catch{}
+  function device(){try{const old=localStorage.getItem('helen-api-device-v1');if(/^[a-f0-9]{64}$/.test(old || ''))return old;}catch{}
     volatileDevice ||= Array.from(crypto.getRandomValues(new Uint8Array(32)),value=>value.toString(16).padStart(2,'0')).join('');
-    try{localStorage.setItem('helen-history-device',volatileDevice);}catch{}return volatileDevice;
+    try{localStorage.setItem('helen-api-device-v1',volatileDevice);}catch{}return volatileDevice;
   }
   function register(data){for(const item of data?.pronunciation || [])if(typeof item.text==='string' && typeof item.proof==='string')grants.set(item.text,{proof:item.proof,word:item.word || data.word || ''});
     if(grants.size>1500)for(const key of [...grants.keys()].slice(0,grants.size-1500))grants.delete(key);

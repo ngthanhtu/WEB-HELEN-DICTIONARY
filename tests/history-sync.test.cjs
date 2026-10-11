@@ -47,3 +47,18 @@ test('blocked storage or missing secure random generation never creates a shared
   await create({storage:{getItem(){throw Error();},setItem(){throw Error();}},fetch:request,crypto:webcrypto}).sync();
   await create({storage:{getItem(){},setItem(){}},fetch:request,crypto:{}}).sync();assert.equal(calls,0);
 });
+test('cookie migration retains legacy history, removes the browser bearer only after verification and uses cookies on reload',async()=>{
+ const data={'helen-history-device':'b'.repeat(64)},storage={getItem:key=>data[key],setItem:(key,value)=>data[key]=value,removeItem:key=>delete data[key]},requests=[];let cookie=false,blocked=true;
+ const fetch=async(url,options={})=>{
+  requests.push({url,options});
+  if(url.endsWith('/status'))return Response.json({configured:true,connected:true,cookie:true});
+  if(url.endsWith('/api/session')){assert.equal(options.headers['X-Helen-Device'],undefined);if(!cookie)assert.equal(JSON.parse(options.body).legacyDevice,'b'.repeat(64));cookie=true;return Response.json({ready:true});}
+  assert.equal(options.headers['X-Helen-Device'],undefined);assert.equal(options.credentials,'same-origin');
+  if(blocked)return Response.json({error:'cookie blocked'},{status:401});
+  return Response.json(options.method==='POST'?{saved:true}:{history:[{word:'brotherhood'}]});
+ };
+ let shown;const first=create({storage,fetch,crypto:webcrypto,onHistory:words=>shown=words});await first.sync();assert.equal(data['helen-history-device'],'b'.repeat(64));
+ blocked=false;await first.sync();assert.equal(data['helen-history-device'],undefined);assert.equal(data['helen-history-cookie-v1'],'1');assert.deepEqual(shown,['brotherhood']);
+ await create({storage,fetch,crypto:webcrypto}).sync();assert.equal(data['helen-history-device'],undefined);
+ assert.deepEqual(JSON.parse(requests.filter(item=>item.url.endsWith('/api/session')).at(-1).options.body),{});
+});

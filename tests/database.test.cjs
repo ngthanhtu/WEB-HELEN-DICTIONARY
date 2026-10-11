@@ -23,8 +23,25 @@ test('slow cache read does not disable subsequent durable writes',async()=>{
   } finally {await db.close();}
 });
 test('translation cache startup scan is bounded and skips malformed payloads without reading audio namespaces',async()=>{
-  const queries=[],hash='a'.repeat(64);const db=createDatabase({MYSQL_HOST:'127.0.0.1',MYSQL_USER:'test',MYSQL_DATABASE:'test',MYSQL_SSL:'false'},{createPool:()=>({end:async()=>{},getConnection:async()=>({release(){},destroy(){},execute:async(sql)=>{if(!sql.startsWith('SELECT namespace'))return [[]];queries.push(sql);return [[{namespace:'translation-v2',cache_key:hash,payload:JSON.stringify('Khoản tiền cho vay.')},{namespace:'translation-v2',cache_key:hash,payload:'invalid json'},{namespace:'translation-v2',cache_key:hash,payload:'null'}]];}})})});
+  const queries=[],hash='a'.repeat(64);const db=createDatabase({MYSQL_HOST:'127.0.0.1',MYSQL_USER:'test',MYSQL_DATABASE:'test',MYSQL_SSL:'false'},{createPool:()=>({end:async()=>{},getConnection:async()=>({release(){},destroy(){},execute:async()=>[[]],query:async(sql)=>{if(!sql.startsWith('SELECT namespace'))return [[]];queries.push(sql);return [[{namespace:'translation-v2',cache_key:hash,payload:JSON.stringify('Khoản tiền cho vay.')},{namespace:'translation-v2',cache_key:hash,payload:'invalid json'},{namespace:'translation-v2',cache_key:hash,payload:'null'}]];}})})});
   try{assert.equal(await db.initialize(),true);assert.deepEqual(await db.translationCache(20000),[{namespace:'translation-v2',key:hash,value:'Khoản tiền cho vay.'}]);assert.match(queries[0],/LIMIT 10000$/);assert.match(queries[0],/namespace IN \('translation-v2','translation-semantic-v4'\)/);assert.equal(db.status().connected,true);}finally{await db.close();}
+});
+test('translation storage survives general cache timeouts and reads/writes five values using one query per batch',async()=>{
+ const saved=new Map(),sqlCalls=[],hash=value=>crypto.createHash('sha256').update(value).digest('hex');let generalDestroyed=0;
+ const db=createDatabase({MYSQL_HOST:'127.0.0.1',MYSQL_USER:'test',MYSQL_DATABASE:'test',MYSQL_SSL:'false'},{
+  createPool:()=>({end:async()=>{},getConnection:async()=>({release(){},destroy(){generalDestroyed++;},execute:async sql=>{if(sql.startsWith('SELECT CAST'))await new Promise(resolve=>setTimeout(resolve,300));return [[]];}})}),
+  createTranslationPool:config=>{assert.equal(config.connectionLimit,2);assert.equal(config.multipleStatements,false);return {end:async()=>{},getConnection:async()=>({release(){},destroy(){throw Error('translation pool must not inherit a cache deadline');},query:async(sql,params)=>{
+   sqlCalls.push(sql);if(sql.startsWith('INSERT'))for(let i=0;i<params.length;i+=4)saved.set(params[i]+'|'+params[i+1],{namespace:params[i],cache_key:params[i+1],payload:params[i+2]});
+   if(sql.includes('cache_key IN'))return [[...saved.values()].filter(row=>row.namespace===params[0] && params.slice(1).includes(row.cache_key))];
+   return [[...saved.values()]];
+  }})};}
+ });
+ try{
+  await db.initialize();await db.get('dictionary-v2','unseen');assert.equal(generalDestroyed,1);
+  const items=Array.from({length:5},(_,i)=>({namespace:'translation-v2',key:`sentence ${i}`,value:`nghĩa đầy đủ ${i}`}));assert.equal(await db.setTranslations(items),true);
+  const values=await db.translationValues('translation-v2',items.map(item=>item.key));assert.deepEqual(values.map(item=>item.value),items.map(item=>item.value));assert.equal(sqlCalls.length,2);assert.equal(values[0].key,hash(items[0].key));
+  assert.equal((await db.translationCache()).length,5);assert.equal(sqlCalls.length,3);await assert.rejects(db.translationValues('tts-v1',['invalid']));
+ }finally{await db.close();}
 });
 test('completed RAM entries are persisted and successful writes are deduplicated',async()=>{
   const {createDictionaryPersistence}=require('../lib/persist-dictionary');

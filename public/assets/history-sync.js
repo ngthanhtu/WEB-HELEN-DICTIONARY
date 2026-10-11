@@ -1,16 +1,16 @@
 (function(root) {
   function create({storage,fetch:request,api='',onHistory=()=>{},onStatus=()=>{},online=()=>root.navigator?.onLine!==false,crypto=root.crypto}) {
-    const DEVICE='helen-history-device',QUEUE='helen-history-outbox',SEEDED='helen-history-seeded';
+    const DEVICE='helen-history-device',COOKIE='helen-history-cookie-v1',QUEUE='helen-history-outbox',SEEDED='helen-history-seeded';
     const read=key=>{try{return storage.getItem(key);}catch{return null;}};
     const write=(key,value)=>{try{storage.setItem(key,value);return true;}catch{return false;}};
     const uuid=()=>crypto?.randomUUID?.() || (crypto?.getRandomValues ? Array.from(crypto.getRandomValues(new Uint8Array(16)),n=>n.toString(16).padStart(2,'0')).join('').replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/,'$1-$2-$3-$4-$5') : null);
-    let token=read(DEVICE), busy=null, checked=false, configured=false, lastCheck=0;
-    if(!/^[a-f0-9]{64}$/.test(token || '')) {
+    let token=read(DEVICE), busy=null, checked=false, configured=false, lastCheck=0,cookieMode=false,sessionReady=false;
+    if(!/^[a-f0-9]{64}$/.test(token || '') && read(COOKIE)!=='1') {
       if(!crypto?.getRandomValues)return {search(){},clear(){},sync:async()=>{}};
       token=Array.from(crypto.getRandomValues(new Uint8Array(32)),n=>n.toString(16).padStart(2,'0')).join('');
       if(!write(DEVICE,token))return {search(){},clear(){},sync:async()=>{}};
     }
-    const headers={'Content-Type':'application/json','X-Helen-Device':token};
+    const headers=()=>({'Content-Type':'application/json',...(!cookieMode?{'X-Helen-Device':token}:{})});
     function queue() {
       try {const values=JSON.parse(read(QUEUE)||'[]');return Array.isArray(values)?values.filter(e=>e && e.id && ['search','clear'].includes(e.action)).slice(-200):[];}catch{return [];}
     }
@@ -38,23 +38,30 @@
         if(!checked || Date.now()-lastCheck>30000) {
           const response=await request(`${api}/api/history/status`,{cache:'no-store'});
           if(!response.ok)throw Error('unavailable');
-          const status=await response.json();configured=status.configured && status.connected;checked=true;lastCheck=Date.now();
+          const status=await response.json();configured=status.configured && status.connected;cookieMode=status.cookie===true;checked=true;lastCheck=Date.now();
         }
         if(!configured) {onStatus('Lịch sử đang lưu trên thiết bị này.');return;}
+        if(cookieMode && !sessionReady){
+          const response=await request(`${api}/api/session`,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(/^[a-f0-9]{64}$/.test(token || '')?{legacyDevice:token}:{})});
+          if(!response.ok)throw Error('session unavailable');sessionReady=true;
+        }
         onStatus('Đang đồng bộ lịch sử…');seed();
         // Events added while a request is pending remain queued for the next batch.
         for(let round=0;round<3 && online();round++) {
           const batch=queue().slice(0,100);if(!batch.length)break;
-          const response=await request(`${api}/api/history`,{method:'POST',headers,body:JSON.stringify({events:batch})});
+          const response=await request(`${api}/api/history`,{method:'POST',credentials:'same-origin',headers:headers(),body:JSON.stringify({events:batch})});
           if(!response.ok)throw Error('unavailable');
           const sent=new Set(batch.map(event=>event.id));write(QUEUE,JSON.stringify(queue().filter(event=>!sent.has(event.id))));
         }
-        const response=await request(`${api}/api/history`,{headers,cache:'no-store'});
+        const response=await request(`${api}/api/history`,{credentials:'same-origin',headers:headers(),cache:'no-store'});
         if(!response.ok)throw Error('unavailable');const data=await response.json();
+        // Delete the legacy bearer only after a cookie-authenticated history GET
+        // succeeds, so blocked cookies/offline migration cannot lose identity.
+        if(cookieMode){write(COOKIE,'1');try{storage.removeItem(DEVICE);}catch{}token=null;}
         // Never restore cleared history or replace a newer local search with an older GET.
         if(!queue().length && Array.isArray(data.history))onHistory(data.history.map(item=>item.word).filter(word=>typeof word==='string').slice(0,40));
         onStatus(queue().length?'Lịch sử mới đang chờ đồng bộ.':'Đã lưu lịch sử vào database cho thiết bị này.');
-      })().catch(()=>{checked=false;onStatus('Lịch sử vẫn được lưu trên thiết bị; sẽ đồng bộ lại.');}).finally(()=>{busy=null;});
+      })().catch(()=>{checked=false;sessionReady=false;onStatus('Lịch sử vẫn được lưu trên thiết bị; sẽ đồng bộ lại.');}).finally(()=>{busy=null;});
       return busy;
     }
     seed();

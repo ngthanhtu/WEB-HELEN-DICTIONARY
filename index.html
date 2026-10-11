@@ -1094,6 +1094,8 @@ function render(d, scroll = true) {
     const sources=[...new Set(d.entries.map(entry=>entry.source).filter(Boolean))].join(', '),wiki=d.entries.some(entry=>/Wiktionary/i.test(`${entry.source} ${entry.relatedSource || ''}`));
     out.insertAdjacentHTML('beforeend', `<p class="src">Source: ${esc(sources)}${wiki?` · <a href="https://en.wiktionary.org/wiki/${encodeURIComponent(d.word)}" target="_blank" rel="noopener">Wiktionary contributors & history</a> · <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>`:''} · <a href="/assets/sources.html">Sources & licenses</a></p>`);
   }
+  const definitionTexts=d.entries.flatMap(entry=>(entry.meanings || []).flatMap(meaning=>(meaning.senses || []).flatMap(sense=>globalThis.HelenQuizTranslation?.chunks(sense.definition) || [sense.definition])));
+  globalThis.HelenTranslationWarmup?.prepareWord(definitionTexts,{kind:'definition'});
   if (scroll && (!globalThis.HelenPages || globalThis.HelenPages.current()==='dictionary')) out.querySelector('h2')?.scrollIntoView({behavior:'smooth', block:'center'});
 }
 // Changing the target language closes open translations so they refresh on next tap.

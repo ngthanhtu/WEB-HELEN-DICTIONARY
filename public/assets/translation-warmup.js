@@ -3,12 +3,13 @@
   if(typeof module==='object' && module.exports)module.exports=factory;
   else root.HelenTranslationWarmup=factory({translate:(...args)=>root.tr(...args),target:()=>root.document.querySelector('#target')?.value || 'vi',online:()=>root.navigator.onLine!==false,Observer:root.IntersectionObserver});
 })(typeof globalThis==='undefined'?this:globalThis,function({translate,target,online=()=>true,Observer,delay=80,batchSize=4}={}){
-  const waiting=new Map(),visible=new Map(),attempted=new Set();let timer,active=0;
+  const waiting=new Map(),visible=new Map(),attempted=new Set();let timer,active=0,currentWord;
   const key=(texts,to,context)=>JSON.stringify([texts,to,context]);
+  function mark(id){attempted.add(id);while(attempted.size>500)attempted.delete(attempted.values().next().value);}
   function prepare(texts,context={}){
     const to=target();if(to==='en' || !online() || !texts.length)return;
     const id=key(texts,to,context);if(attempted.has(id))return;
-    attempted.add(id);if(attempted.size>500)attempted.delete(attempted.values().next().value);
+    mark(id);
     waiting.set(id,{texts,to,context});schedule();
   }
   function schedule(){if(active<2 && !timer && waiting.size)timer=setTimeout(flush,delay);}
@@ -38,8 +39,21 @@
     const info={texts,context,shown:false};visible.set(element,info);observer?.observe(element);
     for(const event of ['pointerenter','focus','touchstart'])element.addEventListener?.(event,()=>prepare(texts,context),{passive:true});
   }
+  function prepareWord(texts,context={kind:'definition'}){
+    currentWord={texts:[...new Set(texts.filter(text=>typeof text==='string' && text.trim()))],context};
+    const to=target();if(to==='en' || !online())return;
+    // Start before a click, including definitions below the fold. tr keeps each
+    // sentence in the same cache/in-flight map used by the eye buttons.
+    for(let i=0;i<currentWord.texts.length;i+=40){
+      const batch=currentWord.texts.slice(i,i+40),id=key(batch,to,context);if(attempted.has(id))continue;
+      mark(id);
+      for(const text of batch){const single=key([text],to,context);mark(single);waiting.delete(single);}
+      void translate(batch,'en',to,context).catch(()=>{/* Eye buttons retry normally. */});
+    }
+  }
   function refresh(){
+    if(currentWord)prepareWord(currentWord.texts,currentWord.context);
     for(const [element,info] of visible){if(element.isConnected===false){observer?.unobserve(element);visible.delete(element);}else if(info.shown)prepare(info.texts,info.context);}
   }
-  return {observe,prepare,refresh};
+  return {observe,prepare,prepareWord,refresh};
 });

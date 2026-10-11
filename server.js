@@ -20,7 +20,10 @@ require('dotenv').config({ path: [path.join(__dirname, '.env'), path.join(__dirn
 // Avoid loading the large SDK during the first mobile translation or recording request.
 if(process.env.GEMINI_API_KEY)require('@google/genai');
 const app = express();
+app.disable('x-powered-by');
 if (process.env.TRUST_PROXY === '1') app.set('trust proxy', 1);
+const webSecurity=require('./lib/web-security').createWebSecurity({production:process.env.NODE_ENV==='production'});
+app.use(webSecurity.headers);
 if (process.env.NODE_ENV === 'production') {
   const { rateLimit } = require('express-rate-limit');
   const limit = count => rateLimit({windowMs:60_000, limit:count, standardHeaders:'draft-8', legacyHeaders:false,
@@ -32,6 +35,8 @@ if (process.env.NODE_ENV === 'production') {
   app.use('/api/spelling', limit(30));
   app.use('/api/suggestions', limit(120));
   app.use('/api/translate', limit(60));
+  app.use('/api/session',limit(30));
+  app.use('/api/voices',limit(60));
   app.post('/api/context', limit(6));
   app.post('/api/speech', limit(10));
 }
@@ -91,13 +96,9 @@ app.post('/api/metrics',async(req,res)=>{
   try{await database.metrics(events);res.json({saved:true});}catch{res.status(503).json({error:'Thống kê chưa sẵn sàng.'});}
 });
 app.get('/healthz', (req, res) => res.json({ status: 'ok', version: process.env.RENDER_GIT_COMMIT?.slice(0, 7) || 'local', voiceConfigured: Boolean(KEY), aiConfigured:contexts.configured,speechConfigured:speech.configured,translation:translations.status(),database:database.status() }));
-app.get('/api/history/status',(req,res) => res.json(database.status()));
-function deviceToken(req,res,next) {
-  if (req.headers.origin && req.headers.origin !== `${req.protocol}://${req.get('host')}`) return res.status(403).json({error:'Yêu cầu không hợp lệ.'});
-  const token = req.get('X-Helen-Device');
-  if (!/^[a-f0-9]{64}$/.test(token || '')) return res.status(401).json({error:'Mở lại website để đồng bộ lịch sử.',code:'HISTORY_DEVICE'});
-  req.deviceToken = token;res.set('Cache-Control','no-store');next();
-}
+app.get('/api/history/status',(req,res) => res.json({...database.status(),cookie:true}));
+app.post('/api/session',webSecurity.session);
+const deviceToken=webSecurity.history;
 if (process.env.NODE_ENV === 'production') app.use('/api/history',require('express-rate-limit').rateLimit({windowMs:60000,limit:60,standardHeaders:'draft-8',legacyHeaders:false,message:{error:'Đợi một phút rồi đồng bộ lại lịch sử.'}}));
 app.get('/api/history',deviceToken,async(req,res) => {
   try {res.json({history:await database.history(req.deviceToken)});}
@@ -121,6 +122,7 @@ app.get(Object.keys(appPages), (req, res) => {
   const page=appPages[req.path.toLowerCase().replace(/\/$/,'') || '/'];
   const html=require('fs').readFileSync(path.join(__dirname,'index.html'),'utf8');
   res.set({'Cache-Control':'no-cache','X-Helen-Build':buildVersion}).type('html').send(html
+    .replace(/<script>/g,`<script nonce="${res.locals.cspNonce}">`)
     .replace('data-page="dictionary"',`data-page="${page}"`)
     .replace('<title>Helen Dictionary</title>',`<title>${pageTitles[page]} · Helen Dictionary</title>`)
     .replace(/(\/assets\/[^"\s]+\.(?:css|js))(?=")/g,`$1?v=${buildVersion}`));
@@ -419,6 +421,11 @@ app.post('/api/translate', async (req, res) => {
     const { texts = [], from = 'en', to = 'vi', kind, definition, senses } = req.body;
     const deadline=Date.now()+6500;
     if (!Array.isArray(texts) || texts.length > 40 || !texts.every(text=>typeof text==='string' && text.trim() && text.length<=450)) return res.status(400).json({ error: 'Nội dung dịch không hợp lệ.', code:'TRANSLATION_INVALID' });
+    if(kind==='definition'){
+      const results=await translations.translateMany(texts,from,to,{deadline,kind,partial:req.body.partial===true});
+      if(req.body.partial===true)return res.json({translations:results.map(item=>item.status==='fulfilled'?item.value:null),errors:results.map(item=>item.status==='rejected'?{error:item.reason.code?item.reason.message:'Chưa kết nối được dịch nghĩa. Hãy thử lại.',code:item.reason.code || 'TRANSLATION_UNAVAILABLE'}:null)});
+      return res.json({translations:results});
+    }
     const tasks=texts.map(async t => {
       const dictionarySenses=Array.isArray(senses)?senses:kind==='headword' && from==='en'?(cache.get(`d|${t.toLowerCase().trim()}`) || []).flatMap(entry=>(entry.meanings || []).flatMap(meaning=>(meaning.senses || []).slice(0,3).map(sense=>({pos:meaning.pos,definition:sense.definition})))):undefined;
       try { return await translations.translate(t,from,to,{deadline,kind,definition:typeof definition==='string'?definition.slice(0,450):undefined,senses:dictionarySenses}); }
@@ -496,6 +503,13 @@ app.get('/api/tts', async (req, res) => {
   } catch (e) { res.status(e.status || 502).json({ error: e.message || 'Voice service is unavailable.',code:e.code, upstream_status: e.upstreamStatus }); }
 });
 
+app.use((error,req,res,next)=>{
+  if(res.headersSent)return next(error);
+  if(error.type==='entity.too.large')return res.status(413).json({error:'Nội dung quá dài. Hãy gửi ít mục hơn.',code:'REQUEST_SIZE'});
+  if(error.type==='entity.parse.failed')return res.status(400).json({error:'Nội dung yêu cầu không hợp lệ.',code:'REQUEST_CONTENT'});
+  console.error('Request failed:',/^[A-Z_0-9]+$/.test(error.code || '')?error.code:'REQUEST_ERROR');
+  res.status(500).json({error:'Chưa xử lý được yêu cầu. Hãy thử lại.',code:'REQUEST_ERROR'});
+});
 const server = app.listen(PORT, () => {
   console.log(`Helen Dictionary v4 on http://localhost:${PORT}\nElevenLabs key: ${KEY ? 'set' : 'MISSING'} | Voice ID in use: ${VOICE}`);
   // Read the spelling index during startup so the first typo does not pay its loading cost.
@@ -503,4 +517,8 @@ const server = app.listen(PORT, () => {
   void translations.prepare();
   void database.initialize().then(ok => {if(database.status().configured) console.log(`Database: ${ok ? 'connected' : 'unavailable — local history and RAM cache remain active'}`);if(ok){void database.prepareTTS().catch(()=>{});void translations.prepareCache().catch(()=>{});}});
 });
-for (const signal of ['SIGINT','SIGTERM']) process.once(signal,() => {server.close();void database.close().finally(() => process.exit(0));});
+for (const signal of ['SIGINT','SIGTERM']) process.once(signal,() => {
+  setTimeout(()=>process.exit(1),20000).unref();
+  server.close(()=>void translations.drain().finally(()=>database.close()).finally(()=>process.exit(0)));
+  server.closeIdleConnections?.();
+});
