@@ -61,3 +61,19 @@ test('unsupported or blocked storage fails safely without pretending clips were 
   const {caches,setFull}=storage();setFull(true);const blocked=createAudio({caches,origin:'https://helen.test'});
   const outcome=await blocked.download({words:['loan'],voice:'Sarah',fetchAudio:async()=>recording()});assert.equal(outcome.saved,0);assert.match(outcome.message,/dung lượng/);
 });
+test('AI reply cache eviction and clearing preserve favorite audio, even for identical text and voice',async()=>{
+  const {caches}=storage(),origin='https://helen.test',favorites=createAudio({caches,origin}),partner=createAudio({caches,origin,cacheName:'helen-practical-audio-v1',maxClips:1,maxBytes:8});
+  assert.equal(favorites.CACHE,'helen-audio-v1');assert.equal(partner.CACHE,'helen-practical-audio-v1');
+  await favorites.save('Hello','Jessica',recording(7));await partner.save('Hello','Jessica',recording(4));
+  assert.equal((await (await favorites.get('Hello','Jessica')).arrayBuffer()).byteLength,7);assert.equal((await (await partner.get('Hello','Jessica')).arrayBuffer()).byteLength,4);
+  await partner.save('How are you?','Jessica',recording(4));assert.equal(await partner.get('Hello','Jessica'),null);assert.ok(await favorites.get('Hello','Jessica'));
+  const reloaded=createAudio({caches,origin,cacheName:'helen-practical-audio-v1',maxClips:1,maxBytes:8});assert.ok(await reloaded.get('How are you?','Jessica'));assert.equal(await reloaded.get('Hello','Jessica'),null);
+  assert.equal(await reloaded.clear(),true);assert.deepEqual(await caches.keys(),['helen-audio-v1']);assert.equal((await favorites.inventory()).length,1);assert.equal((await reloaded.inventory()).length,0);
+});
+test('browser factory creates an independent cache while preserving all existing default methods',async()=>{
+  const {caches}=storage(),scope={caches,location:{origin:'https://helen.test'},Response,URL,URLSearchParams};
+  require('node:vm').runInNewContext(require('node:fs').readFileSync(require.resolve('../public/assets/offline-audio'),'utf8'),scope);
+  const favorites=scope.HelenOfflineAudio;assert.equal(typeof favorites.download,'function');assert.equal(typeof favorites.create,'function');
+  const partner=favorites.create({cacheName:'helen-practical-audio-v1',maxClips:30,maxBytes:5*1024*1024});assert.equal(partner.available,true);
+  await favorites.save('Welcome!','Jessica',recording(5));await partner.save('Welcome!','Jessica',recording(4));await partner.clear();assert.ok(await favorites.get('Welcome!','Jessica'));assert.equal(await partner.get('Welcome!','Jessica'),null);
+});

@@ -1,8 +1,12 @@
 (function(root,factory){
   if(typeof module==='object' && module.exports)module.exports=factory;
-  else root.HelenOfflineAudio=factory({caches:root.caches,origin:root.location.origin});
-})(typeof globalThis!=='undefined'?globalThis:this,function({caches,origin,maxClips=100,maxBytes=20*1024*1024,maxClipBytes=1024*1024}={}){
-  const CACHE='helen-audio-v1';
+  else {
+    const defaults={caches:root.caches,origin:root.location.origin};
+    root.HelenOfflineAudio=factory(defaults);
+    root.HelenOfflineAudio.create=options=>factory({...defaults,...options});
+  }
+})(typeof globalThis!=='undefined'?globalThis:this,function({caches,origin,cacheName='helen-audio-v1',maxClips=100,maxBytes=20*1024*1024,maxClipBytes=1024*1024}={}){
+  const CACHE=cacheName;
   let queue=Promise.resolve();
   const available=Boolean(caches?.open && origin);
   function key(text,voice){
@@ -43,6 +47,8 @@
       return await serialized(async()=>{
         const cache=await caches.open(CACHE);
         // Write first: a full device must not delete the last successful recording.
+        // Each named cache owns its limits, so automatic AI reply caching never
+        // evicts favorite pronunciation clips saved in the default cache.
         await cache.put(url,new Response(bytes,{headers:{'Content-Type':response.headers.get('Content-Type'),'X-Helen-Audio-Bytes':String(bytes.byteLength),'X-Helen-Saved-At':String(Date.now())}}));
         const items=await inventory();let count=items.length,total=items.reduce((sum,item)=>sum+item.bytes,0);
         for(const item of items.slice().reverse()){
