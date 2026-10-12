@@ -21,6 +21,8 @@ require('dotenv').config({ path: [path.join(__dirname, '.env'), path.join(__dirn
 if(process.env.GEMINI_API_KEY)require('@google/genai');
 const app = express();
 app.disable('x-powered-by');
+app.set('query parser','simple');
+const {asyncHandler}=require('./lib/web-security');
 if (process.env.TRUST_PROXY === '1') app.set('trust proxy', 1);
 const webSecurity=require('./lib/web-security').createWebSecurity({production:process.env.NODE_ENV==='production'});
 app.use(webSecurity.headers);
@@ -32,6 +34,7 @@ if (process.env.NODE_ENV === 'production') {
   app.use('/api/pronunciation', limit(30));
   app.post('/api/metrics',limit(30));
   app.use('/api/lookup', limit(30));
+  app.use('/api/collocations', limit(30));
   app.use('/api/spelling', limit(30));
   app.use('/api/suggestions', limit(120));
   app.use('/api/translate', limit(60));
@@ -76,58 +79,59 @@ const memo = async (k, fn) => {
 };
 
 // Short microphone clips are larger than normal dictionary JSON requests.
-app.use('/api/speech',express.json({limit:'2mb'}));
-app.use('/api/practical',express.json({limit:'9mb'}));
-app.use(express.json());
+app.use('/api/speech',express.json({limit:'2mb',inflate:false}));
+app.use('/api/practical',express.json({limit:'9mb',inflate:false}));
+app.use(express.json({inflate:false}));
 app.use((error,req,res,next)=>{
-  if(!req.path.startsWith('/api/speech') && !req.path.startsWith('/api/practical')) return next(error);
-  if(error.type==='entity.too.large') return res.status(413).json({error:req.path.startsWith('/api/practical')?'Bản ghi quá lớn. Thu lại tối đa 3 phút (6 MB).':'Bản ghi âm quá dài. Hãy nói một từ hoặc cụm từ ngắn.',code:'SPEECH_AUDIO'});
+  const route=req.path.toLowerCase();
+  if(!route.startsWith('/api/speech') && !route.startsWith('/api/practical')) return next(error);
+  if(error.type==='entity.too.large') return res.status(413).json({error:route.startsWith('/api/practical')?'Bản ghi quá lớn. Thu lại tối đa 3 phút (6 MB).':'Bản ghi âm quá dài. Hãy nói một từ hoặc cụm từ ngắn.',code:'SPEECH_AUDIO'});
   if(error.type==='entity.parse.failed') return res.status(400).json({error:'Không đọc được bản ghi âm. Hãy bấm micro để ghi lại.',code:'SPEECH_AUDIO'});
   next(error);
 });
 app.use(require('compression')());
 app.use((req,res,next)=>{
-  if(['/api/lookup','/api/study/prepare','/api/context','/api/collocations'].includes(req.path)){
+  if(['/api/lookup','/api/study/prepare','/api/context','/api/collocations'].includes(req.path.toLowerCase())){
     const json=res.json.bind(res);res.json=data=>json(res.statusCode<400 && data && KEY?pronunciation.attach(data):data);
   }next();
 });
-app.post('/api/metrics',async(req,res)=>{
+app.post('/api/metrics',asyncHandler(async(req,res)=>{
   res.set('Cache-Control','no-store');
   if(req.get('Sec-Fetch-Site')==='cross-site' || (req.headers.origin && req.headers.origin!==`${req.protocol}://${req.get('host')}`))return res.status(403).json({error:'Yêu cầu không hợp lệ.'});
   const events=req.body.events,names=new Set(['lookup','favorite','quiz_completed','return_day2','return_day7']);
   if(!Array.isArray(events) || !events.length || events.length>20 || !events.every(event=>event && /^[a-f0-9-]{36}$/.test(event.id || '') && names.has(event.name) && /^\d{4}-\d{2}-\d{2}$/.test(event.day || '') && Number.isFinite(Date.parse(event.day)) && Date.parse(event.day)<=Date.now()+86400000 && Date.parse(event.day)>=Date.now()-7*86400000 && Object.keys(event).every(key=>['id','name','day'].includes(key))))return res.status(400).json({error:'Dữ liệu thống kê không hợp lệ.'});
   try{await database.metrics(events);res.json({saved:true});}catch{res.status(503).json({error:'Thống kê chưa sẵn sàng.'});}
-});
+}));
 app.get('/healthz', (req, res) => res.json({ status: 'ok', version: process.env.RENDER_GIT_COMMIT?.slice(0, 7) || 'local', voiceConfigured: Boolean(KEY), aiConfigured:contexts.configured,speechConfigured:speech.configured,translation:translations.status(),database:database.status() }));
 app.get('/api/history/status',(req,res) => res.json({...database.status(),cookie:true}));
 app.post('/api/session',webSecurity.session);
 const deviceToken=webSecurity.history;
 if (process.env.NODE_ENV === 'production') app.use('/api/history',require('express-rate-limit').rateLimit({windowMs:60000,limit:60,standardHeaders:'draft-8',legacyHeaders:false,message:{error:'Đợi một phút rồi đồng bộ lại lịch sử.'}}));
-app.get('/api/history',deviceToken,async(req,res) => {
+app.get('/api/history',deviceToken,asyncHandler(async(req,res) => {
   try {res.json({history:await database.history(req.deviceToken)});}
   catch(error) {res.status(error.status || 503).json({error:error.message,code:error.code});}
-});
-app.post('/api/history',deviceToken,async(req,res) => {
+}));
+app.post('/api/history',deviceToken,asyncHandler(async(req,res) => {
   const events = req.body.events;
   if (!Array.isArray(events) || !events.length || events.length > 100 || !events.every(event => event && /^[a-f0-9-]{36}$/.test(event.id || '') && ['search','clear'].includes(event.action) && typeof event.at === 'string' && Number.isFinite(Date.parse(event.at)) && Date.parse(event.at) <= Date.now() + 60000 && Date.parse(event.at) >= 0 && (event.action === 'clear' || typeof event.word === 'string' && event.word.trim() && event.word.length <= 100 && !/[\x00-\x1f<>]/.test(event.word)))) return res.status(400).json({error:'Dữ liệu lịch sử không hợp lệ.',code:'HISTORY_INVALID'});
   try {await database.saveHistory(req.deviceToken,events.map(event => ({...event,word:event.word?.trim()})));res.json({saved:true});}
   catch(error) {res.status(error.status || 503).json({error:error.message,code:error.code});}
-});
+}));
 app.get('/api/speech/status',(req,res)=>res.json({configured:speech.configured,provider:'Gemini'}));
-app.post('/api/speech',async(req,res)=>{
+app.post('/api/speech',asyncHandler(async(req,res)=>{
   try {res.json(await speech.transcribe(req.body));}
   catch(error) {res.status(error.status || 503).json({error:error.message || 'Chưa nhận diện được. Hãy thử lại hoặc gõ từ.',code:error.code || 'SPEECH_SERVICE'});}
-});
+}));
 const buildVersion=process.env.RENDER_GIT_COMMIT?.replace(/[^a-zA-Z0-9]/g,'').slice(0,12) || 'mobile-v1';
 app.get('/api/practical/status',(req,res)=>res.json({configured:practical.configured,provider:'Gemini',dailyReplyLimit:usage.limits.practicalDeviceDay,transcriptConfirmation:true,automaticClearSpeech:true,maxRecordingSeconds:180,ieltsAssessment:true,dailyAssessmentLimit:usage.limits.practicalAssessmentDay,pronunciation:require('./public/assets/practical-core').scenarios.map(item=>({text:item.opening,proof:pronunciation.issue(item.opening)}))}));
-app.post('/api/practical',async(req,res)=>{
+app.post('/api/practical',asyncHandler(async(req,res)=>{
   try{
     const device=req.get('X-Helen-Device') || '';
     if(process.env.NODE_ENV==='production' && !/^[a-f0-9]{64}$/.test(device))return res.status(400).json({error:'Tải lại trang để cập nhật luyện nói rồi thử lại.',code:'PRACTICAL_DEVICE'});
     const value=await practical.reply(req.body,{device});
     res.json(value.stage?value:{...value,pronunciation:[value.reply,value.improved,value.phrase.text].filter(text=>text.length<=2000).map(text=>({text,proof:pronunciation.issue(text)}))});
   }catch(error){res.status(error.status || 503).json({error:error.code?error.message:'Chưa kết nối được AI. Hãy thử lại.',code:error.code || 'PRACTICAL_SERVICE'});}
-});
+}));
 const appPages={'/':'dictionary','/study':'study','/topics':'topics','/practical-ai':'practical','/words':'words','/history':'history','/offline':'offline'};
 const pageTitles={dictionary:'Dictionary',study:'Study',topics:'Topics',practical:'Practical AI',words:'My words',history:'History',offline:'Offline'};
 app.get(Object.keys(appPages), (req, res) => {
@@ -286,20 +290,20 @@ async function wordRelations(word) {
 }
 
 const lookups = new Map();
-app.get('/api/suggestions', async(req,res)=>{
+app.get('/api/suggestions', asyncHandler(async(req,res)=>{
   const word=String(req.query.word||'').trim();
   if(word.length>100)return res.status(400).json({error:'Use at most 100 characters.'});
   res.json({word,suggestions:await autocompleteSuggestions(word).catch(()=>[])});
-});
+}));
 // Local suggestions stay responsive while remote dictionaries verify exact matches.
-app.get('/api/spelling', async (req,res) => {
+app.get('/api/spelling', asyncHandler(async (req,res) => {
   const word=String(req.query.word||'').trim().toLowerCase();
   if(word.length>100) return res.status(400).json({error:'Use at most 100 characters.'});
   res.json({word,suggestions:await spellingSuggestions(word).catch(()=>[])});
-});
+}));
 // Learning preparation uses the installed dictionary only, never waits for remote APIs.
 if(process.env.NODE_ENV==='production')app.use('/api/study',require('express-rate-limit').rateLimit({windowMs:60000,limit:30,standardHeaders:'draft-8',legacyHeaders:false,message:{error:'Đợi một phút rồi chuẩn bị thêm từ.'}}));
-app.post('/api/study/prepare',async(req,res)=>{
+app.post('/api/study/prepare',asyncHandler(async(req,res)=>{
   const words=req.body.words;
   if(!Array.isArray(words) || !words.length || words.length>12 || !words.every(word=>typeof word==='string' && word.trim() && word.length<=100 && !/[\x00-\x1f<>]/.test(word)))return res.status(400).json({error:'Chọn tối đa 12 từ hợp lệ mỗi lượt.'});
   const selected=[...new Set(words.map(word=>word.trim().toLowerCase()))],results=[];
@@ -313,9 +317,9 @@ app.post('/api/study/prepare',async(req,res)=>{
     if(grouped.size)results.push({word,entries:[{word,source:'Princeton WordNet',meanings:[...grouped].map(([pos,senses])=>({pos,senses}))}]});
   }
   const ready=new Set(results.map(result=>result.word));res.json({results,missing:selected.filter(word=>!ready.has(word))});
-});
+}));
 const collocations=word=>collocationService.lookup(word);
-app.get('/api/collocations',async(req,res)=>{
+app.get('/api/collocations',asyncHandler(async(req,res)=>{
   const word=String(req.query.word || '').trim().toLowerCase();
   if(!word || word.length>100)return res.status(400).json({error:'Nhập từ hoặc cụm từ tối đa 100 ký tự.'});
   const existing=cache.get(`d|${word}`);
@@ -325,7 +329,7 @@ app.get('/api/collocations',async(req,res)=>{
     const entries=existing.map(entry=>({...entry,collocations:data}));cache.set(`d|${word}`,entries);persistDictionary(word,entries);
   }
   res.json(data);
-});
+}));
 function beginLookup(word) {
   const topic=topicEntry(word);
   if(topic?.topicEdition===2 && word.includes(' ')){const entry={...topic,ipa:''},entries=[entry];cache.set(`d|${word}`,entries);persistDictionary(word,entries);return {first:Promise.resolve(entry),complete:Promise.resolve(entries)};}
@@ -373,7 +377,7 @@ function beginLookup(word) {
   complete.catch(()=>{}).finally(()=>lookups.delete(word));
   const task={first,complete}; lookups.set(word,task); return task;
 }
-app.get('/api/lookup', async (req, res) => {
+app.get('/api/lookup', asyncHandler(async (req, res) => {
   const raw=String(req.query.word||'').trim(), from=String(req.query.from||'en');
   if (!raw) return res.status(400).json({error:'Type a word to search.'});
   if (raw.length>100) return res.status(400).json({error:'Use at most 100 characters for a lookup.'});
@@ -403,10 +407,10 @@ app.get('/api/lookup', async (req, res) => {
     const suggestions=e.status===404 ? await spellingSuggestions(word).catch(()=>[]) : [];
     res.status(e.status||502).json({error:e.message || 'Lookup failed. Try again.',...(e.code?{code:e.code}:{}),query:raw,word,suggestions,suggestionLanguage:'en'});
   }
-});
+}));
 
 app.get('/api/context/status',(req,res)=>res.json({configured:contexts.configured,provider:'Gemini',model:contexts.model}));
-app.post('/api/context',async(req,res)=>{
+app.post('/api/context',asyncHandler(async(req,res)=>{
   const {word:input,meaningIndex=0,senseIndex=0,senseKey,language='vi'}=req.body;
   const word=typeof input==='string'?input.trim().toLowerCase():'';
   if(!word || word.length>100 || typeof language!=='string' || !Object.hasOwn(contextLanguages,language) || !Number.isInteger(meaningIndex) || !Number.isInteger(senseIndex) || meaningIndex<0 || meaningIndex>100 || senseIndex<0 || senseIndex>200) return res.status(400).json({error:'Từ, nghĩa hoặc ngôn ngữ không hợp lệ.'});
@@ -427,9 +431,9 @@ app.post('/api/context',async(req,res)=>{
     if(status===404) return res.status(502).json({error:'Chưa truy cập được từ hoặc model AI đang cấu hình.'});
     res.status(502).json({error:'Chưa tạo được ngữ cảnh AI hợp lệ. Hãy thử lại sau.'});
   }
-});
+}));
 
-app.post('/api/translate', async (req, res) => {
+app.post('/api/translate', asyncHandler(async (req, res) => {
   try {
     const { texts = [], from = 'en', to = 'vi', kind, definition, senses } = req.body;
     const deadline=Date.now()+6500;
@@ -454,18 +458,18 @@ app.post('/api/translate', async (req, res) => {
     }
     res.json({translations:await Promise.all(tasks)});
   } catch (e) { res.status(e.status||503).json({ error: e.code ? e.message : 'Chưa kết nối được dịch nghĩa. Hãy thử lại.', code:e.code || 'TRANSLATION_UNAVAILABLE' }); }
-});
+}));
 
 // List voices your ElevenLabs key can actually use (open http://localhost:3000/api/voices to copy an ID).
-app.get('/api/voices', async (req, res) => {
+app.get('/api/voices', asyncHandler(async (req, res) => {
   if (!KEY) return res.status(501).json({ error: 'Voice chưa được cấu hình. Quản trị viên cần thêm ELEVENLABS_API_KEY trong Environment của dịch vụ Render rồi deploy lại.' });
   const r = await get('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': KEY } }, 6500);
   if (!r || !r.ok) return res.status(502).json({ error: 'Could not load voices. Check key permissions and quota.', status: r ? r.status : null });
   const j = await r.json();
   res.json({ in_use: VOICE, voices: j.voices.map(voiceMetadata) });
-});
+}));
 
-app.post('/api/pronunciation',async(req,res)=>{
+app.post('/api/pronunciation',asyncHandler(async(req,res)=>{
   if(Array.isArray(req.body.words)){
     const words=req.body.words;
     if(!words.length || words.length>20 || !words.every(word=>typeof word==='string' && word.length<=100 && topicEntry(word)))return res.status(400).json({error:'Chỉ chuẩn bị tối đa 20 từ đã có trong Topics.'});
@@ -484,8 +488,8 @@ app.post('/api/pronunciation',async(req,res)=>{
   }
   if(!allowed)return res.status(403).json({error:'Hãy tra lại từ để nghe câu này.',code:'PRONUNCIATION_REQUIRED'});
   res.set('Cache-Control','no-store').json({text,word,proof:pronunciation.issue(text)});
-});
-app.get('/api/tts', async (req, res) => {
+}));
+app.get('/api/tts', asyncHandler(async (req, res) => {
   const text = String(req.query.text || '').trim();
   const voice = String(req.query.voice || VOICE);
   if (!/^[A-Za-z0-9_-]{1,100}$/.test(voice)) return res.status(400).json({ error: 'Invalid voice ID.' });
@@ -516,12 +520,13 @@ app.get('/api/tts', async (req, res) => {
     res.set('Server-Timing',`tts;dur=${(performance.now()-started).toFixed(1)},quota;dur=${quotaMs.toFixed(1)},provider;dur=${providerMs.toFixed(1)}`);
     res.set('Content-Type', 'audio/mpeg').set('Cache-Control', 'no-store').send(buf);
   } catch (e) { res.status(e.status || 502).json({ error: e.message || 'Voice service is unavailable.',code:e.code, upstream_status: e.upstreamStatus }); }
-});
+}));
 
 app.use((error,req,res,next)=>{
   if(res.headersSent)return next(error);
   if(error.type==='entity.too.large')return res.status(413).json({error:'Nội dung quá dài. Hãy gửi ít mục hơn.',code:'REQUEST_SIZE'});
   if(error.type==='entity.parse.failed')return res.status(400).json({error:'Nội dung yêu cầu không hợp lệ.',code:'REQUEST_CONTENT'});
+  if(error.type==='encoding.unsupported')return res.status(415).json({error:'Gửi nội dung JSON không nén rồi thử lại.',code:'REQUEST_ENCODING'});
   console.error('Request failed:',/^[A-Z_0-9]+$/.test(error.code || '')?error.code:'REQUEST_ERROR');
   res.status(500).json({error:'Chưa xử lý được yêu cầu. Hãy thử lại.',code:'REQUEST_ERROR'});
 });

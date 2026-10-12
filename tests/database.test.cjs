@@ -30,8 +30,10 @@ test('translation storage survives general cache timeouts and reads/writes five 
  const saved=new Map(),sqlCalls=[],hash=value=>crypto.createHash('sha256').update(value).digest('hex');let generalDestroyed=0;
  const db=createDatabase({MYSQL_HOST:'127.0.0.1',MYSQL_USER:'test',MYSQL_DATABASE:'test',MYSQL_SSL:'false'},{
   createPool:()=>({end:async()=>{},getConnection:async()=>({release(){},destroy(){generalDestroyed++;},execute:async sql=>{if(sql.startsWith('SELECT CAST'))await new Promise(resolve=>setTimeout(resolve,300));return [[]];}})}),
-  createTranslationPool:config=>{assert.equal(config.connectionLimit,2);assert.equal(config.multipleStatements,false);return {end:async()=>{},getConnection:async()=>({release(){},destroy(){throw Error('translation pool must not inherit a cache deadline');},query:async(sql,params)=>{
-   sqlCalls.push(sql);if(sql.startsWith('INSERT'))for(let i=0;i<params.length;i+=4)saved.set(params[i]+'|'+params[i+1],{namespace:params[i],cache_key:params[i+1],payload:params[i+2]});
+  createTranslationPool:config=>{assert.equal(config.connectionLimit,2);assert.equal(config.multipleStatements,false);return {end:async()=>{},getConnection:async()=>({release(){},destroy(){throw Error('translation pool must not inherit a cache deadline');},execute:async(sql,params)=>{
+   sqlCalls.push(sql);for(let i=0;i<params.length;i+=4)saved.set(params[i]+'|'+params[i+1],{namespace:params[i],cache_key:params[i+1],payload:params[i+2]});return [[]];
+  },query:async(sql,params)=>{
+   sqlCalls.push(sql);assert.ok(!sql.startsWith('INSERT'),'untrusted translation text must use execute');
    if(sql.includes('cache_key IN'))return [[...saved.values()].filter(row=>row.namespace===params[0] && params.slice(1).includes(row.cache_key))];
    return [[...saved.values()]];
   }})};}
@@ -42,6 +44,14 @@ test('translation storage survives general cache timeouts and reads/writes five 
   const values=await db.translationValues('translation-v2',items.map(item=>item.key));assert.deepEqual(values.map(item=>item.value),items.map(item=>item.value));assert.equal(sqlCalls.length,2);assert.equal(values[0].key,hash(items[0].key));
   assert.equal((await db.translationCache()).length,5);assert.equal(sqlCalls.length,3);await assert.rejects(db.translationValues('tts-v1',['invalid']));
  }finally{await db.close();}
+});
+test('translation writes bind hostile text with execute and never depend on client-side SQL escaping',async()=>{
+ const calls=[],value="Nghĩa có dấu ' và \\; DROP TABLE helen_cache; --";
+ const db=createDatabase({MYSQL_HOST:'127.0.0.1',MYSQL_USER:'test',MYSQL_DATABASE:'test',MYSQL_SSL:'false'},{
+  createPool:()=>({end:async()=>{},getConnection:async()=>({release(){},destroy(){},execute:async()=>[[]]})}),
+  createTranslationPool:()=>({end:async()=>{},getConnection:async()=>({release(){},destroy(){},execute:async(sql,params)=>{calls.push({sql,params});return [{}];},query:async()=>{throw Error('Unsafe text-protocol write');}})})
+ });
+ try{await db.initialize();assert.equal(await db.setTranslations([{namespace:'translation-v2',key:'original',value}]),true);assert.equal(calls.length,1);assert.ok(!calls[0].sql.includes(value));assert.equal(calls[0].params[2],JSON.stringify(value));assert.match(calls[0].sql,/VALUES \(\?,\?,\?,UTC_TIMESTAMP\(3\),\?\)/);}finally{await db.close();}
 });
 test('translation cache retries do not postpone database recovery after failed startup',async t=>{
  let clock=Date.now(),failed=false;
@@ -86,6 +96,18 @@ test('missing or invalid databases fail open for cache and use safe actionable h
     await assert.rejects(()=>db.history('a'.repeat(64)),error=>error.code==='DATABASE_UNAVAILABLE' && !error.message.includes('private-password'));
     await db.close();
   }
+});
+test('history and vocabulary keep hostile values in bound parameters, and each history query uses only its device hash',async()=>{
+ const calls=[],hash=value=>crypto.createHash('sha256').update(value).digest('hex');
+ const db=createDatabase({MYSQL_HOST:'127.0.0.1',MYSQL_USER:'test',MYSQL_DATABASE:'test',MYSQL_SSL:'false'},{createPool:()=>({end:async()=>{},getConnection:async()=>({release(){},destroy(){},execute:async(sql,params=[])=>{calls.push({sql,params});return [[]];}})})});
+ try{
+  await db.initialize();calls.length=0;
+  const word="probe' OR 1=1; DROP TABLE helen_history; --",a='a'.repeat(64),b='b'.repeat(64);
+  assert.equal(await db.vocabulary(word,[{word}],2),true);await db.history(a);await db.history(b);
+  assert.ok(calls.every(call=>!call.sql.includes(word) && !call.sql.includes(a) && !call.sql.includes(b)));
+  assert.equal(calls.find(call=>call.sql.startsWith('INSERT INTO helen_vocabulary')).params[0],word);
+  const reads=calls.filter(call=>call.sql.startsWith('SELECT word,last_seen'));assert.deepEqual(reads.map(call=>call.params),[[hash(a)],[hash(b)]]);assert.ok(reads.every(call=>call.sql.includes('WHERE device_hash=?')));
+ }finally{await db.close();}
 });
 test('durable usage reservations lock every bucket and refuse overspending without partial debits',async()=>{
   const totals=new Map(),usageSql=[];let lock=Promise.resolve();
