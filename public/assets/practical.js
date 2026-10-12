@@ -116,6 +116,15 @@
    if(turn.translation){const detail=node('details');detail.append(node('summary','Translation'),node('p',turn.translation));card.append(detail);}
    if(turn.feedback && typeof turn.feedback.note==='string'){
     const feedback=node('div',undefined,'practical-feedback');feedback.append(node('h3','A little coaching'),node('p',turn.feedback.note));
+    if(turn.feedback.partial)feedback.append(node('p','Một vài chỗ sửa chưa đủ rõ nên chưa áp dụng. Câu trả lời gốc vẫn được giữ.','muted'));
+    const flow=turn.feedback.speakingFlow;
+    if(flow?.source==='transcript' && typeof flow.note==='string'){
+     const detail=node('details',undefined,'practical-flow');detail.append(node('summary',`Speaking flow${Number.isSafeInteger(flow.fillerCount) && flow.fillerCount>0?` · ${flow.fillerCount} fillers`:''}`),node('p',flow.note));
+     if(typeof flow.strategy==='string')detail.append(node('p',flow.strategy));
+     if(Array.isArray(flow.restarts) && flow.restarts.length){detail.append(node('strong','Repeated phrases'));for(const quote of flow.restarts.slice(0,3))if(typeof quote==='string')detail.append(node('blockquote',quote));}
+     if(Array.isArray(flow.phrases))for(const item of flow.phrases.slice(0,3))if(typeof item?.text==='string' && typeof item.translation==='string'){detail.append(node('strong',item.text),node('p',item.translation));if(typeof item.purpose==='string')detail.append(node('p',item.purpose,'muted'));}
+     if(typeof flow.notice==='string')detail.append(node('p',flow.notice,'muted'));feedback.append(detail);
+    }
     if(typeof turn.feedback.improved==='string'){
      if(turn.feedback.improved.length>600){const full=node('details');full.append(node('summary','Full suggested answer'),node('blockquote',turn.feedback.improved));feedback.append(full);}
      else feedback.append(node('strong','Try saying'),node('blockquote',turn.feedback.improved));

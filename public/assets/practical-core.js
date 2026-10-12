@@ -24,7 +24,7 @@
  function context(state){return state.messages.slice(-11).map(({role,text})=>({role,text}));}
  function add(state,response){
   if(!response || typeof response.transcript!=='string' || !response.transcript.trim() || typeof response.reply!=='string' || !response.reply.trim())throw Error('Chưa nhận được phản hồi. Hãy thử lại.');
-  const messages=[...state.messages,{role:'user',text:response.transcript,feedback:{improved:response.improved,note:response.feedback,phrase:response.phrase,corrections:response.corrections || [],collocations:response.collocations || []}},{role:'assistant',text:response.reply,translation:response.translation,pronunciation:response.pronunciation}];
+  const messages=[...state.messages,{role:'user',text:response.transcript,feedback:{improved:response.improved,note:response.feedback,phrase:response.phrase,corrections:response.corrections || [],collocations:response.collocations || [],...(response.speakingFlow?{speakingFlow:response.speakingFlow}:{}),...(response.coachingPartial?{partial:true}:{})}},{role:'assistant',text:response.reply,translation:response.translation,pronunciation:response.pronunciation}];
   // Keep the opening and the latest twelve complete exchanges, never half a turn.
   return {...state,messages:messages.length>25?[messages[0],...messages.slice(-24)]:messages};
  }

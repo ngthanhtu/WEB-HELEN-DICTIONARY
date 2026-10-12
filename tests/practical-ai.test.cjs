@@ -86,7 +86,7 @@ test('uncertain speech is not reconstructed from a scenario, and silence has no 
  }
  assert.throws(()=>validateInput({...body(),stage:'transcribe'}),{code:'PRACTICAL_INPUT'});
 });
-test('coaching edits only exact grounded spans and rejects unquoted rewrites, partial words, ambiguous repeats and overlapping edits',async()=>{
+test('coaching applies only exact grounded spans while unsupported rewrites, partial words, ambiguous repeats and overlapping edits cannot replace learner facts',async()=>{
  const input=body('I has coffee in Paris at 7.'),valid={...output(input.text),improved:'I have coffee in Paris at 7.',corrections:[{original:'I has',replacement:'I have',reason:'Dùng have với I.'}]};
  const service=createPracticalService({apiKey:'test-only',fetchImpl:async()=>generated(valid)});
  const value=await service.reply(input);assert.equal(value.improved,valid.improved);assert.deepEqual(value.corrections,valid.corrections);
@@ -95,8 +95,12 @@ test('coaching edits only exact grounded spans and rejects unquoted rewrites, pa
   {...valid,corrections:[{original:'I had',replacement:'I have',reason:'Guess'}]},
   {...valid,corrections:[{original:'has',replacement:'have',reason:'One'},{original:'I has',replacement:'I have',reason:'Two'}]},
   {...valid,corrections:[{original:'aris',replacement:'London',reason:'Partial word'}]},
- ])await assert.rejects(createPracticalService({apiKey:'test-only',fetchImpl:async()=>generated(invalid)}).reply(input),{code:'PRACTICAL_OUTPUT'});
- const repeated=body('I has coffee and has tea.');await assert.rejects(createPracticalService({apiKey:'test-only',fetchImpl:async()=>generated({...output(repeated.text),improved:'I have coffee and have tea.',corrections:[{original:'has',replacement:'have',reason:'Ambiguous'}]})}).reply(repeated),{code:'PRACTICAL_OUTPUT'});
+ ]){
+  const safe=await createPracticalService({apiKey:'test-only',fetchImpl:async()=>generated(invalid)}).reply(input);
+  assert.equal(safe.transcript,input.text);assert.ok(safe.improved.endsWith('coffee in Paris at 7.'));assert.ok(!/London|tea|8\./.test(safe.improved));assert.equal(safe.coachingPartial,true);assert.ok(safe.corrections.length<=1);assert.ok(safe.corrections.every(edit=>input.text.includes(edit.original)));
+ }
+ const repeated=body('I has coffee and has tea.'),safe=await createPracticalService({apiKey:'test-only',fetchImpl:async()=>generated({...output(repeated.text),improved:'I have coffee and have tea.',corrections:[{original:'has',replacement:'have',reason:'Ambiguous'}]})}).reply(repeated);
+ assert.equal(safe.improved,repeated.text);assert.deepEqual(safe.corrections,[]);assert.equal(safe.coachingPartial,true);
 });
 test('private retry cache remains scoped to the device when request ID and contents coincide',async()=>{
  let calls=0;const input=body(),service=createPracticalService({apiKey:'test-only',fetchImpl:async()=>{calls++;return generated(output(input.text));}});
