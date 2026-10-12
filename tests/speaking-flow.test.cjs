@@ -35,3 +35,10 @@ test('assessment aggregates fillers from signed original speech instead of a cle
 test('critical response and echo validation remain strict despite optional edit recovery',()=>{
  for(const value of [{...response,reply:''},{...response,transcript:'An invented answer.'},{...response,collocations:[{text:'broken'}]},{...response,phrase:{}}])assert.throws(()=>validateOutput(value,{text:answer,scenario:'work'}),{code:'PRACTICAL_OUTPUT'});
 });
+test('coaching explanations describe accepted edits instead of invented instructions in a separate model summary',()=>{
+ const reason='Dùng have với chủ ngữ I.',corrections=[{original:'I has',replacement:'I have',reason}];
+ for(const feedback of ['Thêm for khi exchange ideas.',undefined]){
+  const value=validateOutput({...response,corrections,feedback},{text:'I has work experience.',scenario:'work'});assert.equal(value.feedback,reason);assert.equal(value.improved,'I have work experience.');assert.ok(!value.feedback.includes('for'));
+ }
+ const value=validateOutput({...response,corrections:[],feedback:'You have perfect grammar.'},{text:'A coffee, please.',scenario:'coffee'});assert.ok(!value.feedback.includes('perfect'));
+});

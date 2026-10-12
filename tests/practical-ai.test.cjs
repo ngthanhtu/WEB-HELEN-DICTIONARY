@@ -37,10 +37,10 @@ test('confirmed-text coaching retains grammar and collocations without unsupport
  for(const feedback of ['Bạn nói rất trôi chảy và phát âm rõ ràng.','Your fluency and accent are excellent.','Bạn đạt IELTS band 8.']){
   let calls=0;const value={...output(input.text),feedback,improved:'I have coffee.',corrections:[{original:'I has',replacement:'I have',reason:'Dùng have với I.'}],collocations:[{text:'freshly brewed coffee',translation:'cà phê mới pha',example:'I enjoy freshly brewed coffee.'}]};
   const service=createPracticalService({apiKey:'test-only',fetchImpl:async()=>{calls++;return generated(value);}});
-  const reply=await service.reply(input);assert.equal(reply.feedback,'Xem phần sửa câu bên dưới để luyện lại ngữ pháp và cách dùng từ.');assert.equal(reply.improved,'I have coffee.');assert.deepEqual(reply.corrections,value.corrections);assert.deepEqual(reply.collocations,value.collocations);assert.equal(calls,1);
+  const reply=await service.reply(input);assert.equal(reply.feedback,'Dùng have với I.');assert.equal(reply.improved,'I have coffee.');assert.deepEqual(reply.corrections,value.corrections);assert.deepEqual(reply.collocations,value.collocations);assert.equal(calls,1);
  }
  const service=createPracticalService({apiKey:'test-only',fetchImpl:async()=>generated({...output('A coffee, please.'),feedback:'Your pronunciation is perfect.'})});
- const reply=await service.reply(body('A coffee, please.'));assert.equal(reply.feedback,'Thử dùng các collocations bên dưới trong một câu trả lời mới.');assert.equal(reply.improved,reply.transcript);
+ const reply=await service.reply(body('A coffee, please.'));assert.equal(reply.feedback,'Thử dùng cụm gợi ý khi phù hợp, rồi trả lời câu hỏi tiếp theo bằng ý của bạn.');assert.equal(reply.improved,reply.transcript);
 });
 test('pending and completed retries share one generation; changed content does not reuse private results',async()=>{
  let calls=0,reserved=0;const input=body(),service=createPracticalService({apiKey:'test-only',beforeGenerate:async()=>reserved++,fetchImpl:async(url,options)=>{calls++;await new Promise(resolve=>setTimeout(resolve,15));return generated(output(JSON.parse(JSON.parse(options.body).contents[0].parts[0].text).learnerSentence));}});
