@@ -6,7 +6,7 @@ The screenshot shows a successful transcript with many um/uh tokens and repeated
 
 Confirmed-text coaching now keeps a valid conversation reply and discards optional edits that are malformed, unquoted, partial-word, repeated, overlapping or beyond the four-edit limit. Only one exact complete occurrence can be edited. The suggested answer is constructed on the server from accepted edits; an AI-authored full rewrite cannot substitute different facts. Critical reply/translation/phrase structure and an invented transcript still fail validation. The original transcript remains unchanged in the conversation and signed assessment journal.
 
-If an optional edit is discarded, the card explains that some changes were not applied and shows only verified edits. For every confirmed-text turn, feedback is built from accepted correction reasons, so a separate AI summary cannot refer to an edit that was skipped or never proposed. The model does not regenerate this summary, original transcript or full suggested answer. A valid reply still triggers the existing automatic read once. This recovery does not make another AI request or relax microphone uncertainty handling.
+If an optional edit is discarded, the card explains that some changes were not applied and shows only verified edits. For every confirmed-text turn, feedback is built from accepted correction reasons, so a separate AI summary cannot refer to an edit that was skipped or never proposed. The displayed summary, original transcript and full suggested answer are built on the server; any separate provider summary is ignored. A valid reply still triggers the existing automatic read once. This recovery does not make another AI request or relax microphone uncertainty handling.
 
 ## Speaking flow
 

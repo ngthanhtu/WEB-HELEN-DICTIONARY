@@ -46,6 +46,7 @@
 .practical-feedback li{margin-block:var(--space-3);overflow-wrap:anywhere}
 .practical-flow{border:1px solid var(--border);border-radius:var(--radius-xs);background:var(--surface-selected);padding-inline:var(--space-3);line-height:1.6;transition:border-color var(--motion),box-shadow var(--motion)}
 .practical-flow:hover{border-color:var(--action);box-shadow:0 0 0 2px var(--soft-glow)}
+.practical-flow summary{margin-bottom:var(--space-2)}
 .practical-flow[open]{padding-bottom:var(--space-3)}
 .practical-flow>strong{display:block;margin-top:var(--space-3)}
 .practical-transcript-review{padding:var(--space-4);margin-bottom:var(--space-4);border:1px solid var(--action);border-radius:var(--radius-sm);background:var(--surface-selected);color:var(--text-primary);overflow-wrap:anywhere}

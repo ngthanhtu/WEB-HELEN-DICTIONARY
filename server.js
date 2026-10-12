@@ -125,12 +125,14 @@ app.post('/api/speech',asyncHandler(async(req,res)=>{
 const buildVersion=process.env.RENDER_GIT_COMMIT?.replace(/[^a-zA-Z0-9]/g,'').slice(0,12) || 'mobile-v1';
 app.get('/api/practical/status',(req,res)=>res.json({configured:practical.configured,provider:'Gemini',dailyReplyLimit:usage.limits.practicalDeviceDay,transcriptConfirmation:true,automaticClearSpeech:true,maxRecordingSeconds:180,ieltsAssessment:true,dailyAssessmentLimit:usage.limits.practicalAssessmentDay,pronunciation:require('./public/assets/practical-core').scenarios.map(item=>({text:item.opening,proof:pronunciation.issue(item.opening)}))}));
 app.post('/api/practical',asyncHandler(async(req,res)=>{
+  const timing={},started=performance.now();
+  const durations=()=>res.set('Server-Timing',[`practical;dur=${(performance.now()-started).toFixed(1)}`,...['quota','provider','discovery'].map(phase=>`${phase};dur=${(timing[phase+'Ms'] ?? (timing[phase+'Start']===undefined?0:performance.now()-timing[phase+'Start'])).toFixed(1)}`)].join(','));
   try{
     const device=req.get('X-Helen-Device') || '';
     if(process.env.NODE_ENV==='production' && !/^[a-f0-9]{64}$/.test(device))return res.status(400).json({error:'Tải lại trang để cập nhật luyện nói rồi thử lại.',code:'PRACTICAL_DEVICE'});
-    const value=await practical.reply(req.body,{device});
+    const value=await practical.reply(req.body,{device,timing});durations();
     res.json(value.stage?value:{...value,pronunciation:[value.reply,value.improved,value.phrase.text].filter(text=>text.length<=2000).map(text=>({text,proof:pronunciation.issue(text)}))});
-  }catch(error){res.status(error.status || 503).json({error:error.code?error.message:'Chưa kết nối được AI. Hãy thử lại.',code:error.code || 'PRACTICAL_SERVICE'});}
+  }catch(error){durations();res.status(error.status || 503).json({error:error.code?error.message:'Chưa kết nối được AI. Hãy thử lại.',code:error.code || 'PRACTICAL_SERVICE'});}
 }));
 const appPages={'/':'dictionary','/study':'study','/topics':'topics','/practical-ai':'practical','/words':'words','/history':'history','/offline':'offline'};
 const pageTitles={dictionary:'Dictionary',study:'Study',topics:'Topics',practical:'Practical AI',words:'My words',history:'History',offline:'Offline'};
