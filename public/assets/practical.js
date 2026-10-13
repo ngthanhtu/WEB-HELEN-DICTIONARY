@@ -257,6 +257,7 @@
  $('practical-stop-voice').onclick=()=>{stopPartner();message('Đã dừng giọng. Đến lượt bạn.');};
  document.addEventListener('helen:voices',voiceChoices);globalThis.speechSynthesis?.addEventListener?.('voiceschanged',deviceChoices);
  document.addEventListener('helen:voice-selected',()=>{if(aiVoice.value==='preferences')stopPartner();});
+ document.addEventListener('helen:app-update-required',()=>{if(input.value.trim() && !session.report){draft ||= {scenario:state.scenario,level:state.level,text:input.value,uncertain:false};saveDraft();}cancel(false);save();});
  document.addEventListener('helen:page-change',event=>{if(event.detail.page==='practical')void check();else cancel(false);});
  document.addEventListener('visibilitychange',()=>{if(document.hidden)cancel(false);});
  globalThis.addEventListener('pagehide',()=>cancel(false));

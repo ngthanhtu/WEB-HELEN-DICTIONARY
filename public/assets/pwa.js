@@ -2,7 +2,7 @@
   const install=document.querySelector('#install-app'), help=document.querySelector('#install-help');
   const status=document.querySelector('#connection-status'), update=document.querySelector('#app-update');
   if(!install || !help || !status || !update)return;
-  let prompt, registration, reloading=false, latest=null, pendingSave=false;
+  let prompt, registration, latest=null, pendingSave=false;
   const standalone=()=>matchMedia('(display-mode: standalone)').matches || navigator.standalone===true;
   const syncInstall=()=>{install.hidden=standalone();};
   const showDialog=dialog=>{if(dialog.showModal)dialog.showModal();else {dialog.setAttribute('open','');dialog.hidden=false;}};
@@ -173,17 +173,9 @@
   if(!('serviceWorker' in navigator)) {
     status.hidden=false;status.textContent='Trình duyệt này chưa hỗ trợ lưu từ ngoại tuyến. Hãy mở bằng Chrome hoặc Safari.';packButton.disabled=true;summary.textContent='Lưu từ ngoại tuyến chưa sẵn sàng.';return;
   }
-  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(reloading)location.reload();else {captureCurrent();refreshLibrary();}});
-  update.addEventListener('click',()=>{if(registration?.waiting){reloading=true;registration.waiting.postMessage({type:'ACTIVATE_UPDATE'});}});
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{captureCurrent();refreshLibrary();});
   navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).then(value=>{
-    registration=value;
-    const offer=()=>{
-      if(!value.waiting || !navigator.serviceWorker.controller)return;
-      update.hidden=false;
-      const refreshing=performance.getEntriesByType?.('navigation')[0]?.type==='reload';
-      if(refreshing && !document.querySelector('#study')?.dataset.session){reloading=true;value.waiting.postMessage({type:'ACTIVATE_UPDATE'});}
-    };
-    offer();value.addEventListener('updatefound',()=>{const worker=value.installing;worker?.addEventListener('statechange',offer);});
+    registration=value;window.HelenAppUpdate?.attach(value);
     return navigator.serviceWorker.ready;
   }).then(value=>{registration=value;captureCurrent();refreshLibrary();}).catch(()=>{
     status.hidden=false;status.textContent='Chưa bật được lưu ngoại tuyến. Kết nối mạng rồi tải lại trang.';

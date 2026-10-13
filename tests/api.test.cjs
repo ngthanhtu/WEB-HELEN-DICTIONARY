@@ -29,6 +29,12 @@ test('typeahead API returns prefix words and phrasal verbs without looking up de
   assert.equal(data.suggestions[0],'name');assert.ok(data.suggestions.includes('name after'));
   assert.equal((await fetch(`${base}/api/suggestions?word=${'a'.repeat(101)}`)).status,400);
 });
+test('public app version matches HTML and worker and never includes credentials or stale cache headers',async()=>{
+ await ready;const response=await fetch(`${base}/api/app-version`),data=await response.json();
+ assert.equal(response.status,200);assert.equal(response.headers.get('cache-control'),'no-store');assert.deepEqual(Object.keys(data),['build']);
+ const html=await fetch(base).then(r=>r.text()),worker=await fetch(`${base}/sw.js`).then(r=>r.text());
+ assert.ok(html.includes(`data-build="${data.build}"`));assert.ok(worker.includes(`const BUILD='${data.build}'`));assert.doesNotMatch(html,/__APP_BUILD__/);
+});
 test('learning preparation returns real local senses, separates unknown words and rejects invalid batches',async()=>{
   await ready;
   const request=words=>fetch(`${base}/api/study/prepare`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({words})});

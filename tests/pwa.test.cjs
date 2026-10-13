@@ -11,6 +11,11 @@ function worker(network,{quickTimers=false}={}) {
   const request=url=>({method:'GET',url:`https://helen.test${url}`});
   return {context,caches,events,request,deadlines,get:(url,event)=>{context.input=request(url);context.fetchEvent=event;return vm.runInContext('word(input,fetchEvent)',context);},message:async data=>{let done,reply;events.message({data,ports:[{postMessage:value=>reply=value}],waitUntil:value=>done=value,source:{url:'https://helen.test/'}});await done;return reply;}};
 }
+test('the worker exposes its installed build without activating until the user confirms',async()=>{
+ const w=worker(async()=>new Response(''));assert.equal((await w.message({type:'APP_BUILD'})).build,'test');assert.equal(w.context.activated,undefined);
+ await w.message({type:'ACTIVATE_UPDATE'});assert.equal(w.context.activated,true);
+ assert.ok(vm.runInContext("shell.includes('/assets/app-update.js?v=test')",w.context));
+});
 test('refresh serves fresh online HTML while keeping the previous complete app usable offline',async()=>{
   let online=true;const w=worker(async()=>{if(!online)throw Error('offline');return new Response('new page',{headers:{'Content-Type':'text/html','X-Helen-Build':'next'}});});
   const cache=await w.caches.open('helen-test-shell');await cache.put('/',new Response('installed page'));

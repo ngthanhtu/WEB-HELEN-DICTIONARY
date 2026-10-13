@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-page="dictionary">
+<html lang="en" data-page="dictionary" data-build="__APP_BUILD__">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -195,6 +195,7 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
   </div></details>
 </header>
 <div class="app-tools" id="app-status-tools"><button id="install-app" class="word-link" type="button">＋ Install app</button><span id="connection-status" role="status" hidden></span><button id="app-update" class="word-link" type="button" hidden>Update app</button></div>
+<dialog id="app-update-dialog" class="app-update-dialog" lang="vi" aria-labelledby="app-update-title" aria-describedby="app-update-copy"><span class="app-update-icon" aria-hidden="true">↻</span><span class="section-kicker">HELEN · NEW VERSION</span><h2 id="app-update-title">Có bản cập nhật mới</h2><p id="app-update-copy">Helen vừa được nâng cấp. Bạn cần bấm <strong>Update app</strong> để dùng phiên bản mới nhất trước khi tiếp tục.</p><p class="app-update-preserved">Từ yêu thích, lịch ôn và dữ liệu học đã lưu vẫn được giữ.</p><button id="confirm-app-update" class="btn" type="button">Cập nhật ngay · Update app</button><p id="app-update-status" role="status" aria-live="polite"></p></dialog>
 <dialog id="install-help"><h2>Install Helen Dictionary</h2><p id="install-steps"></p><p>Giọng đọc, dịch mới và tạo AI cần Internet. Từ và bài AI đã lưu có thể xem lại khi mất mạng.</p><button id="close-install" class="btn" type="button">Close</button></dialog>
 <div id="audio-status" role="status" hidden></div>
 
@@ -1135,6 +1136,7 @@ document.addEventListener?.('helen:page-change',event=>{if(event.detail.page==='
 <script src="/assets/topics.js" defer></script>
 <script src="/assets/practical-core.js"></script>
 <script src="/assets/practical-audio.js"></script>
+<script src="/assets/app-update.js" defer></script>
 <script src="/assets/practical.js" defer></script>
 <script src="/assets/daily-learning.js" defer></script>
 <script src="/assets/backup.js" defer></script>

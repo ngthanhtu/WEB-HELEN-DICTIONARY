@@ -365,3 +365,13 @@ QA: 390 kiểm thử đạt; 3 MySQL integration local chưa chạy vì không c
 Khởi động: bảng quota được chuẩn bị trước; luyện nói không đợi các bảng khác. Nếu lần chuẩn bị đầu thất bại, thử nối lại sau 5 giây; vẫn yêu cầu quota thực và giữ deadline reservation 3,5 giây.
 
 Practical long-turn QA (13/10/2026): [kiểm thử bản thu gần 3 phút và xử lý quá tải](docs/practical-long-turn-2026-10-13.md). Không cần key, bảng SQL hoặc cấu hình Render mới.
+
+## Mandatory app updates
+
+Khi Helen phát hiện một bản triển khai mới, web và app đã cài mở hộp **Có bản cập nhật mới** và yêu cầu bấm **Cập nhật ngay · Update app** trước khi tiếp tục. Kiểm tra chạy khi vào trang, quay lại tab/app hoặc có mạng trở lại; endpoint `/api/app-version` nhẹ, không cache và không gọi AI. Các lần khởi động chậm có tối đa ba lần kiểm tra lại. Truy cập lần đầu đã ở bản mới nhất không hiện thông báo dư thừa.
+
+Nút cập nhật tải xong shell rồi mới kích hoạt service worker, kiểm tra phiên bản đang chạy và reload đúng trang. Update không tự kích hoạt khi refresh; Escape và chạm nền không đóng hộp. Khi mạng/worker lỗi, người dùng có nút thử lại; toàn bộ thao tác có giới hạn 20 giây. Trình duyệt không chạy service worker vẫn cập nhật web qua reload. Mỗi tab cũ phải xác nhận; bản đã cập nhật không hỏi lại. Người dùng đang mở phiên bản cũ có thể cần tải lại một lần để nhận cơ chế này.
+
+Không xóa từ yêu thích, lịch ôn, bộ từ, giọng đã chọn hoặc cache âm thanh/từ/chủ đề đã tải. Câu Practical AI đang soạn được lưu trước khi dừng thao tác và cập nhật. Lượt quiz chưa hoàn tất trong RAM hoặc bản ghi micro đang thu không được khôi phục; kết quả đã lưu vẫn giữ nguyên. Mở offline khi chưa phát hiện bản mới tiếp tục dùng dữ liệu đã cài. Nếu thông báo cập nhật đang mở rồi mất mạng, cần bật mạng để cập nhật; không giả báo thành công.
+
+QA: **401 tests passed**, 3 real MySQL tests skipped (no local credentials). Two real service-worker builds at 390/1440px cover first visit, mandatory confirmation, keyboard focus/Escape, network failure, stalled update timeout, retry, two tabs, retained learning/draft/audio, no repeat prompt, offline reload, legacy cache migration and plain web mode. Light/dark Axe WCAG AA: zero violations, no horizontal overflow. iPhone Safari/installed-app behavior still needs physical-device testing. Optional browser regression: `node scripts/qa-app-update.cjs` with Playwright and axe-core available in the QA environment. `HELEN_PLAYWRIGHT_MODULE`, `HELEN_CHROMIUM_PATH`, `HELEN_AXE_PATH`, and `HELEN_QA_OUTPUT` may point to existing QA tools/output; no production dependency is added.

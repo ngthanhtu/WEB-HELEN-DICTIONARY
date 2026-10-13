@@ -123,6 +123,7 @@ app.post('/api/speech',asyncHandler(async(req,res)=>{
   catch(error) {res.status(error.status || 503).json({error:error.message || 'Chưa nhận diện được. Hãy thử lại hoặc gõ từ.',code:error.code || 'SPEECH_SERVICE'});}
 }));
 const buildVersion=process.env.RENDER_GIT_COMMIT?.replace(/[^a-zA-Z0-9]/g,'').slice(0,12) || 'mobile-v1';
+app.get('/api/app-version',(req,res)=>res.set('Cache-Control','no-store').json({build:buildVersion}));
 app.get('/api/practical/status',(req,res)=>res.json({configured:practical.configured,provider:'Gemini',dailyReplyLimit:usage.limits.practicalDeviceDay,transcriptConfirmation:true,automaticClearSpeech:true,maxRecordingSeconds:180,ieltsAssessment:true,dailyAssessmentLimit:usage.limits.practicalAssessmentDay,pronunciation:require('./public/assets/practical-core').scenarios.map(item=>({text:item.opening,proof:pronunciation.issue(item.opening)}))}));
 app.post('/api/practical',asyncHandler(async(req,res)=>{
   const timing={},started=performance.now();
@@ -140,6 +141,7 @@ app.get(Object.keys(appPages), (req, res) => {
   const page=appPages[req.path.toLowerCase().replace(/\/$/,'') || '/'];
   const html=require('fs').readFileSync(path.join(__dirname,'index.html'),'utf8');
   res.set({'Cache-Control':'no-cache','X-Helen-Build':buildVersion}).type('html').send(html
+    .replace('__APP_BUILD__',buildVersion)
     .replace(/<script>/g,`<script nonce="${res.locals.cspNonce}">`)
     .replace('data-page="dictionary"',`data-page="${page}"`)
     .replace('<title>Helen Dictionary</title>',`<title>${pageTitles[page]} · Helen Dictionary</title>`)
