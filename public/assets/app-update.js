@@ -15,6 +15,11 @@
  }
  function show(){
   if(!dialog.open){
+   // Lift the existing cursor before the modal opens, including clients that
+   // still have an older pointer controller. It must not become inert with
+   // the rest of the page while the first-entry update notice is visible.
+   const cursor=document.getElementById('pet-cursor');
+   if(cursor){dialog.append(cursor);cursor.inert=false;}
    try{dialog.showModal();}catch{dialog.setAttribute('open','');}
    // Native dialog traps focus. Inert also covers browsers with dialog fallback.
    for(const child of document.body.children)if(child!==dialog && !['SCRIPT','STYLE','LINK'].includes(child.tagName))child.inert=true;

@@ -25,6 +25,13 @@ const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
    const draft='I would like to discuss my experience in healthcare.';await page.locator('#practical-input').fill(draft);
    const second=await context.newPage();await second.goto(origin+'/words');await second.evaluate(()=>navigator.serviceWorker.ready);await second.waitForFunction(()=>window.HelenAppUpdate);
    chosen=1;await page.evaluate(()=>window.HelenAppUpdate.check(true));await page.waitForFunction(()=>document.getElementById('app-update-dialog').open);
+   if(width===1440){
+    // Re-enter with an unconfirmed update: the notice must open on entry,
+    // before any Update app click or pointer-controller initialization.
+    await page.reload();await page.waitForFunction(()=>document.getElementById('app-update-dialog').open);
+    assert.equal(await page.locator('#pet-cursor').evaluate(el=>el.parentElement.id),'app-update-dialog');
+    assert.equal(await page.locator('#pet-cursor').evaluate(el=>el.inert),false);
+   }
    assert.equal(await page.evaluate(()=>document.activeElement.id),'confirm-app-update');await page.keyboard.press('Escape');assert.equal(await page.locator('#app-update-dialog').evaluate(el=>el.open),true);
    await page.keyboard.press('Tab');assert.equal(await page.evaluate(()=>document.getElementById('app-update-dialog').contains(document.activeElement)),true);
    assert.equal(await page.locator('#practical-input').evaluate(el=>el.closest('main').inert),true);
@@ -38,6 +45,10 @@ const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     const picture=await page.locator('#pet-cursor img').getAttribute('src');
     const heading=await page.locator('#app-update-title').boundingBox();await page.mouse.move(heading.x+10,heading.y+10);await page.mouse.down();
     assert.notEqual(await page.locator('#pet-cursor img').getAttribute('src'),picture);await page.mouse.up();
+    await page.mouse.move(100,100);await page.waitForTimeout(100);
+    assert.equal(await page.locator('#pet-cursor').evaluate(el=>el.hidden || el.inert),false);
+    assert.equal(await page.locator('#pet-cursor img').evaluate(el=>Math.round(el.getBoundingClientRect().x)),105);
+    await page.screenshot({path:path.join(output,'helen-cursor-entry-backdrop.png')});
     await page.mouse.move(box.x+box.width/2,box.y+box.height/2);
    }
    await page.waitForFunction(async()=>{const r=await navigator.serviceWorker.getRegistration();return Boolean(r.waiting);},{},{timeout:20000});
@@ -56,7 +67,7 @@ const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
    }
    await page.screenshot({path:path.join(output,`helen-app-update-${width}.png`)});
-   await page.locator('#confirm-app-update').click();await page.waitForFunction(expected=>document.documentElement.dataset.build===expected,builds[1],{timeout:30000});await page.waitForFunction(()=>window.HelenAppUpdate && navigator.serviceWorker.controller);
+   await Promise.all([page.waitForNavigation({waitUntil:'domcontentloaded'}),page.locator('#confirm-app-update').click()]);await page.waitForFunction(expected=>document.documentElement.dataset.build===expected,builds[1],{timeout:30000});await page.waitForFunction(()=>window.HelenAppUpdate && navigator.serviceWorker.controller);
    assert.equal(await page.locator('#app-update-dialog').evaluate(el=>el.open),false);
    assert.equal(await page.evaluate(()=>localStorage.getItem('helen-update-test-sentinel')),'saved learning data');assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('helen-favorites'))),['loan','happy','brotherhood']);
    assert.equal(await page.locator('#practical-input').inputValue(),draft);assert.equal(await page.evaluate(()=>localStorage.getItem('helen-voice')),'SavedVoice');

@@ -6,7 +6,7 @@
   const mascot=document.querySelector('#pet-mascot'), mascotImage=mascot?.querySelector('img');
   const control=document.querySelector('#pet-control'), toggle=document.querySelector('#pet-toggle');
   if(!overlay || !pointer || !cursorImage || !mascot || !mascotImage || !control || !toggle) return;
-  const home=overlay.parentElement;
+  const home=document.body;
   let cursorDialog=null;
   function isModal(dialog) {
     if(!dialog?.isConnected || !dialog.open)return false;
