@@ -22,7 +22,7 @@ test('SDK timeout/abort is classified accurately without exposing upstream detai
  for(const name of ['TimeoutError','AbortError']){const service=createPracticalService({apiKey:'test-only',fetchImpl:async()=>{throw Object.assign(Error('PRIVATE_PROVIDER_DETAIL'),{name});}});await assert.rejects(service.reply(input()),e=>e.code==='PRACTICAL_TIMEOUT' && e.status===504 && !e.message.includes('PRIVATE'));}
 });
 test('an explicitly overloaded latest Lite model fails over once to an available Lite with independent quota reservation',async()=>{
- const models=['gemini-3.5-flash-lite','gemini-3.1-flash-lite'],used=[];let reservations=0;
+ const models=['gemini-3.5-flash-lite','gemini-2.5-flash-lite'],used=[];let reservations=0;
  const service=createPracticalService({apiKey:'test-only',beforeGenerate:()=>reservations++,fetchImpl:async(url)=>{
   if(!String(url).includes('generateContent'))return Response.json({models:models.map(name=>({name:'models/'+name,supportedGenerationMethods:['generateContent']}))});
   used.push(String(url));return used.length===1?bad(503):good();
@@ -32,7 +32,14 @@ test('an explicitly overloaded latest Lite model fails over once to an available
 test('cold model preparation lasts beyond three seconds but has an eight-second bound even if transport ignores abort',async t=>{
  let release,signal;const service=createPracticalService({apiKey:'test-only',fetchImpl:async(_url,options)=>{signal=options.signal;return new Promise(resolve=>release=resolve);}});
  t.mock.timers.enable({apis:['setTimeout']});const work=service.prepare();while(!release)await tick();t.mock.timers.tick(3500);assert.equal(signal.aborted,false);t.mock.timers.tick(4500);await work;assert.equal(signal.aborted,true);assert.equal(service.diagnostics().discoveryFailure.type,'TimeoutError');
- release(Response.json({models:[{name:'models/gemini-3.1-flash-lite',supportedGenerationMethods:['generateContent']}]}));await tick();assert.equal(service.diagnostics().prepared,false);assert.equal(service.model,'gemini-flash-lite-latest');
+ release(Response.json({models:[{name:'models/gemini-3.1-flash-lite',supportedGenerationMethods:['generateContent']}]}));await tick();assert.equal(service.diagnostics().prepared,false);assert.equal(service.model,'gemini-3.1-flash-lite');
+});
+test('a cold unavailable catalogue does not send the first speaking turn to an unconfigured floating alias',async()=>{
+ let generations=0;const service=createPracticalService({apiKey:'test-only',fetchImpl:async(url,options)=>{
+  if(!String(url).includes('generateContent'))return bad(503);
+  generations++;assert.ok(String(url).includes('gemini-3.1-flash-lite'));assert.equal(JSON.parse(options.body).generationConfig.thinkingConfig.thinkingLevel,'MINIMAL');return good();
+ }});
+ await service.prepare();assert.equal(service.diagnostics().prepared,false);assert.equal(service.model,'gemini-3.1-flash-lite');assert.ok((await service.reply(input())).reply);assert.equal(generations,1);
 });
 test('shared long-turn budgets leave upload and response time on the client and bound every stage',()=>{
  for(const [value,serverMs] of [[{text:'Hello'},10000],[{text:'word '.repeat(443)},18000],[{stage:'transcribe',durationMs:175000},30000],[{stage:'transcribe',durationMs:20000},12000],[{stage:'assess'},20000]]){
