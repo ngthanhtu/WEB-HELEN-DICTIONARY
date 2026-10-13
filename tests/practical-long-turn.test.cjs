@@ -21,6 +21,14 @@ test('preparing a concrete Lite model applies minimal thinking without spending 
 test('SDK timeout/abort is classified accurately without exposing upstream details',async()=>{
  for(const name of ['TimeoutError','AbortError']){const service=createPracticalService({apiKey:'test-only',fetchImpl:async()=>{throw Object.assign(Error('PRIVATE_PROVIDER_DETAIL'),{name});}});await assert.rejects(service.reply(input()),e=>e.code==='PRACTICAL_TIMEOUT' && e.status===504 && !e.message.includes('PRIVATE'));}
 });
+test('an explicitly overloaded latest Lite model fails over once to an available Lite with independent quota reservation',async()=>{
+ const models=['gemini-3.5-flash-lite','gemini-3.1-flash-lite'],used=[];let reservations=0;
+ const service=createPracticalService({apiKey:'test-only',beforeGenerate:()=>reservations++,fetchImpl:async(url)=>{
+  if(!String(url).includes('generateContent'))return Response.json({models:models.map(name=>({name:'models/'+name,supportedGenerationMethods:['generateContent']}))});
+  used.push(String(url));return used.length===1?bad(503):good();
+ }});
+ await service.prepare();assert.equal(service.model,models[0]);const response=await service.reply(input());assert.ok(response.reply);assert.equal(used.length,2);assert.equal(reservations,2);assert.ok(used[0].includes(models[0]));assert.ok(used[1].includes(models[1]));assert.equal(service.model,models[1]);
+});
 test('shared long-turn budgets leave upload and response time on the client and bound every stage',()=>{
  for(const [value,serverMs] of [[{text:'Hello'},10000],[{text:'word '.repeat(443)},18000],[{stage:'transcribe',durationMs:175000},30000],[{stage:'transcribe',durationMs:20000},12000],[{stage:'assess'},20000]]){
   const budget=core.requestBudget(value);assert.equal(budget.serverMs,serverMs);assert.equal(budget.clientMs,serverMs+5000);assert.ok(budget.clientMs<=35000);
