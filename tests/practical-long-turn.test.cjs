@@ -4,6 +4,11 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
 const input=()=>({scenario:'work',level:'B1',requestId:crypto.randomUUID(),history:core.context(core.fresh('work')),text:'I work in a hospital.'});
 const good=()=>Response.json({candidates:[{content:{parts:[{text:JSON.stringify({reply:'What have you learned from your work?',translation:'Bạn đã học được gì từ công việc?',feedback:'Hãy bổ sung ví dụ.',phrase:{text:'gain experience',translation:'tích lũy kinh nghiệm'},corrections:[],collocations:[]})}]},finishReason:'STOP'}]});
 const bad=status=>Response.json({error:{code:status,message:'PRIVATE_PROVIDER_DETAIL',status:status===429?'RESOURCE_EXHAUSTED':'UNAVAILABLE'}},{status});
+test('provider timeout header is independent of the local watchdog; diagnostics reveal no input or credentials',async()=>{
+ const service=createPracticalService({apiKey:'test-only',fetchImpl:async(_url,options)=>{assert.equal(new Headers(options.headers).get('X-Server-Timeout'),'60');throw Object.assign(Error('PRIVATE_PROVIDER_DETAIL'),{cause:{code:'UND_ERR_CONNECT_TIMEOUT',message:'PRIVATE_PROVIDER_DETAIL'},name:'TypeError'});}});
+ await assert.rejects(service.reply(input()),{code:'PRACTICAL_SERVICE'});const status=service.diagnostics();assert.equal(status.lastFailure.network,'UND_ERR_CONNECT_TIMEOUT');assert.ok(!JSON.stringify(status).includes('PRIVATE_PROVIDER_DETAIL'));assert.ok(!JSON.stringify(status).includes('test-only'));
+ const misconfigured=createPracticalService({apiKey:'test-only',model:'PRIVATE_CONFIG_VALUE'});assert.equal(misconfigured.diagnostics().model,null);
+});
 test('preparing a concrete Lite model applies minimal thinking without spending generations or overriding an explicit model',async()=>{
  let listed=0,generated=0,reserved=0;
  const service=createPracticalService({apiKey:'test-only',beforeGenerate:()=>reserved++,fetchImpl:async(url,options)=>{

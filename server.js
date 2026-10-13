@@ -126,7 +126,7 @@ const buildVersion=process.env.RENDER_GIT_COMMIT?.replace(/[^a-zA-Z0-9]/g,'').sl
 app.get('/api/app-version',(req,res)=>res.set('Cache-Control','no-store').json({build:buildVersion}));
 app.get('/api/practical/status',(req,res)=>{
   if(practical.configured){void practical.prepare();if(process.env.NODE_ENV==='production')void database.warmPractical().catch(()=>{});}
-  res.json({configured:practical.configured,provider:'Gemini',dailyReplyLimit:usage.limits.practicalDeviceDay,transcriptConfirmation:true,automaticClearSpeech:true,maxRecordingSeconds:180,ieltsAssessment:true,dailyAssessmentLimit:usage.limits.practicalAssessmentDay,pronunciation:require('./public/assets/practical-core').scenarios.map(item=>({text:item.opening,proof:pronunciation.issue(item.opening)}))});
+  res.json({configured:practical.configured,provider:'Gemini',dailyReplyLimit:usage.limits.practicalDeviceDay,transcriptConfirmation:true,automaticClearSpeech:true,maxRecordingSeconds:180,ieltsAssessment:true,dailyAssessmentLimit:usage.limits.practicalAssessmentDay,service:practical.diagnostics(),pronunciation:require('./public/assets/practical-core').scenarios.map(item=>({text:item.opening,proof:pronunciation.issue(item.opening)}))});
 });
 app.post('/api/practical',asyncHandler(async(req,res)=>{
   const timing={},started=performance.now();
