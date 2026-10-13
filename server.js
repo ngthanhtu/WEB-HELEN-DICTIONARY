@@ -131,7 +131,7 @@ app.get('/api/practical/status',(req,res)=>{
 });
 app.post('/api/practical',asyncHandler(async(req,res)=>{
   const timing={},started=performance.now();
-  const durations=()=>res.set('Server-Timing',[`practical;dur=${(performance.now()-started).toFixed(1)}`,...['quota','provider','discovery','backoff'].map(phase=>`${phase};dur=${(timing[phase+'Ms'] ?? (timing[phase+'Start']===undefined?0:performance.now()-timing[phase+'Start'])).toFixed(1)}`)].join(','));
+  const durations=()=>res.set('Server-Timing',[`practical;dur=${(performance.now()-started).toFixed(1)}`,...['quota','provider','discovery','backoff'].map(phase=>`${phase};dur=${(['provider','quota'].includes(phase)?(timing[phase+'Ms'] || 0)+(timing[phase+'Active']?performance.now()-timing[phase+'Start']:0):(timing[phase+'Ms'] ?? (timing[phase+'Start']===undefined?0:performance.now()-timing[phase+'Start']))).toFixed(1)}`)].join(','));
   try{
     const device=req.get('X-Helen-Device') || '';
     if(process.env.NODE_ENV==='production' && !/^[a-f0-9]{64}$/.test(device))return res.status(400).json({error:'Tải lại trang để cập nhật luyện nói rồi thử lại.',code:'PRACTICAL_DEVICE'});

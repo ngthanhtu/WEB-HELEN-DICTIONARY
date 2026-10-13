@@ -22,7 +22,7 @@ test('SDK timeout/abort is classified accurately without exposing upstream detai
  for(const name of ['TimeoutError','AbortError']){const service=createPracticalService({apiKey:'test-only',fetchImpl:async()=>{throw Object.assign(Error('PRIVATE_PROVIDER_DETAIL'),{name});}});await assert.rejects(service.reply(input()),e=>e.code==='PRACTICAL_TIMEOUT' && e.status===504 && !e.message.includes('PRIVATE'));}
 });
 test('an explicitly overloaded latest Lite model fails over once to an available Lite with independent quota reservation',async()=>{
- const models=['gemini-3.1-flash-lite','gemini-3.5-flash-lite'],used=[];let reservations=0;
+ const models=['gemini-3.1-flash-lite','gemini-2.5-flash-lite'],used=[];let reservations=0;
  const service=createPracticalService({apiKey:'test-only',beforeGenerate:()=>reservations++,fetchImpl:async(url)=>{
   if(!String(url).includes('generateContent'))return Response.json({models:models.map(name=>({name:'models/'+name,supportedGenerationMethods:['generateContent']}))});
   used.push(String(url));return used.length===1?bad(503):good();
@@ -65,12 +65,18 @@ test('two stalled long-audio attempts stop at thirty seconds and never create an
  assert.equal(calls,2);assert.equal(reserved,2);assert.ok(signals.every(signal=>signal.aborted));for(const resolve of late)resolve(good());await tick();
 });
 test('a failed backup model is never made sticky; known overloaded backups cool down while the last healthy model recovers',async()=>{
- const models=['gemini-3.1-flash-lite','gemini-3.5-flash-lite'],used=[];const service=createPracticalService({apiKey:'test-only',fetchImpl:async url=>{
+ const models=['gemini-3.1-flash-lite','gemini-2.5-flash-lite'],used=[];const service=createPracticalService({apiKey:'test-only',fetchImpl:async url=>{
   if(!String(url).includes('generateContent'))return Response.json({models:models.map(name=>({name:'models/'+name,supportedGenerationMethods:['generateContent']}))});
   used.push(String(url));return used.length<=3?bad(503):good();
  }});
  await service.prepare();await assert.rejects(service.reply(input()),{code:'PRACTICAL_BUSY'});assert.equal(service.model,models[0]);assert.ok(used[1].includes(models[1]));
  assert.ok((await service.reply(input())).reply);assert.ok(used[2].includes(models[0]));assert.ok(used[3].includes(models[0]));assert.equal(used.length,4);assert.equal(service.model,models[0]);
+});
+test('a newer catalogue model cannot replace the verified Lite on overload; retry remains on the healthy version',async()=>{
+ const used=[],service=createPracticalService({apiKey:'test-only',fetchImpl:async url=>{
+  if(!String(url).includes('generateContent'))return Response.json({models:['gemini-3.1-flash-lite','gemini-3.5-flash-lite'].map(name=>({name:'models/'+name,supportedGenerationMethods:['generateContent']}))});
+  used.push(String(url));return used.length===1?bad(503):good();
+ }});await service.prepare();assert.ok((await service.reply(input())).reply);assert.equal(used.length,2);assert.ok(used.every(url=>url.includes('gemini-3.1-flash-lite')));assert.equal(service.model,'gemini-3.1-flash-lite');
 });
 test('shared long-turn budgets leave upload and response time on the client and bound every stage',()=>{
  for(const [value,serverMs] of [[{text:'Hello'},10000],[{text:'word '.repeat(443)},25000],[{stage:'transcribe',durationMs:175000},30000],[{stage:'transcribe',durationMs:20000},12000],[{stage:'assess'},20000]]){
