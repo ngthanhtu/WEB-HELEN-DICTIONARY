@@ -362,4 +362,6 @@ Practical quota recovery (12/10/2026): kết nối cache lỗi không còn chặ
 
 QA: 390 kiểm thử đạt; 3 MySQL integration local chưa chạy vì không có cấu hình. Kiểm thử mới tái hiện mất kết nối, startup, timeout, rollback/commit không rõ, không trừ hai lần và trả đối thoại kèm feedback sau khôi phục. Xem [phạm vi sửa và cách xác minh](docs/practical-quota-recovery-2026-10-12.md). Không cần key, bảng SQL hoặc cấu hình Render mới.
 
+Khởi động: bảng quota được chuẩn bị trước; luyện nói không đợi các bảng khác. Nếu lần chuẩn bị đầu thất bại, thử nối lại sau 5 giây; vẫn yêu cầu quota thực và giữ deadline reservation 3,5 giây.
+
 Practical long-turn QA (13/10/2026): [kiểm thử bản thu gần 3 phút và xử lý quá tải](docs/practical-long-turn-2026-10-13.md). Không cần key, bảng SQL hoặc cấu hình Render mới.

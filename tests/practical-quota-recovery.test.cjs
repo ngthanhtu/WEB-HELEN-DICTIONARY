@@ -4,13 +4,14 @@ const {createPracticalService}=require('../lib/practical-ai');
 const core=require('../public/assets/practical-core');
 const env={MYSQL_HOST:'127.0.0.1',MYSQL_USER:'test',MYSQL_DATABASE:'test',MYSQL_SSL:'false'};
 const disconnected=()=>Object.assign(Error('private database endpoint details'),{code:'ECONNRESET'});
-function fixture({fault,permanent=false,rollbackFails=false,starting,acquiring}={}){
+function fixture({fault,permanent=false,rollbackFails=false,starting,otherTables,acquiring}={}){
  const ledger=new Map(),stats={acquired:0,commits:0,rollbacks:0,destroyed:0,released:0},calls=[];
  let failed=false,generalFailed=false;
  const maybe=phase=>{if(phase===fault && (!failed || permanent)){failed=true;throw disconnected();}};
  const db=createDatabase(env,{
   createPool:()=>({end:async()=>{},getConnection:async()=>({release(){},destroy(){},execute:async sql=>{
    if(starting && sql.startsWith('CREATE'))await starting;
+   if(otherTables && sql.startsWith('CREATE') && !sql.includes('helen_usage_budget'))await otherTables;
    if(generalFailed && sql.startsWith('SELECT CAST'))throw disconnected();return [[]];
   }})}),
   createAIPool:()=>({end:async()=>{},getConnection:async()=>{
@@ -102,4 +103,23 @@ test('an unavailable durable quota store never reaches the AI provider or produc
   await assert.rejects(service.reply({scenario:'coffee',level:'B1',requestId:crypto.randomUUID(),history:core.context(core.fresh()),text:'I would like a coffee.'},{device:'b'.repeat(64)}),{code:'USAGE_UNAVAILABLE'});
   assert.equal(generated,0);assert.equal(f.stats.acquired,2);assert.equal(f.ledger.size,0);
  }finally{await f.db.close();}
+});
+
+test('speaking starts after the budget table is ready while unrelated startup tables are still pending',async()=>{
+ let release;const otherTables=new Promise(resolve=>release=resolve),f=fixture({otherTables});
+ const initialization=f.db.initialize();try{
+  await new Promise(resolve=>setImmediate(resolve));assert.equal(f.db.status().connected,false);
+  assert.equal(await f.db.reserveUsage(rules(),{isolatedAI:true}),true);assert.deepEqual([...f.ledger.values()],[1,1]);
+  assert.equal(f.db.status().aiQuota.connected,true);assert.equal(f.db.status().connected,false);
+ }finally{release();await initialization;await f.db.close();}
+});
+test('a failed cold-start schema retries after five seconds rather than waiting thirty seconds',async t=>{
+ let now=Date.now(),creates=0;t.mock.method(Date,'now',()=>now);
+ const db=createDatabase(env,{createPool:()=>({end:async()=>{},getConnection:async()=>({release(){},destroy(){},execute:async sql=>{
+  if(sql.startsWith('CREATE') && ++creates===1)throw disconnected();return [[]];
+ }})})});
+ try{
+  assert.equal(await db.initialize(),false);now+=4999;db.status();await new Promise(resolve=>setImmediate(resolve));assert.equal(creates,1);
+  now+=1;db.status();await new Promise(resolve=>setImmediate(resolve));assert.equal(db.status().connected,true);assert.ok(creates>1);
+ }finally{await db.close();}
 });
