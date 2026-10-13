@@ -48,6 +48,22 @@ test('confirmed coaching omits redundant generated feedback and still builds gro
  }});
  const result=await service.reply({...input(),text});assert.equal(result.transcript,text);assert.equal(result.feedback,'Dùng have với I.');assert.equal(result.improved,'I have a useful idea.');
 });
+test('a stalled long recording is aborted at fourteen seconds and retried once inside the same total deadline',async t=>{
+ let calls=0,reserved=0,late,firstSignal;
+ const service=createPracticalService({apiKey:'test-only',beforeGenerate:()=>reserved++,fetchImpl:async(_url,options)=>{
+  if(++calls===1){firstSignal=options.signal;return new Promise(resolve=>late=resolve);}
+  return Response.json({candidates:[{content:{parts:[{text:JSON.stringify({transcript:'Um I has worked in healthcare.',audibility:'clear'})}]},finishReason:'STOP'}]});
+ }});
+ const audio=Buffer.concat([Buffer.from([0,0,0,24]),Buffer.from('ftypM4A '),Buffer.alloc(32)]).toString('base64'),value={...input(),stage:'transcribe',audio,mimeType:'audio/mp4',language:'en-US',durationMs:180000};delete value.text;
+ t.mock.timers.enable({apis:['setTimeout']});const pending=service.reply(value);while(!late)await tick();t.mock.timers.tick(14000);const result=await pending;
+ assert.equal(firstSignal.aborted,true);assert.equal(calls,2);assert.equal(reserved,2);assert.equal(result.transcript,'Um I has worked in healthcare.');late(good());await tick();assert.deepEqual(await service.reply(value),result);assert.equal(calls,2);
+});
+test('two stalled long-audio attempts stop at thirty seconds and never create an unlimited retry loop',async t=>{
+ const signals=[],late=[];let calls=0,reserved=0;const service=createPracticalService({apiKey:'test-only',beforeGenerate:()=>reserved++,fetchImpl:async(_url,options)=>{calls++;signals.push(options.signal);return new Promise(resolve=>late.push(resolve));}});
+ const audio=Buffer.concat([Buffer.from([0,0,0,24]),Buffer.from('ftypM4A '),Buffer.alloc(32)]).toString('base64'),value={...input(),stage:'transcribe',audio,mimeType:'audio/mp4',language:'en-US',durationMs:180000};delete value.text;
+ t.mock.timers.enable({apis:['setTimeout']});const pending=service.reply(value),failed=assert.rejects(pending,{code:'PRACTICAL_TIMEOUT'});while(calls<1)await tick();t.mock.timers.tick(14000);while(calls<2)await tick();t.mock.timers.tick(16000);await failed;
+ assert.equal(calls,2);assert.equal(reserved,2);assert.ok(signals.every(signal=>signal.aborted));for(const resolve of late)resolve(good());await tick();
+});
 test('shared long-turn budgets leave upload and response time on the client and bound every stage',()=>{
  for(const [value,serverMs] of [[{text:'Hello'},10000],[{text:'word '.repeat(443)},25000],[{stage:'transcribe',durationMs:175000},30000],[{stage:'transcribe',durationMs:20000},12000],[{stage:'assess'},20000]]){
   const budget=core.requestBudget(value);assert.equal(budget.serverMs,serverMs);assert.equal(budget.clientMs,serverMs+5000);assert.ok(budget.clientMs<=35000);
