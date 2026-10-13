@@ -14,7 +14,7 @@
  // One shared deadline contract for the server, composer and recorder.
  function requestBudget(input={}){
   const longAnswer=typeof input.text==='string' && input.text.trim().split(/\s+/).length>=120;
-  const serverMs=input.stage==='transcribe'?(input.durationMs>30000?30000:12000):input.stage==='assess'?20000:longAnswer?18000:10000;
+  const serverMs=input.stage==='transcribe'?(input.durationMs>30000?30000:12000):input.stage==='assess'?20000:longAnswer?25000:10000;
   return {serverMs,clientMs:serverMs+5000};
  }
  function scenario(id){return scenarios.find(item=>item.id===id);}

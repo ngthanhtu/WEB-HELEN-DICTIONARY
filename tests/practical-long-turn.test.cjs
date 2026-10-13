@@ -41,8 +41,15 @@ test('a cold unavailable catalogue does not send the first speaking turn to an u
  }});
  await service.prepare();assert.equal(service.diagnostics().prepared,false);assert.equal(service.model,'gemini-3.1-flash-lite');assert.ok((await service.reply(input())).reply);assert.equal(generations,1);
 });
+test('confirmed coaching omits redundant generated feedback and still builds grounded Vietnamese feedback',async()=>{
+ const text='I has a useful idea.';const service=createPracticalService({apiKey:'test-only',fetchImpl:async(_url,options)=>{
+  const fields=JSON.parse(options.body).generationConfig.responseJsonSchema;assert.ok(!fields.properties.feedback);assert.ok(!fields.required.includes('feedback'));
+  return Response.json({candidates:[{content:{parts:[{text:JSON.stringify({reply:'How would you use that idea?',translation:'Bạn sẽ dùng ý tưởng đó thế nào?',phrase:{text:'put an idea into practice',translation:'áp dụng ý tưởng vào thực tế'},corrections:[{original:'I has',replacement:'I have',reason:'Dùng have với I.'}],collocations:[]})}]},finishReason:'STOP'}]});
+ }});
+ const result=await service.reply({...input(),text});assert.equal(result.transcript,text);assert.equal(result.feedback,'Dùng have với I.');assert.equal(result.improved,'I have a useful idea.');
+});
 test('shared long-turn budgets leave upload and response time on the client and bound every stage',()=>{
- for(const [value,serverMs] of [[{text:'Hello'},10000],[{text:'word '.repeat(443)},18000],[{stage:'transcribe',durationMs:175000},30000],[{stage:'transcribe',durationMs:20000},12000],[{stage:'assess'},20000]]){
+ for(const [value,serverMs] of [[{text:'Hello'},10000],[{text:'word '.repeat(443)},25000],[{stage:'transcribe',durationMs:175000},30000],[{stage:'transcribe',durationMs:20000},12000],[{stage:'assess'},20000]]){
   const budget=core.requestBudget(value);assert.equal(budget.serverMs,serverMs);assert.equal(budget.clientMs,serverMs+5000);assert.ok(budget.clientMs<=35000);
  }
 });
