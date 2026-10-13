@@ -90,11 +90,11 @@
   }finally{if(button){button.removeAttribute('aria-busy');button.setAttribute('aria-pressed','false');}controls();}
  }
  function controls(){
-  const offline=navigator.onLine===false,ended=Boolean(session.report),disabled=busy || offline || configured===false || ended;
-  $('practical-send').disabled=disabled || !input.value.trim() || /\[unclear\]/i.test(input.value);input.disabled=ended;input.readOnly=busy;
+  const offline=navigator.onLine===false,ended=Boolean(session.report),fastDraft=phase==='transcribing' && draft?.source==='live',disabled=busy || offline || configured===false || ended,canConfirmNow=fastDraft && !offline && configured!==false && !ended;
+  $('practical-send').disabled=(disabled && !canConfirmNow) || !input.value.trim() || /\[unclear\]/i.test(input.value);input.disabled=ended;input.readOnly=busy && !fastDraft;
   $('practical-transcript-review').hidden=!draft || phase==='recording';$('practical-input-label').textContent=phase==='recording'?'Your reply · live draft':draft?'Your words · edit if needed':'Your reply';
-  $('practical-send').firstChild.textContent=draft?'Confirm & send ':'Send reply ';
-  $('practical-transcript-note').textContent=draft?.source==='live'?'Đây là chữ trình duyệt nghe tạm, có thể sai. Kiểm tra và sửa rồi bấm Confirm & send; AI sẽ góp ý dựa trên câu bạn xác nhận.':draft?.browserText && comparable(draft.browserText)!==comparable(input.value)?'Hai bản nhận diện khác nhau. Xem bản chữ khi nói, kiểm tra câu bên dưới rồi bấm Confirm & send.':draft?.uncertain?'Có chỗ chưa rõ. Sửa [unclear] hoặc thu âm lại, rồi bấm Confirm & send. AI chưa đoán từ hay trả lời.':'Kiểm tra câu bên dưới, sửa từ nghe nhầm rồi bấm Confirm & send. AI chưa trả lời ở bước này.';
+  $('practical-send').firstChild.textContent=fastDraft?'Confirm & send now ':draft?'Confirm & send ':'Send reply ';
+  $('practical-transcript-note').textContent=fastDraft?'Kiểm tra chữ tạm và gửi ngay để nhận góp ý ngữ pháp/từ vựng. Muốn đánh giá phát âm, hãy chờ nhận diện bản thu xong.':draft?.source==='reviewed-live'?'Câu bạn chỉnh sửa vẫn được giữ. Kiểm tra rồi bấm Confirm & send.':draft?.source==='live'?'Đây là chữ trình duyệt nghe tạm, có thể sai. Kiểm tra và sửa rồi bấm Confirm & send; AI sẽ góp ý dựa trên câu bạn xác nhận.':draft?.browserText && comparable(draft.browserText)!==comparable(input.value)?'Hai bản nhận diện khác nhau. Xem bản chữ khi nói, kiểm tra câu bên dưới rồi bấm Confirm & send.':draft?.uncertain?'Có chỗ chưa rõ. Sửa [unclear] hoặc thu âm lại, rồi bấm Confirm & send. AI chưa đoán từ hay trả lời.':'Kiểm tra câu bên dưới, sửa từ nghe nhầm rồi bấm Confirm & send. AI chưa trả lời ở bước này.';
   $('practical-live-original').hidden=!draft?.browserText;$('practical-live-original-text').textContent=draft?.browserText || '';
   mic.disabled=ended || !core.canSend(session,'') || offline || configured===false || !globalThis.HelenVoiceRecorder?.available() || (busy && !['requesting','recording'].includes(phase));
   mic.setAttribute('aria-pressed',String(recording));mic.setAttribute('aria-label',recording?'Stop recording and send reply':'Record a speaking reply');mic.querySelector('span').textContent=recording?'Send recording':'Speak';
@@ -195,7 +195,9 @@
   }finally{clearInterval(progress);}
  }
  async function handleTranscript(data,ticket){
-  if(ticket!==run)return;liveCapture?.cancel();liveCapture=null;audioAttempt=null;reviewTranscript(data);
+  if(ticket!==run)return;liveCapture?.cancel();liveCapture=null;audioAttempt=null;
+  if(draft?.source==='live' && draft.edited){draft.source='reviewed-live';draft.uncertain=true;saveDraft();message('Bản thu đã nhận diện; câu bạn chỉnh vẫn được giữ. Kiểm tra rồi Confirm & send.');return;}
+  reviewTranscript(data);
   if(autoSend.checked && !draft.uncertain && !/\[unclear\]/i.test(data.transcript)){
    if(!core.canSend(session,data.transcript)){message('Phiên đã đủ dài. Kết thúc để xem band trước khi luyện tiếp.',true);return;}
    recording=false;phase='replying';controller=new AbortController();partnerState('thinking');controls();message('Đã nghe câu của bạn. AI đang trả lời và góp ý…',false,true);
@@ -214,10 +216,12 @@
   liveCapture?.cancel();liveCapture=null;saveDraft();audioAttempt=null;stopPartner();if(!busy)return;++run;controller?.abort();if(recording)globalThis.HelenVoiceRecorder?.cancel();busy=false;recording=false;phase='idle';controller=null;partnerState('idle');controls();if(announce)message('Đã dừng. Câu của bạn vẫn giữ nguyên.');
  }
  $('practical-form').addEventListener('submit',async event=>{
-  event.preventDefault();if(busy || session.report || !input.value.trim())return;
+  event.preventDefault();const sendLiveNow=busy && phase==='transcribing' && draft?.source==='live';
+  if((busy && !sendLiveNow) || session.report || !input.value.trim())return;
   if(!core.canSend(session,input.value)){message('Phiên đã đủ dài. Bấm End & see band rồi mở New session.',true);return;}
   if(/\[unclear\]/i.test(input.value)){message('Sửa phần [unclear] hoặc thu âm lại trước khi gửi.',true);input.focus();return;}
   if(navigator.onLine===false){message('Cần Internet để gửi câu trả lời cho AI.',true);return;}
+  if(sendLiveNow)cancel(false);
   stopPartner();void partnerAudio?.unlock({device:voice.value==='device' || quotaActive()});const ticket=++run,value=input.value.trim();let reply;busy=true;phase='replying';controller=new AbortController();globalThis.HelenAudio?.stop();partnerState('thinking');controls();message('AI đang chuẩn bị câu trả lời và góp ý…',false,true);
   try{const data=await request({text:value},controller.signal);if(ticket===run){accept(data);reply=data.reply;}}
   catch(error){if(ticket===run)message(shortError(error,'Chưa kết nối được AI. Hãy thử lại.'),true);}
@@ -236,7 +240,7 @@
   }});
   liveCapture=captions?.start({language:'en-US',onChange:info=>{
    if(ticket!==run || !['requesting','recording','transcribing'].includes(phase) || !info.text.trim())return;
-   draft={scenario:state.scenario,level:state.level,text:info.text,browserText:info.text,uncertain:true,source:'live'};input.value=info.text;input.scrollTop=input.scrollHeight;
+   if(phase==='transcribing' && draft?.edited){draft.browserText=info.text;}else{draft={scenario:state.scenario,level:state.level,text:info.text,browserText:info.text,uncertain:true,source:'live'};input.value=info.text;input.scrollTop=input.scrollHeight;}
    if(!draftTimer)draftTimer=setTimeout(()=>{draftTimer=null;saveDraft();},700);
   },onState:value=>{if(ticket===run)$('practical-live-status').textContent=['listening','restarting'].includes(value)?'Live captions · chữ tạm, có thể nghe nhầm.':value==='stopped'?'Đã giữ bản chữ khi nói.':'Phụ đề trực tiếp chưa khả dụng. Bản thu vẫn hoạt động; chữ hiện sau khi nhận diện.';}});
   void partnerAudio?.unlock({device:voice.value==='device' || quotaActive()});
@@ -260,7 +264,7 @@
  $('practical-cancel').onclick=()=>cancel();$('practical-reset').onclick=()=>reset();$('practical-end').onclick=()=>void endSession();
  $('practical-level').onchange=()=>reset(state.scenario,$('practical-level').value);
  $('practical-use-hint').onclick=()=>{input.value=core.scenario(state.scenario).hint;input.focus();controls();};
- input.addEventListener('input',()=>{if(draft){draft.text=input.value;saveDraft();}controls();});input.addEventListener('keydown',event=>{if(event.key==='Enter' && (event.ctrlKey || event.metaKey)){event.preventDefault();$('practical-form').requestSubmit();}});
+ input.addEventListener('input',()=>{if(draft){draft.text=input.value;draft.edited=true;saveDraft();}controls();});input.addEventListener('keydown',event=>{if(event.key==='Enter' && (event.ctrlKey || event.metaKey)){event.preventDefault();$('practical-form').requestSubmit();}});
  voice.onchange=()=>{stopPartner();put(VOICE,voice.value);voiceChoices();deviceChoices();};
  aiVoice.onchange=()=>{stopPartner();chosenAI=aiVoice.value;put(AI_VOICE,chosenAI);};deviceVoice.onchange=()=>{stopPartner();chosenDevice=deviceVoice.value;put(DEVICE_VOICE,chosenDevice);};
  autoSend.onchange=()=>put(AUTO_SEND,autoSend.checked?'1':'0');
