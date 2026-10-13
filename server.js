@@ -126,7 +126,7 @@ const buildVersion=process.env.RENDER_GIT_COMMIT?.replace(/[^a-zA-Z0-9]/g,'').sl
 app.get('/api/practical/status',(req,res)=>res.json({configured:practical.configured,provider:'Gemini',dailyReplyLimit:usage.limits.practicalDeviceDay,transcriptConfirmation:true,automaticClearSpeech:true,maxRecordingSeconds:180,ieltsAssessment:true,dailyAssessmentLimit:usage.limits.practicalAssessmentDay,pronunciation:require('./public/assets/practical-core').scenarios.map(item=>({text:item.opening,proof:pronunciation.issue(item.opening)}))}));
 app.post('/api/practical',asyncHandler(async(req,res)=>{
   const timing={},started=performance.now();
-  const durations=()=>res.set('Server-Timing',[`practical;dur=${(performance.now()-started).toFixed(1)}`,...['quota','provider','discovery'].map(phase=>`${phase};dur=${(timing[phase+'Ms'] ?? (timing[phase+'Start']===undefined?0:performance.now()-timing[phase+'Start'])).toFixed(1)}`)].join(','));
+  const durations=()=>res.set('Server-Timing',[`practical;dur=${(performance.now()-started).toFixed(1)}`,...['quota','provider','discovery','backoff'].map(phase=>`${phase};dur=${(timing[phase+'Ms'] ?? (timing[phase+'Start']===undefined?0:performance.now()-timing[phase+'Start'])).toFixed(1)}`)].join(','));
   try{
     const device=req.get('X-Helen-Device') || '';
     if(process.env.NODE_ENV==='production' && !/^[a-f0-9]{64}$/.test(device))return res.status(400).json({error:'Tải lại trang để cập nhật luyện nói rồi thử lại.',code:'PRACTICAL_DEVICE'});

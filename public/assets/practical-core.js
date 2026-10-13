@@ -11,6 +11,12 @@
   {id:'free-talk',title:'Free conversation',icon:'✦',role:'a friendly English conversation partner',goal:'Chọn chủ đề của bạn và luyện một cuộc hội thoại tự nhiên.',opening:'What would you like to talk about today?',translation:'Hôm nay bạn muốn nói về chủ đề gì?',hint:'I would like to talk about a trip I am planning.'}
  ];
  const levels=['A2','B1','B2'];
+ // One shared deadline contract for the server, composer and recorder.
+ function requestBudget(input={}){
+  const longAnswer=typeof input.text==='string' && input.text.trim().split(/\s+/).length>=120;
+  const serverMs=input.stage==='transcribe'?(input.durationMs>30000?30000:12000):input.stage==='assess'?20000:longAnswer?18000:10000;
+  return {serverMs,clientMs:serverMs+5000};
+ }
  function scenario(id){return scenarios.find(item=>item.id===id);}
  function validTurn(turn){return turn && ['user','assistant'].includes(turn.role) && typeof turn.text==='string' && turn.text.trim() && turn.text.length<=(turn.role==='user'?6000:800);}
  function restore(value){
@@ -36,5 +42,5 @@
  }
  function sessionWords(session){return session.turns.reduce((sum,turn)=>sum+turn.text.trim().split(/\s+/).length,0);}
  function canSend(session,text){return !session.report && session.turns.length<100 && session.turns.reduce((sum,turn)=>sum+turn.text.length+turn.question.length,0)+text.length+800<=60000;}
- return {scenarios,levels,scenario,restore,fresh,context,add,sessionFrom,restoreSession,sessionWords,canSend};
+ return {scenarios,levels,scenario,restore,fresh,context,add,sessionFrom,restoreSession,sessionWords,canSend,requestBudget};
 });

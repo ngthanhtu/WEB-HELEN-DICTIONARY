@@ -5,7 +5,7 @@
  const input=$('practical-input'),status=$('practical-status'),mic=$('practical-mic'),voice=$('practical-voice'),aiVoice=$('practical-ai-voice'),deviceVoice=$('practical-device-voice'),autoplay=$('practical-autoplay'),fallback=$('practical-quota-fallback'),autoSend=$('practical-auto-send');
  const partnerCache=globalThis.HelenOfflineAudio?.create({cacheName:'helen-practical-audio-v1',maxClips:30,maxBytes:5*1024*1024});
  const partnerAudio=globalThis.HelenPracticalAudio?.create({pronunciation:globalThis.HelenPronunciation,offlineAudio:partnerCache});
- let state,session,draft=null,configured=null,checking,busy=false,phase='idle',run=0,controller,attempt,recording=false,storageFailed=false,partnerConfig=null,partnerLoading,speechPhase='idle',speechRun=0;
+ let state,session,draft=null,configured=null,checking,busy=false,phase='idle',run=0,controller,attempt,audioAttempt=null,recording=false,storageFailed=false,partnerConfig=null,partnerLoading,speechPhase='idle',speechRun=0;
  const get=key=>{try{return localStorage.getItem(key);}catch{return null;}},put=(key,value)=>{try{localStorage.setItem(key,value);}catch{message('Lựa chọn chỉ giữ trong phiên này.');}};
  let chosenAI=get(AI_VOICE),chosenDevice=get(DEVICE_VOICE) || '';
  try{state=core.restore(JSON.parse(localStorage.getItem(KEY) || 'null'));const saved=get(VOICE);if(['device','elevenlabs'].includes(saved))voice.value=saved;autoplay.checked=get(AUTO)!=='0';}catch{}
@@ -94,6 +94,7 @@
   $('practical-transcript-note').textContent=draft?.uncertain?'Có chỗ chưa rõ. Sửa [unclear] hoặc thu âm lại, rồi bấm Confirm & send. AI chưa đoán từ hay trả lời.':'Kiểm tra câu bên dưới, sửa từ nghe nhầm rồi bấm Confirm & send. AI chưa trả lời ở bước này.';
   mic.disabled=ended || !core.canSend(session,'') || offline || configured===false || !globalThis.HelenVoiceRecorder?.available() || (busy && !['requesting','recording'].includes(phase));
   mic.setAttribute('aria-pressed',String(recording));mic.setAttribute('aria-label',recording?'Stop recording and send reply':'Record a speaking reply');mic.querySelector('span').textContent=recording?'Send recording':'Speak';
+  $('practical-retry-recording').hidden=!audioAttempt;$('practical-retry-recording').disabled=disabled;
   $('practical-cancel').hidden=!busy;$('practical-reset').disabled=busy;$('practical-level').disabled=busy;
   $('practical-scenarios').querySelectorAll('button').forEach(button=>button.disabled=busy);
   $('practical-messages').querySelectorAll('.say').forEach(button=>button.disabled=busy || button.getAttribute('aria-busy')==='true');
@@ -162,7 +163,7 @@
   if(busy)return;
   if((state.messages.length>1 || draft) && !confirm('Bắt đầu phiên mới? Cuộc hội thoại và câu đang soạn sẽ được thay thế.')){$('practical-level').value=state.level;return;}
   stopPartner();
-  state=core.fresh(id,level);session=core.sessionFrom(state);draft=null;saveDraft();attempt=null;input.value='';save();render();message(navigator.onLine===false?'Đang ngoại tuyến. Xem lại hội thoại; kết nối mạng để luyện với AI.':'Bấm Speak hoặc nhập câu trả lời để bắt đầu.');
+  state=core.fresh(id,level);session=core.sessionFrom(state);draft=null;saveDraft();attempt=null;audioAttempt=null;input.value='';save();render();message(navigator.onLine===false?'Đang ngoại tuyến. Xem lại hội thoại; kết nối mạng để luyện với AI.':'Bấm Speak hoặc nhập câu trả lời để bắt đầu.');
  }
  async function check(){
   void loadPartner();
@@ -174,17 +175,37 @@
    finally{checking=null;controls();}
   })();return checking;
  }
- async function request(value,signal){
+ async function request(value,signal,identity){
   const content={scenario:state.scenario,level:state.level,history:core.context(state),...value},fingerprint=JSON.stringify(content);
-  const requestId=value.audio?crypto.randomUUID():(attempt && attempt.fingerprint===fingerprint?attempt.id:(attempt={fingerprint,id:crypto.randomUUID()}).id);
-  const response=await apiFetch('/api/practical',{method:'POST',headers:{'Content-Type':'application/json','X-Helen-Device':globalThis.HelenPronunciation.device()},body:JSON.stringify({...content,requestId}),signal,timeoutMs:value.stage==='transcribe'?35000:value.stage==='assess'?25000:10000});
-  const data=await response.json().catch(()=>({}));if(!response.ok)throw Object.assign(Error(data.error || 'Chưa nhận được phản hồi. Hãy thử lại.'),{code:data.code});
-  globalThis.HelenPronunciation?.register(data);return data;
+  const requestId=identity || (value.audio?crypto.randomUUID():(attempt && attempt.fingerprint===fingerprint?attempt.id:(attempt={fingerprint,id:crypto.randomUUID()}).id));
+  const started=Date.now(),ticket=run,copy=value.stage==='transcribe'?'Đang chép lời bản thu':value.stage==='assess'?'Đang đánh giá phiên nói':'AI đang đọc câu trả lời và chuẩn bị góp ý';
+  const progress=setInterval(()=>{
+   const seconds=Math.floor((Date.now()-started)/1000),label=status.querySelector('.loading-copy');
+   if(seconds>=5 && seconds%5===0 && ticket===run && !signal?.aborted && label)label.textContent=`${copy} · ${seconds}s. Bạn có thể bấm Cancel để dừng.`;
+  },1000);
+  try{
+   const response=await apiFetch('/api/practical',{method:'POST',headers:{'Content-Type':'application/json','X-Helen-Device':globalThis.HelenPronunciation.device()},body:JSON.stringify({...content,requestId}),signal,timeoutMs:core.requestBudget(value).clientMs});
+   const data=await response.json().catch(()=>({}));if(!response.ok)throw Object.assign(Error(data.error || 'Chưa nhận được phản hồi. Hãy thử lại.'),{code:data.code});
+   globalThis.HelenPronunciation?.register(data);return data;
+  }finally{clearInterval(progress);}
  }
- function accept(data){session.turns.push({question:state.messages.at(-1).text,text:data.transcript,...(draft?.speechReceipt?{speechReceipt:draft.speechReceipt}:{})});state=core.add(state,data);attempt=null;draft=null;saveDraft();save();input.value='';render();const list=$('practical-messages');list.scrollTop=list.scrollHeight;message(storageFailed?'Bộ nhớ đầy. Hội thoại chỉ giữ trong phiên này.':'Đã có phản hồi. Bạn có thể nghe, xem bản dịch rồi trả lời tiếp.');}
+ async function handleTranscript(data,ticket){
+  if(ticket!==run)return;audioAttempt=null;reviewTranscript(data);
+  if(autoSend.checked && !data.uncertain && !/\[unclear\]/i.test(data.transcript)){
+   if(!core.canSend(session,data.transcript)){message('Phiên đã đủ dài. Kết thúc để xem band trước khi luyện tiếp.',true);return;}
+   recording=false;phase='replying';controller=new AbortController();partnerState('thinking');controls();message('Đã nghe câu của bạn. AI đang trả lời và góp ý…',false,true);
+   const result=await request({text:data.transcript},controller.signal);if(ticket===run){accept(result);return result.reply;}
+  }
+ }
+ function recordingError(error){
+  const text=shortError(error,'Chưa xử lý được bản thu. Hãy thử lại.');
+  message(audioAttempt?text+' Bản thu còn trong tab này. Bấm Retry recording để gửi lại.':text,true);
+ }
+
+ function accept(data){session.turns.push({question:state.messages.at(-1).text,text:data.transcript,...(draft?.speechReceipt?{speechReceipt:draft.speechReceipt}:{})});state=core.add(state,data);attempt=null;audioAttempt=null;draft=null;saveDraft();save();input.value='';render();const list=$('practical-messages');list.scrollTop=list.scrollHeight;message(storageFailed?'Bộ nhớ đầy. Hội thoại chỉ giữ trong phiên này.':'Đã có phản hồi. Bạn có thể nghe, xem bản dịch rồi trả lời tiếp.');}
  function finish(ticket,reply){if(ticket!==run)return;busy=false;recording=false;phase='idle';controller=null;partnerState('idle');controls();if(reply && autoplay.checked)void playReply(reply,$('practical-messages').querySelector('.practical-message.assistant:last-child .say'));}
  function cancel(announce=true){
-  stopPartner();if(!busy)return;++run;controller?.abort();if(recording)globalThis.HelenVoiceRecorder?.cancel();busy=false;recording=false;phase='idle';controller=null;partnerState('idle');controls();if(announce)message('Đã dừng. Câu của bạn vẫn giữ nguyên.');
+  audioAttempt=null;stopPartner();if(!busy)return;++run;controller?.abort();if(recording)globalThis.HelenVoiceRecorder?.cancel();busy=false;recording=false;phase='idle';controller=null;partnerState('idle');controls();if(announce)message('Đã dừng. Câu của bạn vẫn giữ nguyên.');
  }
  $('practical-form').addEventListener('submit',async event=>{
   event.preventDefault();if(busy || session.report || !input.value.trim())return;
@@ -198,18 +219,30 @@
  });
  mic.addEventListener('click',()=>{
   const recorder=globalThis.HelenVoiceRecorder;if(recording){if(phase==='requesting')cancel();else {void partnerAudio?.unlock({device:voice.value==='device' || quotaActive()});recorder?.stop();}return;}if(busy || session.report || !core.canSend(session,'') || !recorder?.available())return;
-  stopPartner();const ticket=++run;let reply;busy=true;recording=true;phase='requesting';globalThis.HelenAudio?.stop();partnerState('requesting');controls();
+  audioAttempt=null;stopPartner();const ticket=++run;let reply;busy=true;recording=true;phase='requesting';globalThis.HelenAudio?.stop();partnerState('requesting');controls();
   const task=recorder.start({language:'en-US',mode:'conversation',submit:recorded,onState:info=>{
    if(ticket!==run)return;phase=info.state;if(info.state==='recording')$('practical-recording-time').textContent=`${Math.floor((info.elapsedMs || 0)/60000)}:${String(Math.floor((info.elapsedMs || 0)/1000)%60).padStart(2,'0')} / 3:00`;controls();
    partnerState(info.state==='recording'?'listening':info.state==='transcribing'?'thinking':'requesting');
    if(info.state==='transcribing')message('Đang chép lại lời bạn nói, chưa sửa câu…',false,true);
    else if(status.textContent!==info.message)message(info.message);
   }});void partnerAudio?.unlock({device:voice.value==='device' || quotaActive()});
-  task.then(async data=>{if(ticket!==run)return;reviewTranscript(data);if(autoSend.checked && !data.uncertain && !/\[unclear\]/i.test(data.transcript)){if(!core.canSend(session,data.transcript)){message('Phiên đã đủ dài. Kết thúc để xem band trước khi luyện tiếp.',true);return;}recording=false;phase='replying';controller=new AbortController();partnerState('thinking');controls();message('Đã nghe câu của bạn. AI đang trả lời và góp ý…',false,true);const result=await request({text:data.transcript},controller.signal);if(ticket===run){accept(result);reply=result.reply;}}}).catch(error=>{if(ticket===run)message(shortError(error,'Chưa nghe rõ. Hãy thử lại hoặc nhập câu trả lời.'),true);}).finally(()=>{finish(ticket,reply);if(ticket===run && draft)input.focus();});
+  task.then(async data=>{reply=await handleTranscript(data,ticket);}).catch(error=>{if(ticket===run)recordingError(error);}).finally(()=>{finish(ticket,reply);if(ticket===run && draft)input.focus();});
  });
  // Recognition still gets audio only. Clear speech proceeds automatically;
  // uncertain speech waits for an edit, without contextual guesses.
- function recorded(value,{signal}={}){return request({...value,stage:'transcribe'},signal);}
+ function recorded(value,{signal}={}){
+  // Keep only the latest clip in this tab's memory, never in persistent storage.
+  audioAttempt={value:{...value,stage:'transcribe'},id:crypto.randomUUID()};
+  return request(audioAttempt.value,signal,audioAttempt.id);
+ }
+ $('practical-retry-recording').onclick=async()=>{
+  if(busy || !audioAttempt || navigator.onLine===false || session.report)return;
+  stopPartner();void partnerAudio?.unlock({device:voice.value==='device' || quotaActive()});const ticket=++run;let reply;
+  busy=true;phase='transcribing';controller=new AbortController();partnerState('thinking');controls();message('Đang gửi lại bản thu và chép lời…',false,true);
+  try{const data=await request(audioAttempt.value,controller.signal,audioAttempt.id);reply=await handleTranscript(data,ticket);}
+  catch(error){if(ticket===run)recordingError(error);}
+  finally{finish(ticket,reply);if(ticket===run && draft)input.focus();}
+ };
  $('practical-cancel').onclick=()=>cancel();$('practical-reset').onclick=()=>reset();$('practical-end').onclick=()=>void endSession();
  $('practical-level').onchange=()=>reset(state.scenario,$('practical-level').value);
  $('practical-use-hint').onclick=()=>{input.value=core.scenario(state.scenario).hint;input.focus();controls();};
