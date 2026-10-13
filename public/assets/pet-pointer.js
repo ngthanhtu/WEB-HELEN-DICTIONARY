@@ -6,6 +6,31 @@
   const mascot=document.querySelector('#pet-mascot'), mascotImage=mascot?.querySelector('img');
   const control=document.querySelector('#pet-control'), toggle=document.querySelector('#pet-toggle');
   if(!overlay || !pointer || !cursorImage || !mascot || !mascotImage || !control || !toggle) return;
+  const home=overlay.parentElement;
+  let cursorDialog=null;
+  function isModal(dialog) {
+    if(!dialog?.isConnected || !dialog.open)return false;
+    try {return dialog.matches(':modal');} catch {return true;}
+  }
+  function placeCursor(target) {
+    const pointed=target?.closest?.('dialog');
+    if(isModal(pointed))cursorDialog=pointed;
+    if(!isModal(cursorDialog)) {
+      cursorDialog=[...document.querySelectorAll('dialog[open]')].reverse().find(isModal) || null;
+    }
+    // Native modal dialogs sit above every ordinary z-index. Put the
+    // decorative overlay in that modal's layer, preserving viewport coordinates.
+    const parent=cursorDialog || home;
+    if(overlay.parentElement!==parent)parent.append(overlay);
+    if(overlay.inert)overlay.inert=false;
+  }
+  new MutationObserver(records=>{
+    const opened=[...records].reverse().find(record=>record.attributeName==='open' && isModal(record.target));
+    placeCursor(opened?.target);
+  }).observe(document.body,{subtree:true,attributes:true,attributeFilter:['open','inert']});
+  document.addEventListener('close',()=>placeCursor(),true);
+  document.addEventListener('helen:app-update-required',()=>placeCursor(document.getElementById('app-update-dialog')));
+  placeCursor();
   let config;
   try {
     const response=await fetch('/assets/appearance.json',{cache:'no-cache'});if(!response.ok)return;config=await response.json();
@@ -55,11 +80,13 @@
   fine.addEventListener('change',applyMode);
   document.addEventListener('pointermove',event=>{
     if(event.pointerType!=='mouse') return;
+    placeCursor(event.target);
     lastPosition={x:event.clientX,y:event.clientY};
     if(!frame) frame=requestAnimationFrame(()=>{frame=0;showPosition();});
   },{passive:true});
   document.addEventListener('pointerdown',event=>{
     if(mode!=='cursor' || event.pointerType!=='mouse' || event.button!==0) return;
+    placeCursor(event.target);
     clearTimeout(timer);lastPosition={x:event.clientX,y:event.clientY};showPosition();
     if(clickBehavior==='toggle') {alternate=!alternate;cursorImage.src=alternate?config.pressedImage:config.idleImage;}
     else {pressed=true;pressedUntil=performance.now()+hold;cursorImage.src=config.pressedImage;}

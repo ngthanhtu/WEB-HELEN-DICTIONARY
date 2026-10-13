@@ -28,6 +28,18 @@ const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
    assert.equal(await page.evaluate(()=>document.activeElement.id),'confirm-app-update');await page.keyboard.press('Escape');assert.equal(await page.locator('#app-update-dialog').evaluate(el=>el.open),true);
    await page.keyboard.press('Tab');assert.equal(await page.evaluate(()=>document.getElementById('app-update-dialog').contains(document.activeElement)),true);
    assert.equal(await page.locator('#practical-input').evaluate(el=>el.closest('main').inert),true);
+   if(width===1440){
+    await page.waitForFunction(()=>!document.getElementById('pet-control').hidden);
+    const box=await page.locator('#confirm-app-update').boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);
+    await page.waitForFunction(()=>!document.getElementById('pet-cursor').hidden);
+    assert.equal(await page.locator('#pet-cursor').evaluate(el=>el.parentElement.id),'app-update-dialog');
+    assert.equal(await page.locator('#pet-cursor').evaluate(el=>el.inert),false);
+    assert.equal(await page.locator('#pet-cursor').evaluate(el=>Math.round(el.getBoundingClientRect().width)),width);
+    const picture=await page.locator('#pet-cursor img').getAttribute('src');
+    const heading=await page.locator('#app-update-title').boundingBox();await page.mouse.move(heading.x+10,heading.y+10);await page.mouse.down();
+    assert.notEqual(await page.locator('#pet-cursor img').getAttribute('src'),picture);await page.mouse.up();
+    await page.mouse.move(box.x+box.width/2,box.y+box.height/2);
+   }
    await page.waitForFunction(async()=>{const r=await navigator.serviceWorker.getRegistration();return Boolean(r.waiting);},{},{timeout:20000});
    assert.equal(await page.evaluate(()=>localStorage.getItem('helen-app-build-v1')),builds[0]);
    await context.setOffline(true);await page.waitForFunction(()=>document.getElementById('confirm-app-update').disabled);assert.match(await page.locator('#app-update-status').textContent(),/Internet|mạng/);await context.setOffline(false);
@@ -52,7 +64,7 @@ const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
    await second.waitForFunction(()=>document.getElementById('app-update-dialog').open);assert.equal(await second.evaluate(()=>document.documentElement.dataset.build),builds[0]);await second.locator('#confirm-app-update').click();await second.waitForFunction(expected=>document.documentElement.dataset.build===expected,builds[1]);
    await page.reload();await page.waitForFunction(()=>window.HelenAppUpdate);await page.waitForTimeout(1200);assert.equal(await page.locator('#app-update-dialog').evaluate(el=>el.open),false);
    await context.setOffline(true);await page.reload();await page.waitForFunction(()=>window.HelenAppUpdate);assert.equal(await page.locator('#app-update-dialog').evaluate(el=>el.open),false);assert.equal(await page.locator('#practical-input').inputValue(),draft);await context.setOffline(false);
-   assert.deepEqual(errors,[]);results.push({width,firstVisitNoFalsePrompt:true,requiredOnNewVersion:true,escapeCannotDismiss:true,backgroundInert:true,failedUpdateRetry:true,stalledUpdateBounded:true,offlineErrorReadable:true,userActivationRequired:true,secondTabAlsoConfirms:true,learningAndDraftPreserved:true,updateOnlyOnce:true,updatedOfflineReload:true,axeViolations:0});console.log(JSON.stringify(results.at(-1)));await context.close();
+   assert.deepEqual(errors,[]);results.push({width,firstVisitNoFalsePrompt:true,requiredOnNewVersion:true,escapeCannotDismiss:true,backgroundInert:true,cursorAboveUpdate:width===1440,cursorClickPicture:width===1440,failedUpdateRetry:true,stalledUpdateBounded:true,offlineErrorReadable:true,userActivationRequired:true,secondTabAlsoConfirms:true,learningAndDraftPreserved:true,updateOnlyOnce:true,updatedOfflineReload:true,axeViolations:0});console.log(JSON.stringify(results.at(-1)));await context.close();
   }
   chosen=0;const legacyContext=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'allow'}),legacy=await legacyContext.newPage();
   await legacy.goto(origin+'/words');await legacy.evaluate(()=>navigator.serviceWorker.ready);await legacy.waitForFunction(()=>navigator.serviceWorker.controller && window.HelenAppUpdate);await legacy.waitForTimeout(1200);
