@@ -57,7 +57,7 @@ const persistDictionary = require('./lib/persist-dictionary').createDictionaryPe
 const contexts=createContextService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,store:database,beforeGenerate});
 const translations=createTranslationService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,store:database,beforeGenerate});
 const speech=createSpeechService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,beforeGenerate});
-const practical=require('./lib/practical-ai').createPracticalService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,beforeGenerate:({stage,device})=>usage.reserve(stage==='assess'?'practical-assessment':stage==='transcribe'?'practical-speech':'practical',1,device)});
+const practical=require('./lib/practical-ai').createPracticalService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,beforeGenerate:({stage,device,network})=>usage.reserve(stage==='assess'?'practical-assessment':stage==='transcribe'?'practical-speech':'practical',1,device,network)});
 const cache = new Map(); // successful results only
 const audioPending=new Map();
 const memo = async (k, fn) => {
@@ -113,8 +113,8 @@ app.get('/api/history',deviceToken,asyncHandler(async(req,res) => {
 }));
 app.post('/api/history',deviceToken,asyncHandler(async(req,res) => {
   const events = req.body.events;
-  if (!Array.isArray(events) || !events.length || events.length > 100 || !events.every(event => event && /^[a-f0-9-]{36}$/.test(event.id || '') && ['search','clear'].includes(event.action) && typeof event.at === 'string' && Number.isFinite(Date.parse(event.at)) && Date.parse(event.at) <= Date.now() + 60000 && Date.parse(event.at) >= 0 && (event.action === 'clear' || typeof event.word === 'string' && event.word.trim() && event.word.length <= 100 && !/[\x00-\x1f<>]/.test(event.word)))) return res.status(400).json({error:'Dữ liệu lịch sử không hợp lệ.',code:'HISTORY_INVALID'});
-  try {await database.saveHistory(req.deviceToken,events.map(event => ({...event,word:event.word?.trim()})));res.json({saved:true});}
+  if (Object.keys(req.body).some(key=>key!=='events') || !Array.isArray(events) || !events.length || events.length > 100 || !events.every(event => event && Object.keys(event).every(key=>['id','action','word','at'].includes(key)) && /^[a-f0-9-]{36}$/.test(event.id || '') && ['search','clear'].includes(event.action) && typeof event.at === 'string' && Number.isFinite(Date.parse(event.at)) && Date.parse(event.at) <= Date.now() + 60000 && Date.parse(event.at) >= 0 && (event.action === 'clear' || typeof event.word === 'string' && event.word.trim() && event.word.length <= 100 && !/[\x00-\x1f<>]/.test(event.word)))) return res.status(400).json({error:'Dữ liệu lịch sử không hợp lệ.',code:'HISTORY_INVALID'});
+  try {await usage.reserve('history',events.length,req.deviceToken,webSecurity.network(req));await database.saveHistory(req.deviceToken,events.map(event => ({...event,word:event.word?.trim()})));res.json({saved:true});}
   catch(error) {res.status(error.status || 503).json({error:error.message,code:error.code});}
 }));
 app.get('/api/speech/status',(req,res)=>res.json({configured:speech.configured,provider:'Gemini'}));
@@ -131,7 +131,7 @@ app.post('/api/practical',asyncHandler(async(req,res)=>{
   try{
     const device=req.get('X-Helen-Device') || '';
     if(process.env.NODE_ENV==='production' && !/^[a-f0-9]{64}$/.test(device))return res.status(400).json({error:'Tải lại trang để cập nhật luyện nói rồi thử lại.',code:'PRACTICAL_DEVICE'});
-    const value=await practical.reply(req.body,{device,timing});durations();
+    const value=await practical.reply(req.body,{device,network:webSecurity.network(req),timing});durations();
     res.json(value.stage?value:{...value,pronunciation:[value.reply,value.improved,value.phrase.text].filter(text=>text.length<=2000).map(text=>({text,proof:pronunciation.issue(text)}))});
   }catch(error){durations();res.status(error.status || 503).json({error:error.code?error.message:'Chưa kết nối được AI. Hãy thử lại.',code:error.code || 'PRACTICAL_SERVICE'});}
 }));
@@ -504,7 +504,7 @@ app.get('/api/tts', asyncHandler(async (req, res) => {
   try {
     const started=performance.now();let quotaMs=0,providerMs=0;
     const buf = await memo(`v|${voice}|${text}`, async () => { // cache key includes the voice
-      const quotaStart=performance.now();await usage.reserve('tts',text.length,device);quotaMs=performance.now()-quotaStart;
+      const quotaStart=performance.now();await usage.reserve('tts',text.length,device,webSecurity.network(req));quotaMs=performance.now()-quotaStart;
       const providerStart=performance.now();
       const r = await get(`https://api.elevenlabs.io/v1/text-to-speech/${voice}`, {
         method: 'POST',

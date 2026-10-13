@@ -20,12 +20,12 @@ function findings(file, content) {
     pattern.lastIndex = 0;
     for (const match of text.matchAll(pattern)) add(rule,match.index);
   }
-  const assignment = /^[ \t]*(?:export[ \t]+)?(ELEVENLABS_API_KEY|GEMINI_API_KEY|MW_LEARNERS_KEY|MYSQL_PASSWORD|DATABASE_URL)[ \t]*=[ \t]*([^\r\n]*)/gm;
+  const assignment = /^[ \t]*(?:export[ \t]+)?(ELEVENLABS_API_KEY|GEMINI_API_KEY|MW_LEARNERS_KEY|MYSQL_PASSWORD|DATABASE_URL|ABUSE_LIMIT_SECRET)[ \t]*=[ \t]*([^\r\n]*)/gm;
   for (const match of text.matchAll(assignment)) {
     const value = match[2].trim().replace(/\s+#.*$/,'').replace(/^(['"])(.*)\1$/,'$2');
     if (value && !placeholder.test(value)) add('Credential value in environment assignment',match.index);
   }
-  const literal = /\b(?:ELEVENLABS_API_KEY|GEMINI_API_KEY|MW_LEARNERS_KEY)['"]?\s*[:=]\s*(['"])([^'"\r\n]+)\1/g;
+  const literal = /\b(?:ELEVENLABS_API_KEY|GEMINI_API_KEY|MW_LEARNERS_KEY|ABUSE_LIMIT_SECRET)['"]?\s*[:=]\s*(['"])([^'"\r\n]+)\1/g;
   for (const match of text.matchAll(literal)) if (!placeholder.test(match[2])) add('Hardcoded API credential',match.index);
   return result;
 }
