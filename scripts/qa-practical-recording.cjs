@@ -1,0 +1,48 @@
+// Optional browser QA with fake capture/providers; never sends a live API request.
+const {chromium}=require(process.env.HELEN_PLAYWRIGHT_MODULE || 'playwright');
+const {spawn}=require('node:child_process'),net=require('node:net'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const root=path.resolve(__dirname,'..'),output=process.env.HELEN_QA_OUTPUT || '/tmp/helen-recording-qa';fs.mkdirSync(output,{recursive:true});
+const raw='Um I has worked in healthcare. I I train doctors.',accurate='Um I have worked in healthcare. I I train doctors.';
+(async()=>{
+ const socket=net.createServer();await new Promise(r=>socket.listen(0,'127.0.0.1',r));const port=socket.address().port;await new Promise(r=>socket.close(r));
+ const server=spawn(process.execPath,['server.js'],{cwd:root,env:{...process.env,PORT:String(port),NODE_ENV:'development',DATABASE_URL:'',MYSQL_HOST:'',GEMINI_API_KEY:'test-only',GEMINI_MODEL:'gemini-2.5-flash-lite',ELEVENLABS_API_KEY:'',HELEN_DISABLE_WORDNET:'1'},stdio:['ignore','pipe','pipe']});server.stdout.resume();server.stderr.resume();let browser;const rows=[];
+ try{
+  await new Promise(r=>setTimeout(r,700));browser=await chromium.launch({executablePath:process.env.HELEN_CHROMIUM_PATH || '/usr/bin/chromium',headless:true,args:['--no-sandbox']});
+  for(const width of [390,1440]){
+   const context=await browser.newContext({viewport:{width,height:844},serviceWorkers:'allow'});
+   if(process.env.HELEN_AXE_PATH)await context.addInitScript({path:process.env.HELEN_AXE_PATH});
+   await context.addInitScript(()=>{
+    localStorage.setItem('helen-practical-voice-v1','device');window.__recognizers=[];window.__utterances=[];window.__offset=0;const now=performance.now.bind(performance);performance.now=()=>now()+window.__offset;
+    Object.defineProperty(navigator,'mediaDevices',{configurable:true,value:{getUserMedia:async()=>({getTracks:()=>[{stop(){}}]})}});
+    window.MediaRecorder=class{static isTypeSupported(t){return t==='audio/mp4';}constructor(){this.mimeType='audio/mp4';this.state='inactive';}start(){this.state='recording';}stop(){if(this.state==='inactive')return;this.state='inactive';this.ondataavailable?.({data:new Blob([new Uint8Array([0,0,0,24,102,116,121,112,77,52,65,32,...Array(80).fill(0)])],{type:'audio/mp4'})});this.onstop?.();}};
+    window.SpeechRecognition=undefined;window.webkitSpeechRecognition=class{constructor(){window.__recognizers.push(this);}start(){this.onstart?.();}stop(){this.onend?.();}abort(){this.onend?.();}};
+    window.__caption=(text,final=false)=>window.__recognizers.at(-1).onresult({resultIndex:0,results:[Object.assign([{transcript:text}],{isFinal:final})]});
+    window.AudioContext=window.webkitAudioContext=undefined;window.confirm=()=>true;window.SpeechSynthesisUtterance=class{constructor(text){this.text=text;}};
+    Object.defineProperty(window,'speechSynthesis',{configurable:true,value:{getVoices:()=>[{name:'Samantha',voiceURI:'Samantha',lang:'en-US',localService:true}],addEventListener(){},resume(){},cancel(){},speak(u){if(u.text.trim())window.__utterances.push(u.text);u.onstart?.();setTimeout(()=>u.onend?.(),50);}}});
+   });
+   let mode='fail',calls=[];const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+   await page.route('**/api/practical',async route=>{
+    const b=route.request().postDataJSON();calls.push(b);if(b.stage==='transcribe'){
+     await new Promise(r=>setTimeout(r,250));if(mode==='fail')return route.fulfill({status:503,json:{code:'PRACTICAL_SERVICE',error:'Chưa kết nối được AI.'}});
+     return route.fulfill({json:{stage:'transcribe',transcript:accurate,uncertain:false,requiresConfirmation:true}});
+    }
+    return route.fulfill({json:{transcript:b.text,reply:'What did you learn from that experience?',translation:'Bạn học được điều gì từ trải nghiệm đó?',improved:b.text.replace('I has','I have'),feedback:'Dùng have với I.',phrase:{text:'gain experience',translation:'tích lũy kinh nghiệm'},corrections:[],collocations:[]}});
+   });
+   await page.goto(`http://localhost:${port}/practical-ai`);await page.waitForFunction(()=>!document.getElementById('practical-mic').disabled);
+   await page.locator('#practical-mic').click();await page.evaluate(()=>window.__caption('Um I ha'));assert.equal(await page.locator('#practical-input').inputValue(),'Um I ha');
+   await page.evaluate(t=>window.__caption(t,true),raw);assert.equal(await page.locator('#practical-input').inputValue(),raw);assert.equal(await page.locator('#practical-input').evaluate(n=>n.readOnly),true);assert.equal(await page.locator('#practical-input').isDisabled(),false);
+   await page.waitForTimeout(800);assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('helen-practical-draft-v1')).text),raw);
+   await page.evaluate(()=>window.__offset+=179000);await page.locator('#practical-mic').click();await page.waitForFunction(()=>!document.getElementById('practical-send').disabled);
+   assert.ok(await page.locator('#practical-retry-recording').isVisible());assert.equal(await page.locator('#practical-input').inputValue(),raw);assert.ok(calls[0].durationMs>=179000 && calls[0].durationMs<=180000);assert.ok(!('text' in calls[0]));
+   await page.screenshot({path:path.join(output,`helen-live-captions-${width}.png`),fullPage:true});
+   await page.reload();await page.waitForFunction(()=>!document.getElementById('practical-send').disabled);assert.equal(await page.locator('#practical-input').inputValue(),raw);assert.equal(await page.locator('#practical-retry-recording').isVisible(),false);
+   await page.locator('#practical-send').click();await page.waitForFunction(()=>document.querySelectorAll('.practical-message.user').length===1 && window.__utterances.length===1);assert.equal(calls.at(-1).text,raw);assert.ok((await page.locator('.practical-feedback').textContent()).includes(raw));
+   mode='mismatch';await page.locator('#practical-reset').click();await page.locator('#practical-mic').click();await page.evaluate(t=>window.__caption(t,true),raw);await page.waitForTimeout(400);await page.locator('#practical-mic').click();await page.waitForFunction(()=>!document.getElementById('practical-send').disabled);
+   assert.equal(await page.locator('#practical-input').inputValue(),accurate);assert.equal(await page.locator('.practical-message.user').count(),0);assert.ok(await page.locator('#practical-live-original').isVisible());assert.equal(await page.locator('#practical-live-original-text').textContent(),raw);
+   await page.locator('#practical-send').click();await page.waitForFunction(()=>document.querySelectorAll('.practical-message.user').length===1);assert.equal(calls.at(-1).text,accurate);assert.ok((await page.locator('.practical-feedback').textContent()).includes(raw));
+   for(const dark of [false,true]){await page.evaluate(d=>document.documentElement.dataset.theme=d?'dark':'light',dark);await page.waitForTimeout(350);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);const v=process.env.HELEN_AXE_PATH?await page.evaluate(async()=>{const r=await axe.run(document.getElementById('page-practical'),{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}});return r.violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)}));}):[];assert.deepEqual(v,[]);}
+   assert.deepEqual(errors,[]);rows.push({width,webkitLiveCaptions:true,partialRevision:true,fillersAndMistakesKept:true,threeMinutePayload:true,failedAudioDraftRetained:true,reloadDraft:true,manualSendFeedback:true,automaticReplyVoice:true,mismatchRequiresConfirmation:true,originalLiveDraftRetained:true,axeViolations:process.env.HELEN_AXE_PATH?0:null,physicalMicrophone:false});console.log(JSON.stringify(rows.at(-1)));await context.close();
+  }
+  fs.writeFileSync(path.join(output,'helen-live-recording-browser-qa.json'),JSON.stringify(rows,null,2));
+ }finally{await browser?.close();server.kill();}
+})().catch(e=>{console.error(e);process.exitCode=1;});

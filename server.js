@@ -124,7 +124,10 @@ app.post('/api/speech',asyncHandler(async(req,res)=>{
 }));
 const buildVersion=process.env.RENDER_GIT_COMMIT?.replace(/[^a-zA-Z0-9]/g,'').slice(0,12) || 'mobile-v1';
 app.get('/api/app-version',(req,res)=>res.set('Cache-Control','no-store').json({build:buildVersion}));
-app.get('/api/practical/status',(req,res)=>res.json({configured:practical.configured,provider:'Gemini',dailyReplyLimit:usage.limits.practicalDeviceDay,transcriptConfirmation:true,automaticClearSpeech:true,maxRecordingSeconds:180,ieltsAssessment:true,dailyAssessmentLimit:usage.limits.practicalAssessmentDay,pronunciation:require('./public/assets/practical-core').scenarios.map(item=>({text:item.opening,proof:pronunciation.issue(item.opening)}))}));
+app.get('/api/practical/status',(req,res)=>{
+  if(practical.configured){void practical.prepare();if(process.env.NODE_ENV==='production')void database.warmPractical().catch(()=>{});}
+  res.json({configured:practical.configured,provider:'Gemini',dailyReplyLimit:usage.limits.practicalDeviceDay,transcriptConfirmation:true,automaticClearSpeech:true,maxRecordingSeconds:180,ieltsAssessment:true,dailyAssessmentLimit:usage.limits.practicalAssessmentDay,pronunciation:require('./public/assets/practical-core').scenarios.map(item=>({text:item.opening,proof:pronunciation.issue(item.opening)}))});
+});
 app.post('/api/practical',asyncHandler(async(req,res)=>{
   const timing={},started=performance.now();
   const durations=()=>res.set('Server-Timing',[`practical;dur=${(performance.now()-started).toFixed(1)}`,...['quota','provider','discovery','backoff'].map(phase=>`${phase};dur=${(timing[phase+'Ms'] ?? (timing[phase+'Start']===undefined?0:performance.now()-timing[phase+'Start'])).toFixed(1)}`)].join(','));
@@ -539,6 +542,7 @@ const server = app.listen(PORT, () => {
   // Read the spelling index during startup so the first typo does not pay its loading cost.
   warmSpellingIndex().catch(error=>console.warn(`Spelling index unavailable: ${error.code || error.name}`));
   void translations.prepare();
+  void practical.prepare();
   if(process.env.NODE_ENV==='production')void (async function warmAIQuota(){
     if(!database.status().configured)return;
     try{await database.prepareAI();}catch{setTimeout(()=>void warmAIQuota(),5000).unref();}

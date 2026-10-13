@@ -31,6 +31,11 @@ function fixture({fault,permanent=false,rollbackFails=false,starting,otherTables
  return {db,ledger,stats,calls,failGeneral:()=>generalFailed=true};
 }
 const rules=()=>[{bucket:'practical-day',key:'g',units:1,limit:600,expiresAt:Date.now()+86400000},{bucket:'practical-reply-device',key:'d',units:1,limit:100,expiresAt:Date.now()+86400000}];
+test('Practical status warm-up coalesces, warms only the isolated pool and does not debit a generation',async()=>{
+ let queries=0,connections=0,release;const warming=new Promise(resolve=>release=resolve);
+ const db=createDatabase(env,{createPool:()=>({end:async()=>{},getConnection:async()=>({release(){},execute:async()=>[[]]})}),createAIPool:()=>({end:async()=>{},getConnection:async()=>{connections++;await warming;return {release(){},query:async sql=>{assert.equal(sql,'SELECT 1');queries++;return [[{1:1}]];}};}})});
+ try{await db.initialize();const first=db.warmPractical(),second=db.warmPractical();await new Promise(resolve=>setImmediate(resolve));assert.equal(connections,1);release();await Promise.all([first,second]);await db.warmPractical();assert.equal(queries,1);}finally{release();await db.close();}
+});
 test('a disconnected dictionary cache does not block the independent speaking quota connection for 30 seconds',async()=>{
  const f=fixture();await f.db.initialize();try{
   f.failGeneral();assert.equal(await f.db.get('dictionary-v2','intermediate'),null);assert.equal(f.db.status().connected,false);
@@ -52,7 +57,7 @@ test('a stalled quota connection has one overall deadline and can never commit o
  let release;const acquiring=new Promise(resolve=>release=resolve),f=fixture({acquiring});await f.db.initialize();
  try{
   const failed=assert.rejects(f.db.reserveUsage(rules(),{isolatedAI:true}),{code:'USAGE_UNAVAILABLE'});
-  await new Promise(resolve=>setImmediate(resolve));t.mock.timers.tick(3500);await failed;
+  await new Promise(resolve=>setImmediate(resolve));t.mock.timers.tick(6500);await failed;
   release();await new Promise(resolve=>setImmediate(resolve));assert.equal(f.stats.commits,0);assert.equal(f.ledger.size,0);assert.equal(f.stats.acquired,1);assert.equal(f.stats.released,1);
  }finally{release();await f.db.close();}
 });

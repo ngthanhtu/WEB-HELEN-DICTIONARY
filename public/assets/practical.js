@@ -5,6 +5,7 @@
  const input=$('practical-input'),status=$('practical-status'),mic=$('practical-mic'),voice=$('practical-voice'),aiVoice=$('practical-ai-voice'),deviceVoice=$('practical-device-voice'),autoplay=$('practical-autoplay'),fallback=$('practical-quota-fallback'),autoSend=$('practical-auto-send');
  const partnerCache=globalThis.HelenOfflineAudio?.create({cacheName:'helen-practical-audio-v1',maxClips:30,maxBytes:5*1024*1024});
  const partnerAudio=globalThis.HelenPracticalAudio?.create({pronunciation:globalThis.HelenPronunciation,offlineAudio:partnerCache});
+ const captions=globalThis.HelenLiveTranscript?.create();let liveCapture=null,draftTimer;
  let state,session,draft=null,configured=null,checking,busy=false,phase='idle',run=0,controller,attempt,audioAttempt=null,recording=false,storageFailed=false,partnerConfig=null,partnerLoading,speechPhase='idle',speechRun=0;
  const get=key=>{try{return localStorage.getItem(key);}catch{return null;}},put=(key,value)=>{try{localStorage.setItem(key,value);}catch{message('Lựa chọn chỉ giữ trong phiên này.');}};
  let chosenAI=get(AI_VOICE),chosenDevice=get(DEVICE_VOICE) || '';
@@ -19,9 +20,11 @@
  function travelIcon(){const element=document.createElementNS('http://www.w3.org/2000/svg','svg'),path=document.createElementNS(element.namespaceURI,'path');element.setAttribute('viewBox','0 0 24 24');element.setAttribute('aria-hidden','true');path.setAttribute('d','M5 19 19 5M5 5h14v14');element.append(path);return element;}
  function message(text,error=false,loading=false){status.classList.toggle('error',error);status.setAttribute('role',error?'alert':'status');if(loading)showLoading(status,text);else finishLoading(status,text);}
  function save(){try{localStorage.setItem(SESSION,JSON.stringify(session));localStorage.setItem(KEY,JSON.stringify(state));storageFailed=false;}catch{storageFailed=true;}}
- function saveDraft(){try{if(draft)localStorage.setItem(DRAFT,JSON.stringify({...draft,text:input.value}));else localStorage.removeItem(DRAFT);}catch{}}
+ function saveDraft(){clearTimeout(draftTimer);draftTimer=null;try{if(draft)localStorage.setItem(DRAFT,JSON.stringify({...draft,text:input.value}));else localStorage.removeItem(DRAFT);}catch{}}
+ const comparable=text=>String(text || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();
  function reviewTranscript(data){
-  draft={scenario:state.scenario,level:state.level,text:data.transcript,uncertain:data.uncertain===true,...(data.speechReceipt?{speechReceipt:data.speechReceipt}:{})};input.value=data.transcript;saveDraft();
+  const browserText=draft?.browserText || (draft?.source==='live'?input.value:undefined),changed=Boolean(browserText && comparable(browserText)!==comparable(data.transcript));
+  draft={scenario:state.scenario,level:state.level,text:data.transcript,uncertain:data.uncertain===true || changed,...(browserText?{browserText}:{}),...(data.speechReceipt?{speechReceipt:data.speechReceipt}:{})};input.value=data.transcript;saveDraft();
   message(draft.uncertain?'Có chỗ chưa nghe rõ. Sửa [unclear] hoặc thu âm lại; AI chưa tự đoán từ.':'Kiểm tra câu vừa nghe, sửa nếu cần rồi bấm Confirm & send.');
  }
  function quotaActive(){return voice.value==='elevenlabs' && fallback.checked && quotaUntil>Date.now();}
@@ -88,10 +91,11 @@
  }
  function controls(){
   const offline=navigator.onLine===false,ended=Boolean(session.report),disabled=busy || offline || configured===false || ended;
-  $('practical-send').disabled=disabled || !input.value.trim() || /\[unclear\]/i.test(input.value);input.disabled=busy || ended;
-  $('practical-transcript-review').hidden=!draft;$('practical-input-label').textContent=draft?'Your words · edit if needed':'Your reply';
+  $('practical-send').disabled=disabled || !input.value.trim() || /\[unclear\]/i.test(input.value);input.disabled=ended;input.readOnly=busy;
+  $('practical-transcript-review').hidden=!draft || phase==='recording';$('practical-input-label').textContent=phase==='recording'?'Your reply · live draft':draft?'Your words · edit if needed':'Your reply';
   $('practical-send').firstChild.textContent=draft?'Confirm & send ':'Send reply ';
-  $('practical-transcript-note').textContent=draft?.uncertain?'Có chỗ chưa rõ. Sửa [unclear] hoặc thu âm lại, rồi bấm Confirm & send. AI chưa đoán từ hay trả lời.':'Kiểm tra câu bên dưới, sửa từ nghe nhầm rồi bấm Confirm & send. AI chưa trả lời ở bước này.';
+  $('practical-transcript-note').textContent=draft?.source==='live'?'Đây là chữ trình duyệt nghe tạm, có thể sai. Kiểm tra và sửa rồi bấm Confirm & send; AI sẽ góp ý dựa trên câu bạn xác nhận.':draft?.browserText && comparable(draft.browserText)!==comparable(input.value)?'Hai bản nhận diện khác nhau. Xem bản chữ khi nói, kiểm tra câu bên dưới rồi bấm Confirm & send.':draft?.uncertain?'Có chỗ chưa rõ. Sửa [unclear] hoặc thu âm lại, rồi bấm Confirm & send. AI chưa đoán từ hay trả lời.':'Kiểm tra câu bên dưới, sửa từ nghe nhầm rồi bấm Confirm & send. AI chưa trả lời ở bước này.';
+  $('practical-live-original').hidden=!draft?.browserText;$('practical-live-original-text').textContent=draft?.browserText || '';
   mic.disabled=ended || !core.canSend(session,'') || offline || configured===false || !globalThis.HelenVoiceRecorder?.available() || (busy && !['requesting','recording'].includes(phase));
   mic.setAttribute('aria-pressed',String(recording));mic.setAttribute('aria-label',recording?'Stop recording and send reply':'Record a speaking reply');mic.querySelector('span').textContent=recording?'Send recording':'Speak';
   $('practical-retry-recording').hidden=!audioAttempt;$('practical-retry-recording').disabled=disabled;
@@ -118,6 +122,7 @@
    if(turn.feedback && typeof turn.feedback.note==='string'){
     const feedback=node('div',undefined,'practical-feedback');feedback.append(node('h3','A little coaching'),node('p',turn.feedback.note));
     if(turn.feedback.partial)feedback.append(node('p','Một vài chỗ sửa chưa đủ rõ nên chưa áp dụng. Câu trả lời gốc vẫn được giữ.','muted'));
+    if(typeof turn.feedback.liveTranscript==='string' && turn.feedback.liveTranscript.length<=6000){const original=node('details');original.append(node('summary','Original live captions · bản tạm'),node('p',turn.feedback.liveTranscript));feedback.append(original);}
     const flow=turn.feedback.speakingFlow;
     if(flow?.source==='transcript' && typeof flow.note==='string'){
      const detail=node('details',undefined,'practical-flow');detail.append(node('summary',`Speaking flow${Number.isSafeInteger(flow.fillerCount) && flow.fillerCount>0?` · ${flow.fillerCount} fillers`:''}`),node('p',flow.note));
@@ -190,8 +195,8 @@
   }finally{clearInterval(progress);}
  }
  async function handleTranscript(data,ticket){
-  if(ticket!==run)return;audioAttempt=null;reviewTranscript(data);
-  if(autoSend.checked && !data.uncertain && !/\[unclear\]/i.test(data.transcript)){
+  if(ticket!==run)return;liveCapture?.cancel();liveCapture=null;audioAttempt=null;reviewTranscript(data);
+  if(autoSend.checked && !draft.uncertain && !/\[unclear\]/i.test(data.transcript)){
    if(!core.canSend(session,data.transcript)){message('Phiên đã đủ dài. Kết thúc để xem band trước khi luyện tiếp.',true);return;}
    recording=false;phase='replying';controller=new AbortController();partnerState('thinking');controls();message('Đã nghe câu của bạn. AI đang trả lời và góp ý…',false,true);
    const result=await request({text:data.transcript},controller.signal);if(ticket===run){accept(result);return result.reply;}
@@ -199,13 +204,14 @@
  }
  function recordingError(error){
   const text=shortError(error,'Chưa xử lý được bản thu. Hãy thử lại.');
-  message(audioAttempt?text+' Bản thu còn trong tab này. Bấm Retry recording để gửi lại.':text,true);
+  const saved=draft?.source==='live' && input.value.trim();
+  message(text+(saved?' Chữ đã giữ. Kiểm tra rồi Confirm & send, hoặc Retry recording.':audioAttempt?' Bản thu còn trong tab này. Bấm Retry recording để gửi lại.':''),true);
  }
 
- function accept(data){session.turns.push({question:state.messages.at(-1).text,text:data.transcript,...(draft?.speechReceipt?{speechReceipt:draft.speechReceipt}:{})});state=core.add(state,data);attempt=null;audioAttempt=null;draft=null;saveDraft();save();input.value='';render();const list=$('practical-messages');list.scrollTop=list.scrollHeight;message(storageFailed?'Bộ nhớ đầy. Hội thoại chỉ giữ trong phiên này.':'Đã có phản hồi. Bạn có thể nghe, xem bản dịch rồi trả lời tiếp.');}
+ function accept(data){session.turns.push({question:state.messages.at(-1).text,text:data.transcript,...(draft?.speechReceipt?{speechReceipt:draft.speechReceipt}:{})});state=core.add(state,{...data,...(draft?.browserText?{liveTranscript:draft.browserText}:draft?.source==='live'?{liveTranscript:input.value}:{})});attempt=null;audioAttempt=null;draft=null;input.value='';saveDraft();save();render();const list=$('practical-messages');list.scrollTop=list.scrollHeight;message(storageFailed?'Bộ nhớ đầy. Hội thoại chỉ giữ trong phiên này.':'Đã có phản hồi. Bạn có thể nghe, xem bản dịch rồi trả lời tiếp.');}
  function finish(ticket,reply){if(ticket!==run)return;busy=false;recording=false;phase='idle';controller=null;partnerState('idle');controls();if(reply && autoplay.checked)void playReply(reply,$('practical-messages').querySelector('.practical-message.assistant:last-child .say'));}
  function cancel(announce=true){
-  audioAttempt=null;stopPartner();if(!busy)return;++run;controller?.abort();if(recording)globalThis.HelenVoiceRecorder?.cancel();busy=false;recording=false;phase='idle';controller=null;partnerState('idle');controls();if(announce)message('Đã dừng. Câu của bạn vẫn giữ nguyên.');
+  liveCapture?.cancel();liveCapture=null;saveDraft();audioAttempt=null;stopPartner();if(!busy)return;++run;controller?.abort();if(recording)globalThis.HelenVoiceRecorder?.cancel();busy=false;recording=false;phase='idle';controller=null;partnerState('idle');controls();if(announce)message('Đã dừng. Câu của bạn vẫn giữ nguyên.');
  }
  $('practical-form').addEventListener('submit',async event=>{
   event.preventDefault();if(busy || session.report || !input.value.trim())return;
@@ -219,14 +225,22 @@
  });
  mic.addEventListener('click',()=>{
   const recorder=globalThis.HelenVoiceRecorder;if(recording){if(phase==='requesting')cancel();else {void partnerAudio?.unlock({device:voice.value==='device' || quotaActive()});recorder?.stop();}return;}if(busy || session.report || !core.canSend(session,'') || !recorder?.available())return;
+  if(input.value.trim()){message('Gửi hoặc xóa câu đang soạn trước khi thu bản mới.',true);input.focus();return;}
   audioAttempt=null;stopPartner();const ticket=++run;let reply;busy=true;recording=true;phase='requesting';globalThis.HelenAudio?.stop();partnerState('requesting');controls();
   const task=recorder.start({language:'en-US',mode:'conversation',submit:recorded,onState:info=>{
-   if(ticket!==run)return;phase=info.state;if(info.state==='recording')$('practical-recording-time').textContent=`${Math.floor((info.elapsedMs || 0)/60000)}:${String(Math.floor((info.elapsedMs || 0)/1000)%60).padStart(2,'0')} / 3:00`;controls();
+   if(ticket!==run)return;phase=info.state;if(info.state==='recording')$('practical-recording-time').textContent=`${Math.floor((info.elapsedMs || 0)/60000)}:${String(Math.floor((info.elapsedMs || 0)/1000)%60).padStart(2,'0')} / 3:00`;
+   if(info.state==='transcribing'){liveCapture?.stop();saveDraft();}controls();
    partnerState(info.state==='recording'?'listening':info.state==='transcribing'?'thinking':'requesting');
    if(info.state==='transcribing')message('Đang chép lại lời bạn nói, chưa sửa câu…',false,true);
    else if(status.textContent!==info.message)message(info.message);
-  }});void partnerAudio?.unlock({device:voice.value==='device' || quotaActive()});
-  task.then(async data=>{reply=await handleTranscript(data,ticket);}).catch(error=>{if(ticket===run)recordingError(error);}).finally(()=>{finish(ticket,reply);if(ticket===run && draft)input.focus();});
+  }});
+  liveCapture=captions?.start({language:'en-US',onChange:info=>{
+   if(ticket!==run || !['requesting','recording','transcribing'].includes(phase) || !info.text.trim())return;
+   draft={scenario:state.scenario,level:state.level,text:info.text,browserText:info.text,uncertain:true,source:'live'};input.value=info.text;input.scrollTop=input.scrollHeight;
+   if(!draftTimer)draftTimer=setTimeout(()=>{draftTimer=null;saveDraft();},700);
+  },onState:value=>{if(ticket===run)$('practical-live-status').textContent=['listening','restarting'].includes(value)?'Live captions · chữ tạm, có thể nghe nhầm.':value==='stopped'?'Đã giữ bản chữ khi nói.':'Phụ đề trực tiếp chưa khả dụng. Bản thu vẫn hoạt động; chữ hiện sau khi nhận diện.';}});
+  void partnerAudio?.unlock({device:voice.value==='device' || quotaActive()});
+  task.then(async data=>{reply=await handleTranscript(data,ticket);}).catch(error=>{if(ticket===run)recordingError(error);}).finally(()=>{if(ticket===run){liveCapture?.cancel();liveCapture=null;saveDraft();finish(ticket,reply);if(draft)input.focus();}});
  });
  // Recognition still gets audio only. Clear speech proceeds automatically;
  // uncertain speech waits for an edit, without contextual guesses.

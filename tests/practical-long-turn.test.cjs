@@ -4,6 +4,18 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
 const input=()=>({scenario:'work',level:'B1',requestId:crypto.randomUUID(),history:core.context(core.fresh('work')),text:'I work in a hospital.'});
 const good=()=>Response.json({candidates:[{content:{parts:[{text:JSON.stringify({reply:'What have you learned from your work?',translation:'Bạn đã học được gì từ công việc?',feedback:'Hãy bổ sung ví dụ.',phrase:{text:'gain experience',translation:'tích lũy kinh nghiệm'},corrections:[],collocations:[]})}]},finishReason:'STOP'}]});
 const bad=status=>Response.json({error:{code:status,message:'PRIVATE_PROVIDER_DETAIL',status:status===429?'RESOURCE_EXHAUSTED':'UNAVAILABLE'}},{status});
+test('preparing a concrete Lite model applies minimal thinking without spending generations or overriding an explicit model',async()=>{
+ let listed=0,generated=0,reserved=0;
+ const service=createPracticalService({apiKey:'test-only',beforeGenerate:()=>reserved++,fetchImpl:async(url,options)=>{
+  if(!String(url).includes('generateContent')){listed++;return Response.json({models:[{name:'models/gemini-2.5-flash-lite',supportedGenerationMethods:['generateContent']},{name:'models/gemini-flash-lite-latest',supportedGenerationMethods:['generateContent']}]});}
+  generated++;const body=JSON.parse(options.body);assert.equal(body.generationConfig.thinkingConfig.thinkingBudget,0);assert.ok(!String(url).includes('flash-lite-latest'));return good();
+ }});
+ await Promise.all([service.prepare(),service.prepare()]);assert.equal(service.model,'gemini-2.5-flash-lite');assert.equal(listed,1);assert.equal(reserved,0);await service.reply(input());assert.equal(generated,1);assert.equal(reserved,1);
+ const explicit=createPracticalService({apiKey:'test-only',model:'gemini-custom',fetchImpl:()=>assert.fail('must not list models')});await explicit.prepare();assert.equal(explicit.model,'gemini-custom');
+});
+test('SDK timeout/abort is classified accurately without exposing upstream details',async()=>{
+ for(const name of ['TimeoutError','AbortError']){const service=createPracticalService({apiKey:'test-only',fetchImpl:async()=>{throw Object.assign(Error('PRIVATE_PROVIDER_DETAIL'),{name});}});await assert.rejects(service.reply(input()),e=>e.code==='PRACTICAL_TIMEOUT' && e.status===504 && !e.message.includes('PRIVATE'));}
+});
 test('shared long-turn budgets leave upload and response time on the client and bound every stage',()=>{
  for(const [value,serverMs] of [[{text:'Hello'},10000],[{text:'word '.repeat(443)},18000],[{stage:'transcribe',durationMs:175000},30000],[{stage:'transcribe',durationMs:20000},12000],[{stage:'assess'},20000]]){
   const budget=core.requestBudget(value);assert.equal(budget.serverMs,serverMs);assert.equal(budget.clientMs,serverMs+5000);assert.ok(budget.clientMs<=35000);
