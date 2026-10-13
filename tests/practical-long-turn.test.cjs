@@ -29,6 +29,11 @@ test('an explicitly overloaded latest Lite model fails over once to an available
  }});
  await service.prepare();assert.equal(service.model,models[0]);const response=await service.reply(input());assert.ok(response.reply);assert.equal(used.length,2);assert.equal(reservations,2);assert.ok(used[0].includes(models[0]));assert.ok(used[1].includes(models[1]));assert.equal(service.model,models[1]);
 });
+test('cold model preparation lasts beyond three seconds but has an eight-second bound even if transport ignores abort',async t=>{
+ let release,signal;const service=createPracticalService({apiKey:'test-only',fetchImpl:async(_url,options)=>{signal=options.signal;return new Promise(resolve=>release=resolve);}});
+ t.mock.timers.enable({apis:['setTimeout']});const work=service.prepare();while(!release)await tick();t.mock.timers.tick(3500);assert.equal(signal.aborted,false);t.mock.timers.tick(4500);await work;assert.equal(signal.aborted,true);assert.equal(service.diagnostics().discoveryFailure.type,'TimeoutError');
+ release(Response.json({models:[{name:'models/gemini-3.1-flash-lite',supportedGenerationMethods:['generateContent']}]}));await tick();assert.equal(service.diagnostics().prepared,false);assert.equal(service.model,'gemini-flash-lite-latest');
+});
 test('shared long-turn budgets leave upload and response time on the client and bound every stage',()=>{
  for(const [value,serverMs] of [[{text:'Hello'},10000],[{text:'word '.repeat(443)},18000],[{stage:'transcribe',durationMs:175000},30000],[{stage:'transcribe',durationMs:20000},12000],[{stage:'assess'},20000]]){
   const budget=core.requestBudget(value);assert.equal(budget.serverMs,serverMs);assert.equal(budget.clientMs,serverMs+5000);assert.ok(budget.clientMs<=35000);

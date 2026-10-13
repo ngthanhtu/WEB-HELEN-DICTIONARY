@@ -40,3 +40,8 @@ test('new anonymous history sessions share the backend network write allowance',
  assert.equal((await post(f,'/api/history',{events:[event('one')]},{Cookie:a})).status,200);
  const denied=await post(f,'/api/history',{events:[event('two')]},{Cookie:b});assert.equal(denied.status,429);assert.equal((await denied.json()).code,'USAGE_LIMIT');assert.deepEqual((await fetch(f.base+'/api/history',{headers:{Cookie:b}}).then(r=>r.json())).history,[]);
 });
+test('history reads and cookie rotation cannot bypass the IP request ceiling or create provider calls',async t=>{
+ const f=await fixture(t);
+ for(let i=0;i<61;i++){const r=await fetch(f.base+'/api/history',{headers:{Cookie:'__Host-helen-device='+crypto.randomBytes(32).toString('hex')}});assert.equal(r.status,i<60?200:429);}
+ assert.equal(f.stats().aiCalls,0);assert.equal(f.stats().ttsCalls,0);
+});

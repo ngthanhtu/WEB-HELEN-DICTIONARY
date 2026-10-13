@@ -39,6 +39,7 @@ if (process.env.NODE_ENV === 'production') {
   app.use('/api/suggestions', limit(120));
   app.use('/api/translate', limit(60));
   app.use('/api/session',limit(30));
+  app.use('/api/history',limit(60));
   app.use('/api/voices',limit(60));
   app.post('/api/context', limit(6));
   app.post('/api/speech', limit(10));
