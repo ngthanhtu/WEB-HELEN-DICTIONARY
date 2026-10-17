@@ -1,5 +1,7 @@
 (()=>{
  'use strict';
+  const localUI=(text,params)=>globalThis.HelenI18n?.t(text,params) || text;
+ const t=(text,params)=>globalThis.HelenI18n?.t(text,params) || text;
  const core=globalThis.HelenPracticalCore,page=document.getElementById('page-practical');if(!core || !page)return;
  const $=id=>document.getElementById(id),KEY='helen-practical-ai-v1',VOICE='helen-practical-voice-v1',AI_VOICE='helen-practical-ai-voice-v1',DEVICE_VOICE='helen-practical-device-voice-v1',AUTO='helen-practical-autoplay-v1',DRAFT='helen-practical-draft-v1',FALLBACK='helen-practical-quota-fallback-v1',QUOTA_UNTIL='helen-practical-voice-quota-until-v1',AUTO_SEND='helen-practical-auto-send-v1',SESSION='helen-practical-session-v1';
  const input=$('practical-input'),status=$('practical-status'),mic=$('practical-mic'),voice=$('practical-voice'),aiVoice=$('practical-ai-voice'),deviceVoice=$('practical-device-voice'),autoplay=$('practical-autoplay'),fallback=$('practical-quota-fallback'),autoSend=$('practical-auto-send');
@@ -35,7 +37,7 @@
  }
  function partnerState(value){
   const captions={idle:'Ready when you are.',requesting:'Let’s get your mic ready.',listening:'I’m listening…',thinking:'Let me think…',loading:'Getting my voice ready…',speaking:'Your turn is next!',blocked:'Tap Hear reply to listen.',error:'You can still read my reply.'};
-  $('practical-partner').dataset.state=value;$('practical-partner-caption').textContent=captions[value] || captions.idle;
+  $('practical-partner').dataset.state=value;$('practical-partner-caption').textContent=t(captions[value] || captions.idle);
  }
  function stopPartner(){++speechRun;partnerAudio?.stop();speechPhase='idle';if(!busy)partnerState('idle');controls();}
  function voiceChoices(){
@@ -104,21 +106,49 @@
   $('practical-messages').querySelectorAll('.say').forEach(button=>button.disabled=busy || button.getAttribute('aria-busy')==='true');
   $('practical-use-hint').disabled=busy || ended;
   $('practical-end').disabled=busy || offline || configured===false || !session.turns.length || ended;
-  $('practical-session-count').textContent=ended?'Session complete · bắt đầu New session để luyện tiếp.':`${session.turns.length} replies · ${core.sessionWords(session)} words · cần ít nhất 80 từ để ước lượng band.`;
+  $('practical-session-count').textContent=ended?t('Session complete · bắt đầu New session để luyện tiếp.'):t('{count} replies · {words} words · at least 80 words needed for a band estimate.',{count:session.turns.length,words:core.sessionWords(session)});
   $('practical-recording-time').hidden=phase!=='recording';
   $('practical-messages').setAttribute('aria-busy',String(busy));
   $('practical-replay').disabled=busy || ['loading','speaking'].includes(speechPhase);$('practical-stop-voice').disabled=!['loading','speaking'].includes(speechPhase);
   aiVoice.disabled=busy;deviceVoice.disabled=busy;voice.disabled=busy;fallback.disabled=busy;autoSend.disabled=busy;$('practical-retry-voice').disabled=busy;voiceStatus();
  }
+ document.querySelector('#target')?.addEventListener('change',()=>{document.querySelectorAll('.practical-reply-translation,.practical-meaning').forEach(detail=>{if(detail.open || detail.closest('details')?.open)void detail.translateSelectedLanguage?.();});});
+ function meaningParagraph(text,translation,sourceLanguage='vi'){
+  const paragraph=node('p',undefined,'practical-meaning');let language,version=0;
+  paragraph.translateSelectedLanguage=async()=>{
+   const to=document.querySelector('#target')?.value || 'vi',ticket=++version;
+   if(language===to)return;
+   if(to==='en'){finishLoading(paragraph,text);language=to;return;}
+   if(to===sourceLanguage && translation){finishLoading(paragraph,translation);language=to;return;}
+   showLoading(paragraph,t('Translating meaning…'));
+   try{const result=(await window.tr(window.HelenQuizTranslation.chunks(text),'en',to)).join(' ');if(ticket===version && document.querySelector('#target')?.value===to){finishLoading(paragraph,result);language=to;}}
+   catch{if(ticket===version)finishLoading(paragraph,t('Translation is unavailable. Please try again.'));}
+  };
+  const to=document.querySelector('#target')?.value || 'vi';
+  if(to==='en'){paragraph.textContent=text;language=to;}else if(to===sourceLanguage && translation){paragraph.textContent=translation;language=to;}
+  return paragraph;
+ }
  function listen(text){const button=node('button','🔊','say');button.type='button';button.setAttribute('aria-label','Listen to this sentence');button.setAttribute('aria-pressed','false');button.onclick=()=>{void partnerAudio?.unlock({device:voice.value==='device' || quotaActive()});void playReply(text,button);};return button;}
  function render(){
-  const item=core.scenario(state.scenario);$('practical-level').value=state.level;$('practical-chat-title').textContent=item.title;$('practical-goal').textContent=item.goal;$('practical-hint').textContent=item.hint;$('practical-settings-summary').textContent=`Conversation settings · ${state.level}`;
-  $('practical-scenarios').replaceChildren(...core.scenarios.map(item=>{const button=node('button');button.type='button';button.dataset.scenario=item.id;button.setAttribute('aria-pressed',String(item.id===state.scenario));const icon=node('span',item.id==='travel'?undefined:item.icon);icon.setAttribute('aria-hidden','true');if(item.id==='travel')icon.append(travelIcon());button.append(icon,node('strong',item.title));button.onclick=()=>reset(item.id,state.level);return button;}));
+  const item=core.scenario(state.scenario);$('practical-level').value=state.level;$('practical-chat-title').textContent=t(item.title);$('practical-goal').textContent=t(item.goal);$('practical-hint').textContent=item.hint;$('practical-settings-summary').textContent=`${t('Conversation settings')} · ${state.level}`;
+  $('practical-scenarios').replaceChildren(...core.scenarios.map(item=>{const button=node('button');button.type='button';button.dataset.scenario=item.id;button.setAttribute('aria-pressed',String(item.id===state.scenario));const icon=node('span',item.id==='travel'?undefined:item.icon);icon.setAttribute('aria-hidden','true');if(item.id==='travel')icon.append(travelIcon());button.append(icon,node('strong',t(item.title)));button.onclick=()=>reset(item.id,state.level);return button;}));
   const cards=state.messages.map(turn=>{
    const card=node('article',undefined,'practical-message '+turn.role),head=node('div',undefined,'practical-message-header');head.append(node('strong',turn.role==='user'?'You':'Speaking partner'));
    if(turn.role==='assistant')head.append(listen(turn.text));card.append(head);
    if(turn.text.length>600){const full=node('details');full.append(node('summary','Read full answer'),node('p',turn.text));card.append(node('p',turn.text.slice(0,240)+'…'),full);}else card.append(node('p',turn.text));
-   if(turn.translation){const detail=node('details');detail.append(node('summary','Translation'),node('p',turn.translation));card.append(detail);}
+   if(turn.role==='assistant'){
+    const detail=node('details'),paragraph=node('p'),sourceLanguage=turn.translationLanguage || 'vi';detail.className='practical-reply-translation';
+    detail.append(node('summary',t('Translation')),paragraph);card.append(detail);
+    let language,version=0;
+    const translate=async()=>{if(!detail.open)return;const to=document.querySelector('#target')?.value || 'vi',ticket=++version;
+     if(language===to)return;
+     if(to==='en'){paragraph.textContent=turn.text;language=to;return;}
+     if(to===sourceLanguage && turn.translation){paragraph.textContent=turn.translation;language=to;return;}
+     showLoading(paragraph,t('Translating meaning…'));
+     try{const value=(await window.tr(window.HelenQuizTranslation.chunks(turn.text),'en',to)).join(' ');if(ticket===version && (document.querySelector('#target')?.value || 'vi')===to){finishLoading(paragraph,value);language=to;}}
+     catch{if(ticket===version)finishLoading(paragraph,t('Translation is unavailable. Please try again.'));}
+    };detail.addEventListener('toggle',()=>void translate());detail.translateSelectedLanguage=translate;
+   }
    if(turn.feedback && typeof turn.feedback.note==='string'){
     const feedback=node('div',undefined,'practical-feedback');feedback.append(node('h3','A little coaching'),node('p',turn.feedback.note));
     if(turn.feedback.partial)feedback.append(node('p','Một vài chỗ sửa chưa đủ rõ nên chưa áp dụng. Câu trả lời gốc vẫn được giữ.','muted'));
@@ -128,22 +158,23 @@
      const detail=node('details',undefined,'practical-flow');detail.append(node('summary',`Speaking flow${Number.isSafeInteger(flow.fillerCount) && flow.fillerCount>0?` · ${flow.fillerCount} fillers`:''}`),node('p',flow.note));
      if(typeof flow.strategy==='string')detail.append(node('p',flow.strategy));
      if(Array.isArray(flow.restarts) && flow.restarts.length){detail.append(node('strong','Repeated phrases'));for(const quote of flow.restarts.slice(0,3))if(typeof quote==='string')detail.append(node('blockquote',quote));}
-     if(Array.isArray(flow.phrases))for(const item of flow.phrases.slice(0,3))if(typeof item?.text==='string' && typeof item.translation==='string'){detail.append(node('strong',item.text),node('p',item.translation));if(typeof item.purpose==='string')detail.append(node('p',item.purpose,'muted'));}
+     if(Array.isArray(flow.phrases))for(const item of flow.phrases.slice(0,3))if(typeof item?.text==='string' && typeof item.translation==='string'){detail.append(node('strong',item.text),meaningParagraph(item.text,item.translation,turn.feedback.translationLanguage || 'vi'));if(typeof item.purpose==='string')detail.append(node('p',item.purpose,'muted'));}
      if(typeof flow.notice==='string')detail.append(node('p',flow.notice,'muted'));feedback.append(detail);
     }
     if(typeof turn.feedback.improved==='string'){
-     if(turn.feedback.improved.length>600){const full=node('details');full.append(node('summary','Full suggested answer'),node('blockquote',turn.feedback.improved));feedback.append(full);}
-     else feedback.append(node('strong','Try saying'),node('blockquote',turn.feedback.improved));
+     if(turn.feedback.improved.length>600){const full=node('details');full.append(node('summary',t('Full suggested answer')),node('blockquote',turn.feedback.improved));feedback.append(full);}
+     else feedback.append(node('strong',t('Try saying')),node('blockquote',turn.feedback.improved));
     }
     if(Array.isArray(turn.feedback.corrections) && turn.feedback.corrections.length){
      const list=node('ul');for(const item of turn.feedback.corrections.slice(0,4))if(typeof item?.original==='string' && typeof item.replacement==='string' && typeof item.reason==='string'){
       const edit=node('li');edit.append(node('strong',item.original+' → '+(item.replacement || '(remove)')),node('p',item.reason));list.append(edit);
      }feedback.append(list);
     }
-    if(turn.feedback.phrase && typeof turn.feedback.phrase.text==='string')feedback.append(node('p','Useful phrase · '+turn.feedback.phrase.text),node('p',typeof turn.feedback.phrase.translation==='string'?turn.feedback.phrase.translation:''));
-    if(Array.isArray(turn.feedback.collocations) && turn.feedback.collocations.length){const detail=node('details');detail.append(node('summary','Vocabulary & collocations'));for(const item of turn.feedback.collocations.slice(0,3))if(typeof item?.text==='string' && typeof item.translation==='string' && typeof item.example==='string'){detail.append(node('strong',item.text),node('p',item.translation),node('blockquote',item.example));}feedback.append(detail);}
+    if(turn.feedback.phrase && typeof turn.feedback.phrase.text==='string'){const detail=node('details');detail.append(node('summary',t('Useful phrase')),node('strong',turn.feedback.phrase.text),meaningParagraph(turn.feedback.phrase.text,turn.feedback.phrase.translation,turn.feedback.translationLanguage || 'vi'));feedback.append(detail);}
+    if(Array.isArray(turn.feedback.collocations) && turn.feedback.collocations.length){const detail=node('details');detail.append(node('summary',t('Vocabulary & collocations')));for(const item of turn.feedback.collocations.slice(0,3))if(typeof item?.text==='string' && typeof item.translation==='string' && typeof item.example==='string'){detail.append(node('strong',item.text),meaningParagraph(item.text,item.translation,turn.feedback.translationLanguage || 'vi'),node('blockquote',item.example));}feedback.append(detail);}
     card.append(feedback);
    }
+   card.querySelectorAll('.practical-meaning').forEach(paragraph=>{const detail=paragraph.closest('details');detail?.addEventListener('toggle',()=>{if(detail.open)void paragraph.translateSelectedLanguage();});});
    globalThis.HelenPronunciation?.register(turn);return card;
   });$('practical-messages').replaceChildren(...cards);renderReport();controls();
  }
@@ -175,13 +206,13 @@
   if(navigator.onLine===false){message('Đang ngoại tuyến. Xem lại hội thoại; kết nối mạng để luyện với AI.');controls();return;}
   if(checking)return checking;
   checking=(async()=>{
-   try{const response=await apiFetch('/api/practical/status',{cache:'no-store'}),data=await response.json();if(response.ok){configured=data.configured===true;globalThis.HelenPronunciation?.register(data);if(Number.isSafeInteger(data.dailyReplyLimit))$('practical-daily-limit').textContent=`${data.dailyReplyLimit} AI replies/day per device · đặt lại lúc 07:00 giờ Việt Nam. Hạn mức nguồn AI vẫn áp dụng.`;if(!busy && speechPhase==='idle')message(navigator.onLine===false?'Đang ngoại tuyến. Hội thoại đã lưu vẫn xem được.':!configured?'Practical AI chưa được bật. Quản trị viên cần cấu hình Gemini.':draft?'Kiểm tra câu đã nghe rồi bấm Confirm & send.':'Bấm Speak hoặc nhập câu trả lời để bắt đầu.');}}
+   try{const response=await apiFetch('/api/practical/status',{cache:'no-store'}),data=await response.json();if(response.ok){configured=data.configured===true;globalThis.HelenPronunciation?.register(data);if(Number.isSafeInteger(data.dailyReplyLimit))$('practical-daily-limit').textContent=t('{count} AI replies/day per device. Resets at 00:00 UTC. Provider limits apply.',{count:data.dailyReplyLimit});if(!busy && speechPhase==='idle')message(navigator.onLine===false?'Đang ngoại tuyến. Hội thoại đã lưu vẫn xem được.':!configured?'Practical AI chưa được bật. Quản trị viên cần cấu hình Gemini.':draft?'Kiểm tra câu đã nghe rồi bấm Confirm & send.':'Bấm Speak hoặc nhập câu trả lời để bắt đầu.');}}
    catch{if(!busy && speechPhase==='idle')message(navigator.onLine===false?'Đang ngoại tuyến. Hội thoại đã lưu vẫn xem được.':'Chưa kết nối được AI. Hội thoại đã lưu vẫn xem được; có mạng thì thử gửi lại.',navigator.onLine!==false);}
    finally{checking=null;controls();}
   })();return checking;
  }
  async function request(value,signal,identity){
-  const content={scenario:state.scenario,level:state.level,history:core.context(state),...value},fingerprint=JSON.stringify(content);
+  const content={scenario:state.scenario,level:state.level,history:core.context(state),...value,translationLanguage:document.querySelector('#target')?.value || 'vi',interfaceLanguage:globalThis.HelenI18n?.locale || 'vi'},fingerprint=JSON.stringify(content);
   const requestId=identity || (value.audio?crypto.randomUUID():(attempt && attempt.fingerprint===fingerprint?attempt.id:(attempt={fingerprint,id:crypto.randomUUID()}).id));
   const started=Date.now(),ticket=run,copy=value.stage==='transcribe'?'Đang chép lời bản thu':value.stage==='assess'?'Đang đánh giá phiên nói':'AI đang đọc câu trả lời và chuẩn bị góp ý';
   const progress=setInterval(()=>{

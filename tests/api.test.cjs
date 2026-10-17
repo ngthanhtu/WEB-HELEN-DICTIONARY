@@ -198,6 +198,7 @@ test('redirects missing local backgrounds to the current branch after history cl
   fs.copyFileSync(path.join(__dirname,'..','public','assets','study-core.js'),path.join(tmp,'public','assets','study-core.js'));
   fs.copyFileSync(path.join(__dirname,'..','public','assets','sense-core.js'),path.join(tmp,'public','assets','sense-core.js'));
   fs.copyFileSync(path.join(__dirname,'..','public','assets','practical-core.js'),path.join(tmp,'public','assets','practical-core.js'));
+  for(const name of ['languages.js','i18n.js','ui-messages.js'])fs.copyFileSync(path.join(__dirname,'..','public','assets',name),path.join(tmp,'public','assets',name));
   const child = spawn(process.execPath, [path.join(tmp, 'server.js')], {
     env: {...process.env, DATABASE_URL:'', MYSQL_HOST:'', PORT:'3201', NODE_PATH:path.join(__dirname,'..','node_modules')}, stdio:['ignore','pipe','pipe']
   });
@@ -387,4 +388,14 @@ test('published IELTS compounds resolve locally with complete bilingual senses a
 test('saved modern topic phrases can be prepared for Study without a remote dictionary',async()=>{
  await ready;const words=['digital literacy','assess learning outcomes','improve financial literacy'];
  const response=await fetch(`${base}/api/study/prepare`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({words})});assert.equal(response.status,200);const d=await response.json();assert.deepEqual(d.missing,[]);assert.deepEqual(d.results.map(r=>r.word),words);assert.ok(d.results.every(r=>r.entries[0].meanings[0].senses[0].definitionVi));
+});
+
+test('translation and lookup reject removed languages, even an empty batch, and serve the shared seven-language registry',async()=>{
+ await ready;
+ for(const body of [{texts:[],from:'de',to:'vi'},{texts:['hello'],from:'en',to:'ru'},{texts:['hello'],from:['en'],to:'ko'}]){
+  const response=await fetch(`${base}/api/translate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});assert.equal(response.status,400);assert.equal((await response.json()).code,'TRANSLATION_INVALID');
+ }
+ assert.equal((await fetch(`${base}/api/lookup?word=hello&from=de`)).status,400);
+ const response=await fetch(`${base}/api/translate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({texts:['안녕하세요'],from:'ko-KR',to:'ko'})});assert.equal(response.status,200);assert.deepEqual((await response.json()).translations,['안녕하세요']);
+ const asset=await fetch(`${base}/assets/languages.js`);assert.equal(asset.status,200);assert.match(await asset.text(),/zh-CN/);
 });

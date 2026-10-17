@@ -40,6 +40,7 @@
 *{box-sizing:border-box}
 body{margin:0;font:400 16px/1.5 var(--font);color:var(--text-primary);background-color:var(--surface-base);background-image:linear-gradient(var(--page-wash),var(--page-wash)),var(--page-image);background-position:center;background-size:cover;background-repeat:no-repeat;background-attachment:fixed;min-height:100vh}
 #out{background:var(--page-panel);border-radius:var(--radius-md)}
+.language-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px;font-size:13px}.language-tools span{overflow-wrap:anywhere}.translation-panel{max-width:852px;margin:0 auto 20px;padding:16px 20px;background:var(--translation-bg);border:1px solid var(--border);border-radius:16px;overflow-wrap:anywhere}.translation-panel[hidden]{display:none}.translation-panel p{margin:0 0 8px;font-size:13px;color:var(--text-tertiary)}
 a,button,select,input{font:inherit}
 :focus-visible{outline:3px solid var(--link);outline-offset:2px}
 .bar{background:var(--bar-bg);color:var(--text-inverse);display:flex;align-items:center;justify-content:space-between;padding:var(--space-4) var(--space-6);gap:var(--space-5);flex-wrap:wrap}
@@ -167,133 +168,138 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
 <link rel="stylesheet" href="/assets/topics.css">
 <link rel="stylesheet" href="/assets/practical.css">
 <link rel="stylesheet" href="/assets/practical-avatar.css">
+<script src="/assets/languages.js"></script>
+<script src="/assets/ui-messages.js"></script>
+<script src="/assets/i18n.js"></script>
 <script src="/assets/navigation.js"></script>
 </head>
 <body>
-<a class="skip-link" href="#page-dictionary">Skip to content</a>
+<a class="skip-link" href="#page-dictionary"><span data-i18n>Skip to content</span></a>
 <header class="bar">
-  <div class="brand"><i aria-hidden="true"></i><a href="/" data-page-link>Helen Dictionary</a><button id="pet-mascot" class="pet-mascot" type="button" aria-label="Change dog picture" hidden><img alt="" draggable="false"></button></div>
-  <nav class="main-nav" aria-label="Main navigation"><a href="/" data-page-link aria-label="Dictionary search"><span class="nav-full">Dictionary</span><span class="nav-short">Search</span></a><a href="/study" data-page-link>Study</a><a href="/topics" data-page-link>Topics</a><a href="/practical-ai" data-page-link class="practical-nav"><span aria-hidden="true">✦</span> Practical AI <span class="nav-sparkle" aria-hidden="true">✧</span></a><a href="/words" data-page-link>My words</a><a href="/history" data-page-link>History</a><a href="/offline" data-page-link>Offline</a></nav>
-  <details class="preferences"><summary>Preferences <span aria-hidden="true">⚙</span></summary><div class="preferences-body">
-  <label>Meanings in
-    <select id="target" aria-label="Translate meanings into"></select>
+  <div class="brand"><i aria-hidden="true"></i><a href="/" data-page-link>Helen Dictionary</a><button id="pet-mascot" class="pet-mascot" type="button" aria-label="Change dog picture" hidden data-i18n-control data-i18n-attributes="aria-label"><img alt="" draggable="false"></button></div>
+  <nav class="main-nav" aria-label="Main navigation" data-i18n-attributes="aria-label"><a href="/" data-page-link aria-label="Dictionary search" data-i18n-attributes="aria-label"><span class="nav-full"><span data-i18n>Dictionary</span></span><span class="nav-short"><span data-i18n>Search</span></span></a><a href="/study" data-page-link><span data-i18n>Study</span></a><a href="/topics" data-page-link><span data-i18n>Topics</span></a><a href="/practical-ai" data-page-link class="practical-nav"><span aria-hidden="true">✦</span> Practical AI <span class="nav-sparkle" aria-hidden="true">✧</span></a><a href="/words" data-page-link><span data-i18n>My words</span></a><a href="/history" data-page-link><span data-i18n>History</span></a><a href="/offline" data-page-link><span data-i18n>Offline</span></a></nav>
+  <details class="preferences"><summary><span data-i18n>Preferences</span> <span aria-hidden="true">⚙</span></summary><div class="preferences-body">
+  <label><span data-i18n>Meanings in</span>
+    <select id="target" aria-label="Translate meanings into" data-i18n-attributes="aria-label"></select>
   </label>
-  <label>ElevenLabs voice <select id="voice" aria-label="Pronunciation voice"><option value="">Loading voices…</option></select></label>
-  <button id="retry-voices" class="word-link" type="button">↻ Reload voices</button>
+  <label><span data-i18n>ElevenLabs voice</span> <select id="voice" aria-label="Pronunciation voice" data-i18n-attributes="aria-label"><option value="" data-i18n>Loading voices…</option></select></label>
+  <button id="retry-voices" class="word-link" type="button" data-i18n-control><span data-i18n>↻ Reload voices</span></button>
   <!-- Toggle adapted from Uiverse.io by Javierrocadev -->
   <div class="appearance-controls">
   <label class="theme-control">
-    <input id="theme-toggle" type="checkbox" role="switch" aria-label="Dark mode">
+    <input id="theme-toggle" type="checkbox" role="switch" aria-label="Dark mode" data-i18n-attributes="aria-label">
     <span class="theme-track" aria-hidden="true"></span>
-    <span id="theme-label">Light mode</span>
+    <span id="theme-label" data-i18n-control><span data-i18n>Light mode</span></span>
   </label>
-  <label class="pet-control" id="pet-control" hidden><input id="pet-toggle" type="checkbox" role="switch" aria-label="Dog cursor or mascot"><span id="pet-label">Dog cursor</span></label>
+  <label class="pet-control" id="pet-control" hidden><input id="pet-toggle" type="checkbox" role="switch" aria-label="Dog cursor or mascot" data-i18n-attributes="aria-label"><span id="pet-label"><span data-i18n>Dog cursor</span></span></label>
   </div>
   <span id="voice-status" role="status"></span>
-  <p class="data-note">AI voice · <a href="https://elevenlabs.io/" rel="noopener" target="_blank">elevenlabs.io</a> · chỉ dùng phi thương mại với gói Free.</p>
-  <label class="metrics-opt-in"><input id="metrics-opt-in" type="checkbox"><span>Help improve Helen<small>Cho phép đếm lượt tra, lưu và học. Không gửi từ đã tra, danh tính hay bản ghi âm trong thống kê. Có thể tắt bất kỳ lúc nào.</small></span></label>
+  <p class="data-note"><span data-i18n>AI voice ·</span> <a href="https://elevenlabs.io/" rel="noopener" target="_blank">elevenlabs.io</a> <span data-i18n>· chỉ dùng phi thương mại với gói Free.</span></p>
+  <label class="metrics-opt-in"><input id="metrics-opt-in" type="checkbox"><span><span data-i18n>Help improve Helen</span><small><span data-i18n>Cho phép đếm lượt tra, lưu và học. Không gửi từ đã tra, danh tính hay bản ghi âm trong thống kê. Có thể tắt bất kỳ lúc nào.</span></small></span></label>
   </div></details>
 </header>
-<div class="app-tools" id="app-status-tools"><button id="install-app" class="word-link" type="button">＋ Install app</button><span id="connection-status" role="status" hidden></span><button id="app-update" class="word-link" type="button" hidden>Update app</button></div>
-<dialog id="app-update-dialog" class="app-update-dialog" lang="vi" aria-labelledby="app-update-title" aria-describedby="app-update-copy"><span class="app-update-icon" aria-hidden="true">↻</span><span class="section-kicker">HELEN · NEW VERSION</span><h2 id="app-update-title">Có bản cập nhật mới</h2><p id="app-update-copy">Helen vừa được nâng cấp. Bạn cần bấm <strong>Update app</strong> để dùng phiên bản mới nhất trước khi tiếp tục.</p><p class="app-update-preserved">Từ yêu thích, lịch ôn và dữ liệu học đã lưu vẫn được giữ.</p><button id="confirm-app-update" class="btn" type="button">Cập nhật ngay · Update app</button><p id="app-update-status" role="status" aria-live="polite"></p></dialog>
-<dialog id="install-help"><h2>Install Helen Dictionary</h2><p id="install-steps"></p><p>Giọng đọc, dịch mới và tạo AI cần Internet. Từ và bài AI đã lưu có thể xem lại khi mất mạng.</p><button id="close-install" class="btn" type="button">Close</button></dialog>
+<div class="app-tools" id="app-status-tools"><button id="install-app" class="word-link" type="button" data-i18n-control><span data-i18n>＋ Install app</span></button><span id="connection-status" role="status" hidden></span><button id="app-update" class="word-link" type="button" hidden data-i18n-control><span data-i18n>Update app</span></button></div>
+<dialog id="app-update-dialog" class="app-update-dialog" aria-labelledby="app-update-title" aria-describedby="app-update-copy"><span class="app-update-icon" aria-hidden="true">↻</span><span class="section-kicker"><span data-i18n>HELEN · NEW VERSION</span></span><h2 id="app-update-title"><span data-i18n>Có bản cập nhật mới</span></h2><p id="app-update-copy"><span data-i18n>Helen vừa được nâng cấp. Bạn cần bấm</span> <strong><span data-i18n>Update app</span></strong> <span data-i18n>để dùng phiên bản mới nhất trước khi tiếp tục.</span></p><p class="app-update-preserved"><span data-i18n>Từ yêu thích, lịch ôn và dữ liệu học đã lưu vẫn được giữ.</span></p><button id="confirm-app-update" class="btn" type="button" data-i18n-control><span data-i18n>Cập nhật ngay · Update app</span></button><p id="app-update-status" role="status" aria-live="polite"></p></dialog>
+<dialog id="install-help"><h2><span data-i18n>Install Helen Dictionary</span></h2><p id="install-steps"></p><p><span data-i18n>Giọng đọc, dịch mới và tạo AI cần Internet. Từ và bài AI đã lưu có thể xem lại khi mất mạng.</span></p><button id="close-install" class="btn" type="button" data-i18n-control><span data-i18n>Close</span></button></dialog>
 <div id="audio-status" role="status" hidden></div>
 
 <main id="app-content" class="app-content">
-<section id="page-dictionary" class="app-page" data-app-page="dictionary" aria-label="Dictionary">
-<section class="hero" id="lookup" aria-label="Dictionary search">
+<section id="page-dictionary" class="app-page" data-app-page="dictionary" aria-label="Dictionary" data-i18n-attributes="aria-label">
+<section class="hero" id="lookup" aria-label="Dictionary search" data-i18n-attributes="aria-label">
   <div class="lookup-panel">
-    <span class="section-kicker">YOUR PERSONAL DICTIONARY</span>
-    <h1>Look up a word.<br><em>Make it yours.</em></h1>
-    <p>Hear it. Understand it. Keep it.<br>Tra nghĩa, lưu từ và luyện lại theo cách của bạn.</p>
+    <span class="section-kicker"><span data-i18n>YOUR PERSONAL DICTIONARY</span></span>
+    <h1><span data-i18n>Look up a word.</span><br><em><span data-i18n>Make it yours.</span></em></h1>
+    <p><span data-i18n>Hear it. Understand it. Keep it.</span><br><span data-i18n>Tra nghĩa, lưu từ và luyện lại theo cách của bạn.</span></p>
     <form class="search" id="form" role="search">
-      <select id="from" aria-label="Search language"></select>
-      <input id="q" type="search" placeholder="Search a word" autocomplete="off" autocapitalize="none" spellcheck="false" role="combobox" aria-autocomplete="list" aria-controls="search-suggestions" aria-expanded="false" aria-label="Word to search" required>
-      <button class="mic" id="mic" type="button" aria-label="Tìm bằng giọng nói" aria-pressed="false" title="Tìm bằng giọng nói"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/></svg></button>
-      <button class="btn" type="submit">Search</button>
+      <select id="from" aria-label="Search language" data-i18n-attributes="aria-label"></select>
+      <input id="q" type="search" placeholder="Search a word" autocomplete="off" autocapitalize="none" spellcheck="false" role="combobox" aria-autocomplete="list" aria-controls="search-suggestions" aria-expanded="false" aria-label="Word to search" required data-i18n-attributes="aria-label placeholder">
+      <button class="mic" id="mic" type="button" aria-label="Tìm bằng giọng nói" aria-pressed="false" title="Tìm bằng giọng nói" data-i18n-control data-i18n-attributes="aria-label title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/></rect><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/></path></svg></button>
+      <button class="btn" type="submit" data-i18n-control><span data-i18n>Search</span></button>
     </form>
-    <div id="search-suggestions" class="search-suggestions" role="listbox" aria-label="Suggested English words and phrases" hidden></div>
+    <div id="search-suggestions" class="search-suggestions" role="listbox" aria-label="Suggested English words and phrases" hidden data-i18n-attributes="aria-label"></div>
     <p id="search-suggestions-status" role="status" hidden></p>
+    <div class="language-tools"><button id="swap-languages" class="word-link" type="button" aria-label="Swap languages" data-i18n-control data-i18n-attributes="aria-label">⇄ <span data-i18n>Swap languages</span></button><span data-i18n>Translation follows your selection. Interface follows your device language.</span></div>
     <p class="speech-status" id="speech-status" role="status"></p>
   </div>
   <!-- Paste your image link in IMAGES.hero below. Empty = blank box. -->
   <div class="img-slot" id="slot-hero"></div>
 </section>
 
+<div class="translation-panel" id="query-translation-panel" hidden><p id="translation-direction"></p><div id="word-translation" role="status"></div></div>
 <div id="out" aria-live="polite"></div>
 </section>
-<section id="page-study" class="app-page" data-app-page="study" aria-label="Study">
-<header class="page-intro"><span class="section-kicker">A LITTLE EVERY DAY</span><h1 tabindex="-1">Your learning space.</h1><p>Ôn từ đến hạn, chọn một kiểu luyện tập và theo dõi tiến bộ của bạn.</p></header>
-<section id="study" class="study-panel" aria-label="Review and quiz">
-  <p class="topic-study-note"><a href="/topics" data-page-link>Explore 4,000 words in 20 topics →</a><br>Chọn một nhóm 20 từ để luyện ngay, hoặc lưu từ cần ôn vào kho cá nhân.</p>
+<section id="page-study" class="app-page" data-app-page="study" aria-label="Study" data-i18n-attributes="aria-label">
+<header class="page-intro"><span class="section-kicker"><span data-i18n>A LITTLE EVERY DAY</span></span><h1 tabindex="-1"><span data-i18n>Your learning space.</span></h1><p><span data-i18n>Ôn từ đến hạn, chọn một kiểu luyện tập và theo dõi tiến bộ của bạn.</span></p></header>
+<section id="study" class="study-panel" aria-label="Review and quiz" data-i18n-attributes="aria-label">
+  <p class="topic-study-note"><a href="/topics" data-page-link><span data-i18n>Explore 4,000 words in 20 topics →</span></a><br><span data-i18n>Chọn một nhóm 20 từ để luyện ngay, hoặc lưu từ cần ôn vào kho cá nhân.</span></p>
   <p id="topic-practice-note" class="topic-study-note" hidden></p>
-  <div class="study-page-heading"><h2>Review & Quiz</h2><span id="study-count"></span></div>
+  <div class="study-page-heading"><h2><span data-i18n>Review & Quiz</span></h2><span id="study-count"></span></div>
   <p id="study-progress"></p><p id="study-next" class="muted"></p>
-  <section id="daily-learning" class="daily-learning" aria-labelledby="daily-title"><div><span class="section-kicker">BUILD YOUR DAILY HABIT</span><h3 id="daily-title">A little practice, every day</h3><strong id="daily-count">0/5 lượt luyện</strong><progress id="daily-meter" value="0" max="5" aria-label="Daily learning progress"></progress><span id="daily-streak">0 ngày liên tiếp</span></div><label for="daily-goal">Daily goal<select id="daily-goal"><option value="5">5 lượt</option><option value="10">10 lượt</option><option value="20">20 lượt</option></select></label><p id="daily-note"></p></section>
-  <div class="study-dashboard" aria-label="Study overview">
-    <button class="study-tile" id="open-review" type="button"><span class="tile-symbol" aria-hidden="true">↻</span><strong>Review due</strong><small id="tile-due">Ôn đúng thời điểm</small></button>
-    <button class="study-tile" id="open-decks" type="button"><span class="tile-symbol" aria-hidden="true">▤</span><strong>Word sets</strong><small id="tile-decks">Bộ từ theo mục tiêu</small></button>
-    <button class="study-tile" id="open-progress" type="button" aria-expanded="false" aria-controls="progress-panel"><span class="tile-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20V12m8 8V7m8 13V3"/></svg></span><strong>Your progress</strong><small id="tile-progress">Theo dõi sự tiến bộ</small></button>
+  <section id="daily-learning" class="daily-learning" aria-labelledby="daily-title"><div><span class="section-kicker"><span data-i18n>BUILD YOUR DAILY HABIT</span></span><h3 id="daily-title"><span data-i18n>A little practice, every day</span></h3><strong id="daily-count">0/5 lượt luyện</strong><progress id="daily-meter" value="0" max="5" aria-label="Daily learning progress" data-i18n-attributes="aria-label"></progress><span id="daily-streak">0 ngày liên tiếp</span></div><label for="daily-goal"><span data-i18n>Daily goal</span><select id="daily-goal"><option value="5" data-i18n>5 lượt</option><option value="10" data-i18n>10 lượt</option><option value="20" data-i18n>20 lượt</option></select></label><p id="daily-note"></p></section>
+  <div class="study-dashboard" aria-label="Study overview" data-i18n-attributes="aria-label">
+    <button class="study-tile" id="open-review" type="button" data-i18n-control><span class="tile-symbol" aria-hidden="true">↻</span><strong><span data-i18n>Review due</span></strong><small id="tile-due"><span data-i18n>Ôn đúng thời điểm</span></small></button>
+    <button class="study-tile" id="open-decks" type="button" data-i18n-control><span class="tile-symbol" aria-hidden="true">▤</span><strong><span data-i18n>Word sets</span></strong><small id="tile-decks"><span data-i18n>Bộ từ theo mục tiêu</span></small></button>
+    <button class="study-tile" id="open-progress" type="button" aria-expanded="false" aria-controls="progress-panel" data-i18n-control><span class="tile-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20V12m8 8V7m8 13V3"/></path></svg></span><strong><span data-i18n>Your progress</span></strong><small id="tile-progress"><span data-i18n>Theo dõi sự tiến bộ</span></small></button>
   </div>
-  <section id="progress-panel" class="progress-panel" aria-label="Learning progress" hidden></section>
-  <details id="study-decks" class="study-decks"><summary>My word sets <span id="deck-count">0</span></summary><p>Gom từ yêu thích theo mục tiêu. Một từ có thể nằm trong nhiều bộ.</p><div class="deck-toolbar"><button id="create-deck" class="word-link" type="button">＋ New word set</button><button id="add-current-deck" class="word-link" type="button">Add searched word to a set</button></div><div id="deck-list" class="deck-list"></div><details class="starter-sets"><summary>Try a starter set</summary><p>Bộ nhỏ có nghĩa và ví dụ từ WordNet. Thêm vào kho từ để luyện ngay, không gọi AI.</p><div id="starter-list"></div><p id="starter-status" role="status"></p></details></details>
-  <div class="practice-settings"><label for="study-scope">Practice from<select id="study-scope"><option value="all">All saved words</option></select></label><label for="quiz-mode">Practice style<select id="quiz-mode"><option value="mixed">Quick quiz · Mixed</option><option value="choice">Multiple choice</option><option value="cloze">Fill in the blank</option><option value="type">Type the word</option><option value="matching">Matching pairs</option></select></label></div>
+  <section id="progress-panel" class="progress-panel" aria-label="Learning progress" hidden data-i18n-attributes="aria-label"></section>
+  <details id="study-decks" class="study-decks"><summary><span data-i18n>My word sets</span> <span id="deck-count">0</span></summary><p><span data-i18n>Gom từ yêu thích theo mục tiêu. Một từ có thể nằm trong nhiều bộ.</span></p><div class="deck-toolbar"><button id="create-deck" class="word-link" type="button" data-i18n-control><span data-i18n>＋ New word set</span></button><button id="add-current-deck" class="word-link" type="button" data-i18n-control><span data-i18n>Add searched word to a set</span></button></div><div id="deck-list" class="deck-list"></div><details class="starter-sets"><summary><span data-i18n>Try a starter set</span></summary><p><span data-i18n>Bộ nhỏ có nghĩa và ví dụ từ WordNet. Thêm vào kho từ để luyện ngay, không gọi AI.</span></p><div id="starter-list"></div><p id="starter-status" role="status"></p></details></details>
+  <div class="practice-settings"><label for="study-scope"><span data-i18n>Practice from</span><select id="study-scope"><option value="all" data-i18n>All saved words</option></select></label><label for="quiz-mode"><span data-i18n>Practice style</span><select id="quiz-mode"><option value="mixed" data-i18n>Quick quiz · Mixed</option><option value="choice" data-i18n>Multiple choice</option><option value="cloze" data-i18n>Fill in the blank</option><option value="type" data-i18n>Type the word</option><option value="matching" data-i18n>Matching pairs</option></select></label></div>
   <p id="quiz-readiness" class="quiz-readiness" role="status"></p>
-  <div class="study-actions"><button id="start-review" class="word-link" type="button">Review due words</button><button id="start-quiz" class="word-link" type="button">Quick quiz</button><button id="quiz-sound" class="word-link" type="button" aria-pressed="true">🔊 Quiz sound: on</button><button id="prepare-study" class="word-link" type="button" hidden>Prepare saved words</button><button id="cancel-prepare" class="word-link" type="button" hidden>Cancel preparation</button><button id="end-study" class="word-link" type="button" hidden>End session</button></div>
+  <div class="study-actions"><button id="start-review" class="word-link" type="button" data-i18n-control><span data-i18n>Review due words</span></button><button id="start-quiz" class="word-link" type="button" data-i18n-control><span data-i18n>Quick quiz</span></button><button id="quiz-sound" class="word-link" type="button" aria-pressed="true" data-i18n-control><span data-i18n>🔊 Quiz sound: on</span></button><button id="prepare-study" class="word-link" type="button" hidden data-i18n-control><span data-i18n>Prepare saved words</span></button><button id="cancel-prepare" class="word-link" type="button" hidden data-i18n-control><span data-i18n>Cancel preparation</span></button><button id="end-study" class="word-link" type="button" hidden data-i18n-control><span data-i18n>End session</span></button></div>
   <p id="study-status" role="status"></p>
   <div id="study-stage" class="study-stage" tabindex="-1" hidden></div>
-  <p class="muted">Review lên lịch ôn từ yêu thích theo mức nhớ. Quiz luyện nghĩa và câu ví dụ; không đổi lịch ôn. Tiến độ, bản dịch và âm thanh đã lưu dùng được ngoại tuyến; bản dịch và giọng đọc mới cần mạng.</p>
+  <p class="muted"><span data-i18n>Review lên lịch ôn từ yêu thích theo mức nhớ. Quiz luyện nghĩa và câu ví dụ; không đổi lịch ôn. Tiến độ, bản dịch và âm thanh đã lưu dùng được ngoại tuyến; bản dịch và giọng đọc mới cần mạng.</span></p>
 </section>
-<section id="word-of-day" class="word-of-day" aria-label="Word of the day" hidden><div><span class="section-kicker">WORD OF THE DAY · A LITTLE EVERY DAY</span><h2 id="daily-word"></h2><p id="daily-gloss"></p><small>Princeton WordNet · Gợi ý nhẹ từ bộ từ ngoại tuyến</small></div><div class="word-actions"><button id="daily-explore" class="word-link" type="button">Explore word</button><button id="daily-save" class="word-link" type="button">☆ Save word</button></div><p id="daily-word-status" role="status"></p></section>
+<section id="word-of-day" class="word-of-day" aria-label="Word of the day" hidden data-i18n-attributes="aria-label"><div><span class="section-kicker"><span data-i18n>WORD OF THE DAY · A LITTLE EVERY DAY</span></span><h2 id="daily-word"></h2><p id="daily-gloss"></p><small><span data-i18n>Princeton WordNet · Gợi ý nhẹ từ bộ từ ngoại tuyến</span></small></div><div class="word-actions"><button id="daily-explore" class="word-link" type="button" data-i18n-control><span data-i18n>Explore word</span></button><button id="daily-save" class="word-link" type="button" data-i18n-control><span data-i18n>☆ Save word</span></button></div><p id="daily-word-status" role="status"></p></section>
 </section>
-<section id="page-topics" class="app-page" data-app-page="topics" aria-label="Topic vocabulary library">
-<header class="page-intro"><span class="section-kicker">WORDS FOR REAL LIFE</span><h1 tabindex="-1">One topic. A world of words.</h1><p>IELTS aim 6.5+ · 20 chủ đề · 4.000 mục học. Mỗi chủ đề gồm 50 khái niệm và 150 collocations để luyện cách dùng từ trong Speaking và Writing.</p></header>
-<section id="topic-library" class="topic-library" aria-label="Explore vocabulary topics">
-  <p class="topic-source-note">Bộ từ và nghĩa tiếng Việt do Helen biên soạn theo ngữ cảnh; mục tiêu 6.5+ là định hướng luyện tập, không cam kết điểm thi. Đây không phải danh sách chính thức hay bảng tần suất đề thi. Mỗi mục hiển thị một nghĩa theo ngữ cảnh. Mở Dictionary để xem các nghĩa khác.</p>
+<section id="page-topics" class="app-page" data-app-page="topics" aria-label="Topic vocabulary library" data-i18n-attributes="aria-label">
+<header class="page-intro"><span class="section-kicker"><span data-i18n>WORDS FOR REAL LIFE</span></span><h1 tabindex="-1"><span data-i18n>One topic. A world of words.</span></h1><p><span data-i18n>IELTS aim 6.5+ · 20 chủ đề · 4.000 mục học. Mỗi chủ đề gồm 50 khái niệm và 150 collocations để luyện cách dùng từ trong Speaking và Writing.</span></p></header>
+<section id="topic-library" class="topic-library" aria-label="Explore vocabulary topics" data-i18n-attributes="aria-label">
+  <p class="topic-source-note"><span data-i18n>Bộ từ và nghĩa tiếng Việt do Helen biên soạn theo ngữ cảnh; mục tiêu 6.5+ là định hướng luyện tập, không cam kết điểm thi. Đây không phải danh sách chính thức hay bảng tần suất đề thi. Mỗi mục hiển thị một nghĩa theo ngữ cảnh. Mở Dictionary để xem các nghĩa khác.</span></p>
   <p id="topics-status" role="status"></p>
-  <div id="topics-catalog"><div class="topic-toolbar"><label for="topic-filter">Find a topic<input id="topic-filter" type="search" placeholder="Education, work, IELTS…" autocomplete="off"></label></div><div id="topics-grid" class="topic-grid"></div></div>
+  <div id="topics-catalog"><div class="topic-toolbar"><label for="topic-filter"><span data-i18n>Find a topic</span><input id="topic-filter" type="search" placeholder="Education, work, IELTS…" autocomplete="off" data-i18n-attributes="placeholder"></label></div><div id="topics-grid" class="topic-grid"></div></div>
   <section id="topic-detail" class="topic-detail" aria-labelledby="topic-title" hidden>
-    <button id="topic-back" class="word-link" type="button">← All topics</button>
+    <button id="topic-back" class="word-link" type="button" data-i18n-control><span data-i18n>← All topics</span></button>
     <header class="topic-detail-header"><h2 id="topic-title" tabindex="-1"></h2><p id="topic-description"></p></header>
-    <div id="topic-lessons" class="topic-lessons" role="group" aria-label="Choose a 20-word lesson"></div>
+    <div id="topic-lessons" class="topic-lessons" role="group" aria-label="Choose a 20-word lesson" data-i18n-attributes="aria-label"></div>
     <h3 id="topic-lesson-title"></h3><p id="topic-progress"></p>
-    <div id="topic-actions" class="topic-actions" hidden><button id="practice-topic" class="word-link" type="button">Practice this lesson →</button><button id="save-topic-lesson" class="word-link" type="button">☆ Save these 20 words</button><button id="download-topic" class="word-link" type="button">↓ Save topic offline</button></div>
-    <div class="topic-audio-control"><label for="topic-audio-mode">Topic audio</label><select id="topic-audio-mode" aria-describedby="topic-audio-note"><option value="selected">Selected ElevenLabs voice</option><option value="device">⚡ Fast device voice</option></select><label for="topic-voice">ElevenLabs voice</label><select id="topic-voice" aria-describedby="topic-audio-note"><option value="">Loading voices…</option></select><button id="topic-retry-voices" class="word-link" type="button">↻ Reload voices</button><label for="topic-device-voice">Device voice</label><select id="topic-device-voice" aria-describedby="topic-audio-note"><option value="">Auto · English voice</option></select><p id="topic-audio-note" role="status">Nghe đúng giọng ElevenLabs đã chọn; âm thanh đã lưu mở lại ngay.</p></div>
+    <div id="topic-actions" class="topic-actions" hidden><button id="practice-topic" class="word-link" type="button" data-i18n-control><span data-i18n>Practice this lesson →</span></button><button id="save-topic-lesson" class="word-link" type="button" data-i18n-control><span data-i18n>☆ Save these 20 words</span></button><button id="download-topic" class="word-link" type="button" data-i18n-control><span data-i18n>↓ Save topic offline</span></button></div>
+    <div class="topic-audio-control"><label for="topic-audio-mode"><span data-i18n>Topic audio</span></label><select id="topic-audio-mode" aria-describedby="topic-audio-note"><option value="selected" data-i18n>Selected ElevenLabs voice</option><option value="device" data-i18n>⚡ Fast device voice</option></select><label for="topic-voice"><span data-i18n>ElevenLabs voice</span></label><select id="topic-voice" aria-describedby="topic-audio-note"><option value="" data-i18n>Loading voices…</option></select><button id="topic-retry-voices" class="word-link" type="button" data-i18n-control><span data-i18n>↻ Reload voices</span></button><label for="topic-device-voice"><span data-i18n>Device voice</span></label><select id="topic-device-voice" aria-describedby="topic-audio-note"><option value="" data-i18n>Auto · English voice</option></select><p id="topic-audio-note" role="status"><span data-i18n>Nghe đúng giọng ElevenLabs đã chọn; âm thanh đã lưu mở lại ngay.</span></p></div>
     <details id="topic-prompts" class="topic-prompts"></details>
-    <div class="topic-toolbar"><label for="topic-word-filter">Find a word in this topic<input id="topic-word-filter" type="search" autocomplete="off" placeholder="Search all 200 words…"></label></div><p id="topic-word-count" role="status"></p>
+    <div class="topic-toolbar"><label for="topic-word-filter"><span data-i18n>Find a word in this topic</span><input id="topic-word-filter" type="search" autocomplete="off" placeholder="Search all 200 words…" data-i18n-attributes="placeholder"></label></div><p id="topic-word-count" role="status"></p>
     <div id="topic-words" class="topic-word-list"></div>
-    <p class="topic-source-note">Bộ IELTS v2: Helen editorial. Bộ cũ: Princeton WordNet hoặc Helen editorial. <a href="/assets/licenses/wordnet.txt">WordNet license</a>. Bộ mới đã tải có định nghĩa và bản dịch tiếng Việt dùng được ngoại tuyến; ngôn ngữ khác và giọng AI cần Internet.</p>
+    <p class="topic-source-note"><span data-i18n>Bộ IELTS v2: Helen editorial. Bộ cũ: Princeton WordNet hoặc Helen editorial.</span> <a href="/assets/licenses/wordnet.txt"><span data-i18n>WordNet license</span></a><span data-i18n>. Bộ mới đã tải có định nghĩa và bản dịch tiếng Việt dùng được ngoại tuyến; ngôn ngữ khác và giọng AI cần Internet.</span></p>
   </section>
 </section>
 </section>
-<section id="page-words" class="app-page" data-app-page="words" aria-label="My words">
-<header class="page-intro"><span class="section-kicker">KEEP WHAT MATTERS</span><h1 tabindex="-1">A collection of your own.</h1><p>Từ đã lưu và bản sao lưu ở một nơi. Bộ từ và bài luyện nằm trong Study.</p></header>
-<section class="learning-tools" id="library" aria-label="Saved words and backups">
-  <details open><summary>Từ yêu thích <span id="favorites-count">0</span></summary><p>Bấm ☆ cạnh từ để lưu. Dữ liệu lưu riêng trong trình duyệt này.</p><div class="word-list" id="favorites-list"></div></details>
-  <details class="backup-panel"><summary>Backup & export <span aria-hidden="true">↗</span></summary><p>Lưu một bản để chuyển máy hoặc tránh mất dữ liệu. JSON giữ từ, bộ từ, lịch ôn và tiến độ. CSV và Anki TSV dùng để học ở ứng dụng khác.</p><div class="backup-actions"><button id="backup-json" class="word-link" type="button">Download backup</button><button id="backup-import" class="word-link" type="button">Restore backup</button><button id="backup-csv" class="word-link" type="button">Export CSV</button><button id="backup-anki" class="word-link" type="button">Export Anki TSV</button></div><input id="backup-file" type="file" accept=".json,application/json" hidden><p id="backup-status" role="status"></p><small>Anki: Import file → chọn TSV, cho phép HTML, cột 1 = Front, cột 2 = Back. Âm thanh và bản ghi micro không nằm trong bản sao lưu.</small></details>
+<section id="page-words" class="app-page" data-app-page="words" aria-label="My words" data-i18n-attributes="aria-label">
+<header class="page-intro"><span class="section-kicker"><span data-i18n>KEEP WHAT MATTERS</span></span><h1 tabindex="-1"><span data-i18n>A collection of your own.</span></h1><p><span data-i18n>Từ đã lưu và bản sao lưu ở một nơi. Bộ từ và bài luyện nằm trong Study.</span></p></header>
+<section class="learning-tools" id="library" aria-label="Saved words and backups" data-i18n-attributes="aria-label">
+  <details open><summary><span data-i18n>Từ yêu thích</span> <span id="favorites-count">0</span></summary><p><span data-i18n>Bấm ☆ cạnh từ để lưu. Dữ liệu lưu riêng trong trình duyệt này.</span></p><div class="word-list" id="favorites-list"></div></details>
+  <details class="backup-panel"><summary><span data-i18n>Backup & export</span> <span aria-hidden="true">↗</span></summary><p><span data-i18n>Lưu một bản để chuyển máy hoặc tránh mất dữ liệu. JSON giữ từ, bộ từ, lịch ôn và tiến độ. CSV và Anki TSV dùng để học ở ứng dụng khác.</span></p><div class="backup-actions"><button id="backup-json" class="word-link" type="button" data-i18n-control><span data-i18n>Download backup</span></button><button id="backup-import" class="word-link" type="button" data-i18n-control><span data-i18n>Restore backup</span></button><button id="backup-csv" class="word-link" type="button" data-i18n-control><span data-i18n>Export CSV</span></button><button id="backup-anki" class="word-link" type="button" data-i18n-control><span data-i18n>Export Anki TSV</span></button></div><input id="backup-file" type="file" accept=".json,application/json" hidden><p id="backup-status" role="status"></p><small><span data-i18n>Anki: Import file → chọn TSV, cho phép HTML, cột 1 = Front, cột 2 = Back. Âm thanh và bản ghi micro không nằm trong bản sao lưu.</span></small></details>
 </section>
-<p class="page-next"><a href="/study" data-page-link>Practice your saved words →</a></p>
+<p class="page-next"><a href="/study" data-page-link><span data-i18n>Practice your saved words →</span></a></p>
 </section>
-<section id="page-practical" class="app-page" data-app-page="practical" aria-label="Practical AI">
-<header class="page-intro practical-intro"><div><span class="section-kicker">REAL CONVERSATIONS. SMALL STEPS.</span><h1 tabindex="-1">Practical AI <span aria-hidden="true">✦</span></h1><p>Speak a little. Make it real.<br>Luyện hội thoại, thử cách diễn đạt mới và nhận góp ý sau mỗi câu.</p></div><span class="practical-badge">✧ Your speaking space</span></header>
+<section id="page-practical" class="app-page" data-app-page="practical" aria-label="Practical AI" data-i18n-attributes="aria-label">
+<header class="page-intro practical-intro"><div><span class="section-kicker"><span data-i18n>REAL CONVERSATIONS. SMALL STEPS.</span></span><h1 tabindex="-1">Practical AI <span aria-hidden="true">✦</span></h1><p><span data-i18n>Speak a little. Make it real.</span><br><span data-i18n>Luyện hội thoại, thử cách diễn đạt mới và nhận góp ý sau mỗi câu.</span></p></div><span class="practical-badge"><span data-i18n>✧ Your speaking space</span></span></header>
 <div class="practical-layout">
-<aside class="practical-settings" aria-label="Speaking settings"><details id="practical-settings-details" open><summary id="practical-settings-summary">Conversation settings</summary><div class="practical-settings-body"><h2>Pick a situation</h2><p class="muted">Một cuộc hội thoại gần với cuộc sống của bạn.</p><div id="practical-scenarios" class="practical-scenarios"></div><label for="practical-level">Your level</label><select id="practical-level"><option value="A2">A2 · Getting started</option><option value="B1" selected>B1 · Building confidence</option><option value="B2">B2 · Expressing ideas</option></select><label for="practical-voice">Listen with</label><select id="practical-voice"><option value="elevenlabs" selected>ElevenLabs · AI voice</option><option value="device">Device voice · nhanh</option></select><div id="practical-ai-voice-field" class="practical-voice-field"><label for="practical-ai-voice">AI voice</label><select id="practical-ai-voice" aria-describedby="practical-voice-note"><option value="">Loading AI voice…</option></select></div><div id="practical-device-voice-field" class="practical-voice-field" hidden><label for="practical-device-voice">Device voice</label><select id="practical-device-voice" aria-describedby="practical-voice-note"><option value="">Auto · Friendly English voice</option></select></div><label class="practical-auto"><input id="practical-auto-send" type="checkbox" checked> Auto-send clear speech</label><label class="practical-auto"><input id="practical-autoplay" type="checkbox" checked> Auto-read replies</label><label class="practical-auto"><input id="practical-quota-fallback" type="checkbox" checked> Keep speaking with device voice</label><p id="practical-voice-status" class="muted" role="status"></p><button id="practical-retry-voice" type="button" class="word-link" hidden>Try AI voice again</button><p id="practical-daily-limit" class="muted">100 AI replies/day per device. Hạn mức nguồn AI vẫn áp dụng.</p><p id="practical-voice-note" class="muted">AI có giọng riêng. Khi ElevenLabs hết quota, dùng giọng máy và báo rõ; có thể tắt tùy chọn này.</p></div></details></aside>
-<section class="practical-chat" aria-labelledby="practical-chat-title"><header class="practical-chat-header"><div class="practical-avatar" aria-hidden="true">✦</div><div><h2 id="practical-chat-title">Your speaking partner</h2><p id="practical-goal"></p></div><button id="practical-end" type="button" class="word-link">End &amp; see band</button><button id="practical-reset" type="button" class="word-link">New session</button></header><div id="practical-partner" class="practical-partner" data-state="idle"><div class="practical-partner-scene" aria-hidden="true"><span class="practical-partner-glow"></span><img id="practical-partner-image" class="practical-partner-portrait" src="/assets/practical-partner.webp" width="320" height="320" alt="" draggable="false"><div class="practical-partner-bars"><span></span><span></span><span></span><span></span><span></span></div></div><div class="practical-partner-copy"><span class="practical-partner-kicker">✦ Your AI partner</span><h3 id="practical-partner-name">Meet Helen.</h3><p id="practical-partner-caption">Ready when you are.</p><div class="practical-partner-actions"><button id="practical-replay" type="button" class="word-link">Hear reply</button><button id="practical-stop-voice" type="button" class="word-link" disabled>Stop voice</button></div></div></div><div id="practical-messages" class="practical-messages" aria-label="Conversation"></div>
-<section id="practical-report" class="practical-report" tabindex="-1" aria-label="IELTS speaking estimate" hidden></section><form id="practical-form" class="practical-composer"><div id="practical-transcript-review" class="practical-transcript-review" hidden><strong>Review what I heard</strong><p id="practical-transcript-note">Kiểm tra câu bên dưới, sửa từ nghe nhầm rồi bấm Confirm &amp; send. AI chưa trả lời ở bước này.</p></div><label id="practical-input-label" for="practical-input">Your reply</label><textarea id="practical-input" rows="3" maxlength="6000" placeholder="Say it with the mic, or type your reply…" aria-describedby="practical-privacy practical-transcript-note practical-live-status"></textarea><p id="practical-live-status" class="muted" role="status">Lời nói hiện trực tiếp khi trình duyệt hỗ trợ; chữ tạm có thể nghe nhầm.</p><details id="practical-live-original" class="practical-tip" hidden><summary>Original live captions</summary><p id="practical-live-original-text"></p></details><div class="practical-actions"><button id="practical-mic" class="practical-mic" type="button" aria-label="Record a speaking reply" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/></svg><span>Speak</span></button><button id="practical-send" class="btn" type="submit">Send reply <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></button><button id="practical-retry-recording" type="button" class="word-link" hidden>Retry recording</button><button id="practical-cancel" type="button" class="word-link" hidden>Cancel</button></div><p id="practical-session-count" class="muted"></p><output id="practical-recording-time" class="practical-recording-time" aria-label="Recording time" hidden>0:00 / 3:00</output><p id="practical-status" role="status" aria-live="polite"></p><details class="practical-tip"><summary>Need a starting point?</summary><p id="practical-hint"></p><button id="practical-use-hint" type="button" class="word-link">Use this sentence</button></details><p id="practical-privacy" class="practical-privacy">Nói tối đa 3 phút rồi bấm mic để gửi. Phụ đề trực tiếp do dịch vụ nhận diện của trình duyệt xử lý khi khả dụng. Chữ tạm lưu trên thiết bị để bạn sửa nếu nhận diện bản thu lỗi; có thể xóa trong ô trả lời. Câu nghe rõ tự gửi và AI tự đọc phản hồi; chỗ chưa rõ cho bạn sửa trước. Có thể tắt Auto-send hoặc Auto-read trong settings. Gemini xử lý âm thanh; Helen không lưu file ghi âm lâu dài. Bản thu gửi lỗi chỉ giữ tạm trong tab để thử lại; rời trang, hủy hoặc tải lại sẽ xóa bản thu. End &amp; see band đưa điểm ước lượng theo 4 tiêu chí IELTS, không phải điểm thi chính thức.</p></form></section>
+<aside class="practical-settings" aria-label="Speaking settings" data-i18n-attributes="aria-label"><details id="practical-settings-details" open><summary id="practical-settings-summary"><span data-i18n>Conversation settings</span></summary><div class="practical-settings-body"><h2><span data-i18n>Pick a situation</span></h2><p class="muted"><span data-i18n>Một cuộc hội thoại gần với cuộc sống của bạn.</span></p><div id="practical-scenarios" class="practical-scenarios"></div><label for="practical-level"><span data-i18n>Your level</span></label><select id="practical-level"><option value="A2" data-i18n>A2 · Getting started</option><option value="B1" selected data-i18n>B1 · Building confidence</option><option value="B2" data-i18n>B2 · Expressing ideas</option></select><label for="practical-voice"><span data-i18n>Listen with</span></label><select id="practical-voice"><option value="elevenlabs" selected data-i18n>ElevenLabs · AI voice</option><option value="device" data-i18n>Device voice · nhanh</option></select><div id="practical-ai-voice-field" class="practical-voice-field"><label for="practical-ai-voice"><span data-i18n>AI voice</span></label><select id="practical-ai-voice" aria-describedby="practical-voice-note"><option value="" data-i18n>Loading AI voice…</option></select></div><div id="practical-device-voice-field" class="practical-voice-field" hidden><label for="practical-device-voice"><span data-i18n>Device voice</span></label><select id="practical-device-voice" aria-describedby="practical-voice-note"><option value="" data-i18n>Auto · Friendly English voice</option></select></div><label class="practical-auto"><input id="practical-auto-send" type="checkbox" checked> <span data-i18n>Auto-send clear speech</span></label><label class="practical-auto"><input id="practical-autoplay" type="checkbox" checked> <span data-i18n>Auto-read replies</span></label><label class="practical-auto"><input id="practical-quota-fallback" type="checkbox" checked> <span data-i18n>Keep speaking with device voice</span></label><p id="practical-voice-status" class="muted" role="status"></p><button id="practical-retry-voice" type="button" class="word-link" hidden data-i18n-control><span data-i18n>Try AI voice again</span></button><p id="practical-daily-limit" class="muted"><span data-i18n>100 AI replies/day per device. Hạn mức nguồn AI vẫn áp dụng.</span></p><p id="practical-voice-note" class="muted"><span data-i18n>AI có giọng riêng. Khi ElevenLabs hết quota, dùng giọng máy và báo rõ; có thể tắt tùy chọn này.</span></p></div></details></aside>
+<section class="practical-chat" aria-labelledby="practical-chat-title"><header class="practical-chat-header"><div class="practical-avatar" aria-hidden="true">✦</div><div><h2 id="practical-chat-title"><span data-i18n>Your speaking partner</span></h2><p id="practical-goal"></p></div><button id="practical-end" type="button" class="word-link" data-i18n-control><span data-i18n>End &amp; see band</span></button><button id="practical-reset" type="button" class="word-link" data-i18n-control><span data-i18n>New session</span></button></header><div id="practical-partner" class="practical-partner" data-state="idle"><div class="practical-partner-scene" aria-hidden="true"><span class="practical-partner-glow"></span><img id="practical-partner-image" class="practical-partner-portrait" src="/assets/practical-partner.webp" width="320" height="320" alt="" draggable="false"><div class="practical-partner-bars"><span></span><span></span><span></span><span></span><span></span></div></div><div class="practical-partner-copy"><span class="practical-partner-kicker"><span data-i18n>✦ Your AI partner</span></span><h3 id="practical-partner-name"><span data-i18n>Meet Helen.</span></h3><p id="practical-partner-caption" data-i18n-control><span data-i18n>Ready when you are.</span></p><div class="practical-partner-actions"><button id="practical-replay" type="button" class="word-link" data-i18n-control><span data-i18n>Hear reply</span></button><button id="practical-stop-voice" type="button" class="word-link" disabled data-i18n-control><span data-i18n>Stop voice</span></button></div></div></div><div id="practical-messages" class="practical-messages" aria-label="Conversation" data-i18n-attributes="aria-label"></div>
+<section id="practical-report" class="practical-report" tabindex="-1" aria-label="IELTS speaking estimate" hidden data-i18n-attributes="aria-label"></section><form id="practical-form" class="practical-composer"><div id="practical-transcript-review" class="practical-transcript-review" hidden><strong><span data-i18n>Review what I heard</span></strong><p id="practical-transcript-note" data-i18n-control><span data-i18n>Kiểm tra câu bên dưới, sửa từ nghe nhầm rồi bấm Confirm &amp; send. AI chưa trả lời ở bước này.</span></p></div><label id="practical-input-label" for="practical-input" data-i18n-control><span data-i18n>Your reply</span></label><textarea id="practical-input" rows="3" maxlength="6000" placeholder="Say it with the mic, or type your reply…" aria-describedby="practical-privacy practical-transcript-note practical-live-status" data-i18n-attributes="placeholder"></textarea><p id="practical-live-status" class="muted" role="status" data-i18n-control><span data-i18n>Lời nói hiện trực tiếp khi trình duyệt hỗ trợ; chữ tạm có thể nghe nhầm.</span></p><details id="practical-live-original" class="practical-tip" hidden><summary><span data-i18n>Original live captions</span></summary><p id="practical-live-original-text"></p></details><div class="practical-actions"><button id="practical-mic" class="practical-mic" type="button" aria-label="Record a speaking reply" aria-pressed="false" data-i18n-control data-i18n-attributes="aria-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/></rect><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/></path></svg><span><span data-i18n>Speak</span></span></button><button id="practical-send" class="btn" type="submit" data-i18n-control><span data-i18n>Send reply</span> <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></path></svg></button><button id="practical-retry-recording" type="button" class="word-link" hidden data-i18n-control><span data-i18n>Retry recording</span></button><button id="practical-cancel" type="button" class="word-link" hidden data-i18n-control><span data-i18n>Cancel</span></button></div><p id="practical-session-count" class="muted"></p><output id="practical-recording-time" class="practical-recording-time" aria-label="Recording time" hidden data-i18n-attributes="aria-label">0:00 / 3:00</output><p id="practical-status" role="status" aria-live="polite"></p><details class="practical-tip"><summary><span data-i18n>Need a starting point?</span></summary><p id="practical-hint"></p><button id="practical-use-hint" type="button" class="word-link" data-i18n-control><span data-i18n>Use this sentence</span></button></details><p id="practical-privacy" class="practical-privacy" data-i18n><span data-i18n>Nói tối đa 3 phút rồi bấm mic để gửi. Phụ đề trực tiếp do dịch vụ nhận diện của trình duyệt xử lý khi khả dụng. Chữ tạm lưu trên thiết bị để bạn sửa nếu nhận diện bản thu lỗi; có thể xóa trong ô trả lời. Câu nghe rõ tự gửi và AI tự đọc phản hồi; chỗ chưa rõ cho bạn sửa trước. Có thể tắt Auto-send hoặc Auto-read trong settings. Gemini xử lý âm thanh; Helen không lưu file ghi âm lâu dài. Bản thu gửi lỗi chỉ giữ tạm trong tab để thử lại; rời trang, hủy hoặc tải lại sẽ xóa bản thu. End &amp; see band đưa điểm ước lượng theo 4 tiêu chí IELTS, không phải điểm thi chính thức.</span></p></form></section>
 </div></section>
-<section id="page-history" class="app-page" data-app-page="history" aria-label="History">
-<header class="page-intro"><span class="section-kicker">PICK UP WHERE YOU LEFT OFF</span><h1 tabindex="-1">Your recent discoveries.</h1><p>Xem lại từ đã tra hoặc mở lại một từ để tiếp tục khám phá.</p></header>
-<section class="learning-tools history-tools" aria-label="Lookup history">
-  <details open><summary>Lịch sử tra cứu <span id="history-count">0</span></summary><p>40 từ tra thành công gần nhất. Khi database được kết nối, lịch sử được đồng bộ cho thiết bị này.</p><p id="history-sync-status" class="muted" role="status"></p><button class="word-link" id="clear-history" type="button">Xóa lịch sử</button><div class="word-list" id="history-list"></div></details>
+<section id="page-history" class="app-page" data-app-page="history" aria-label="History" data-i18n-attributes="aria-label">
+<header class="page-intro"><span class="section-kicker"><span data-i18n>PICK UP WHERE YOU LEFT OFF</span></span><h1 tabindex="-1"><span data-i18n>Your recent discoveries.</span></h1><p><span data-i18n>Xem lại từ đã tra hoặc mở lại một từ để tiếp tục khám phá.</span></p></header>
+<section class="learning-tools history-tools" aria-label="Lookup history" data-i18n-attributes="aria-label">
+  <details open><summary><span data-i18n>Lịch sử tra cứu</span> <span id="history-count">0</span></summary><p><span data-i18n>40 từ tra thành công gần nhất. Khi database được kết nối, lịch sử được đồng bộ cho thiết bị này.</span></p><p id="history-sync-status" class="muted" role="status"></p><button class="word-link" id="clear-history" type="button" data-i18n-control><span data-i18n>Xóa lịch sử</span></button><div class="word-list" id="history-list"></div></details>
 </section>
 </section>
-<section id="page-offline" class="app-page" data-app-page="offline" aria-label="Offline">
-<header class="page-intro"><span class="section-kicker">TAKE HELEN WITH YOU</span><h1 tabindex="-1">Learn beyond the connection.</h1><p>Cài app, lưu từ và tải giọng đọc để dùng khi mất mạng.</p></header>
+<section id="page-offline" class="app-page" data-app-page="offline" aria-label="Offline" data-i18n-attributes="aria-label">
+<header class="page-intro"><span class="section-kicker"><span data-i18n>TAKE HELEN WITH YOU</span></span><h1 tabindex="-1"><span data-i18n>Learn beyond the connection.</span></h1><p><span data-i18n>Cài app, lưu từ và tải giọng đọc để dùng khi mất mạng.</span></p></header>
 <div id="offline-content"></div>
 </section>
 </main>
-<footer>Helen Dictionary · Free to learn<br><a href="/assets/sources.html">Sources, licenses & privacy</a> · AI voice: <a href="https://elevenlabs.io/">elevenlabs.io</a></footer>
-<dialog id="deck-editor" class="deck-dialog" aria-labelledby="deck-editor-title"><form id="deck-form"><h2 id="deck-editor-title">New word set</h2><label for="deck-existing">Choose a word set</label><select id="deck-existing"><option value="">Create a new set</option></select><label for="deck-name">Word set name</label><input id="deck-name" maxlength="50" required autocomplete="off" placeholder="e.g. IELTS Reading"><label for="deck-filter">Find a saved word</label><input id="deck-filter" type="search" placeholder="Filter your words" autocomplete="off"><fieldset><legend>Select saved words</legend><div id="deck-word-options"></div></fieldset><p id="deck-editor-error" role="alert"></p><div class="dialog-actions"><button class="btn" type="submit">Save word set</button><button id="cancel-deck-editor" class="word-link" type="button">Cancel</button></div></form></dialog>
+<footer><span data-i18n>Helen Dictionary · Free to learn</span><br><a href="/assets/sources.html"><span data-i18n>Sources, licenses & privacy</span></a> <span data-i18n>· AI voice:</span> <a href="https://elevenlabs.io/">elevenlabs.io</a></footer>
+<dialog id="deck-editor" class="deck-dialog" aria-labelledby="deck-editor-title"><form id="deck-form"><h2 id="deck-editor-title"><span data-i18n>New word set</span></h2><label for="deck-existing"><span data-i18n>Choose a word set</span></label><select id="deck-existing"><option value="" data-i18n>Create a new set</option></select><label for="deck-name"><span data-i18n>Word set name</span></label><input id="deck-name" maxlength="50" required autocomplete="off" placeholder="e.g. IELTS Reading" data-i18n-attributes="placeholder"><label for="deck-filter"><span data-i18n>Find a saved word</span></label><input id="deck-filter" type="search" placeholder="Filter your words" autocomplete="off" data-i18n-attributes="placeholder"><fieldset><legend><span data-i18n>Select saved words</span></legend><div id="deck-word-options"></div></fieldset><p id="deck-editor-error" role="alert"></p><div class="dialog-actions"><button class="btn" type="submit" data-i18n-control><span data-i18n>Save word set</span></button><button id="cancel-deck-editor" class="word-link" type="button" data-i18n-control><span data-i18n>Cancel</span></button></div></form></dialog>
 <div class="pet-cursor" id="pet-cursor" aria-hidden="true" hidden><span class="pet-pointer"><span class="pet-hotspot"></span><img alt="" draggable="false"></span></div>
 
 <script src="/assets/voice-recorder.js"></script>
@@ -311,7 +317,8 @@ footer{background:var(--surface-strong);color:var(--text-inverse);padding:var(--
 // ===== CONFIG =====
 const API = ''; // '' = same server. Set e.g. 'https://yourdomain.com' if hosted separately.
 const IMAGES = { hero: '/assets/mobile/hero.webp' }; // paste image URLs here
-const LANGS = {en:'English',vi:'Tiếng Việt',es:'Español',fr:'Français',de:'Deutsch',it:'Italiano',pt:'Português',ru:'Русский',ja:'日本語',ko:'한국어','zh-CN':'中文 (简体)','zh-TW':'中文 (繁體)',ar:'العربية',hi:'हिन्दी',th:'ไทย',id:'Bahasa Indonesia',ms:'Bahasa Melayu',tr:'Türkçe',nl:'Nederlands',pl:'Polski',sv:'Svenska',el:'Ελληνικά',he:'עברית',uk:'Українська'};
+const LANGS = HelenLanguages.names;
+const ui=(text,params)=>globalThis.HelenI18n?.t(text,params) || text;
 
 const $ = s => document.querySelector(s);
 const opt = (sel, def) => { sel.innerHTML = Object.entries(LANGS).map(([k,v]) => `<option value="${k}">${v}</option>`).join(''); sel.value = def; };
@@ -347,9 +354,9 @@ async function apiFetch(url,options={}) {
 }
 // Loading animation adapted from Uiverse.io by Nawsome, supplied by the user.
 const HAMSTER='<span class="wheel-and-hamster" aria-hidden="true"><span class="wheel"></span><span class="hamster"><span class="hamster__body"><span class="hamster__head"><span class="hamster__ear"></span><span class="hamster__eye"></span><span class="hamster__nose"></span></span><span class="hamster__limb hamster__limb--fr"></span><span class="hamster__limb hamster__limb--fl"></span><span class="hamster__limb hamster__limb--br"></span><span class="hamster__limb hamster__limb--bl"></span><span class="hamster__tail"></span></span></span><span class="spoke"></span></span>';
-function loadingHTML(message,size='compact') {return `<span class="loading-ui loading-${size}" aria-busy="true">${HAMSTER}<span class="loading-copy">${esc(message)}</span></span>`;}
+function loadingHTML(message,size='compact') {message=globalThis.HelenI18n?.t(message) || message;return `<span class="loading-ui loading-${size}" aria-busy="true">${HAMSTER}<span class="loading-copy">${esc(message)}</span></span>`;}
 function showLoading(node,message,size='compact') {node.innerHTML=loadingHTML(message,size);node.setAttribute('aria-busy','true');}
-function finishLoading(node,message) {node.removeAttribute('aria-busy');node.textContent=message;}
+function finishLoading(node,message) {node.removeAttribute('aria-busy');node.textContent=globalThis.HelenI18n?.t(message) || message;}
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
   $('#theme-toggle').checked = theme === 'dark';
@@ -360,7 +367,9 @@ $('#theme-toggle').addEventListener('change', () => {
   const theme = $('#theme-toggle').checked ? 'dark' : 'light';
   applyTheme(theme); remember('helen-theme', theme);
 });
-opt($('#target'), LANGS[stored('helen-target')] ? stored('helen-target') : 'vi'); opt($('#from'), LANGS[stored('helen-from')] ? stored('helen-from') : 'en');
+const languagePreferences=HelenLanguages.preferences({getItem:stored},globalThis.navigator);
+opt($('#target'), languagePreferences.to); opt($('#from'), languagePreferences.from);
+remember('helen-target',languagePreferences.to);remember('helen-from',languagePreferences.from);
 $('#q').value = stored('helen-query') || '';
 $('#q').addEventListener('input', () => remember('helen-query', $('#q').value));
 $('#from').addEventListener('change', () => remember('helen-from', $('#from').value));
@@ -588,7 +597,16 @@ function showSuggestions(data, provisional = false) {
   } else section.insertAdjacentHTML('beforeend','<p>Chưa có gợi ý phù hợp. Hãy kiểm tra chính tả hoặc ngôn ngữ nhập.</p>');
   $('#out').append(section);
 }
-let searchRequest = 0, searchPending=false;
+let searchRequest = 0, searchPending=false,reverseTranslation=null;
+$('#swap-languages').addEventListener('click',()=>{
+  cancelSpeech();autocomplete?.close();const from=$('#from').value,to=$('#target').value,query=$('#q').value.trim();
+  $('#from').value=to;$('#target').value=from;remember('helen-from',to);remember('helen-target',from);
+  const reversed=reverseTranslation?.query===query && reverseTranslation.from===from && reverseTranslation.to===to?reverseTranslation.text:'';
+  $('#q').value=reversed.length<=100?reversed:'';
+  remember('helen-query',$('#q').value);lastResult=null;++targetRequest;++searchRequest;searchPending=false;
+  document.querySelectorAll('.tr').forEach(box=>box.hidden=true);globalThis.HelenTranslationWarmup?.refresh();
+  $('#query-translation-panel').hidden=true;if($('#q').value.trim())searchWord({scroll:false});else $('#q').focus();
+});
 async function searchWord({ scroll = true, recordHistory = true, suggestions = true } = {}) {
   globalThis.HelenPages?.go('/', {focus:globalThis.HelenPages.current()!=='dictionary', scroll:false, restore:false});
   if(suggestions)autocomplete?.suggest({immediate:true,submitted:true});else autocomplete?.close();
@@ -596,7 +614,8 @@ async function searchWord({ scroll = true, recordHistory = true, suggestions = t
   const from = $('#from').value, request = ++searchRequest;
   searchPending=true;
   remember('helen-query', $('#q').value); remember('helen-from', from);
-  lastResult = null; ++targetRequest;
+  lastResult = null; ++targetRequest;reverseTranslation=null;$('#query-translation-panel').hidden=true;
+  if(from!=='en'){lastResult={query:word,word,from,entries:[]};void updateWordTranslation();}
   msg('Searching…',false,'',true);
   let resolved=false;
   // Spell checking uses local WordNet data; remote dictionary timeouts never delay these links.
@@ -655,7 +674,7 @@ async function searchWord({ scroll = true, recordHistory = true, suggestions = t
 $('#form').addEventListener('submit', e => { e.preventDefault(); cancelSpeech(); searchWord(); });
 const autocomplete=globalThis.HelenAutocomplete?.create({input:$('#q'),list:$('#search-suggestions'),status:$('#search-suggestions-status'),language:$('#from'),fetch:apiFetch,api:API,localWords:()=>[...favorites,...history],loading:showLoading,onSelect:word=>{cancelSpeech();remember('helen-query',word);searchWord({suggestions:false});}});
 
-const SPEECH_LANGS={en:'en-US',vi:'vi-VN',es:'es-ES',fr:'fr-FR',de:'de-DE',it:'it-IT',pt:'pt-PT',ru:'ru-RU',ja:'ja-JP',ko:'ko-KR','zh-CN':'zh-CN','zh-TW':'zh-TW',ar:'ar-SA',hi:'hi-IN',th:'th-TH',id:'id-ID',ms:'ms-MY',tr:'tr-TR',nl:'nl-NL',pl:'pl-PL',sv:'sv-SE',el:'el-GR',he:'he-IL',uk:'uk-UA'};
+const SPEECH_LANGS=HelenLanguages.speech;
 let speech=null, speechActive=false, speechCanceled=false, speechTimer=null, speechUseRecorder=false;
 function resetMic() {
   clearTimeout(speechTimer); speechTimer=null;
@@ -832,7 +851,7 @@ function createAISection(entry,onSelection=()=>{}) {
   const senses=HelenSenses.choices(entry);
   if(!senses.length) return null;
   const root=document.createElement('section');root.className='ai-study';
-  root.innerHTML='<h3>AI contexts <span class="ai-badge">AI</span></h3><p>Chọn một nghĩa để luyện ví dụ và hội thoại trong đúng ngữ cảnh đó. Bấm Generate context để tạo bài.</p><div class="ai-controls"><label>Sense to practice<select class="ai-sense" aria-label="Sense for AI context"></select></label><button class="btn ai-generate" type="button">Generate context</button></div><div class="ai-selected-sense"></div><p class="ai-status" role="status"></p><div class="ai-result"></div>';
+  root.innerHTML=`<h3>AI contexts <span class="ai-badge">AI</span></h3><p>Chọn một nghĩa để luyện ví dụ và hội thoại trong đúng ngữ cảnh đó. Bấm Generate context để tạo bài.</p><div class="ai-controls"><label>Sense to practice<select class="ai-sense" aria-label="Sense for AI context"></select></label><button class="btn ai-generate" type="button">${esc(ui('Generate context'))}</button></div><div class="ai-selected-sense"></div><p class="ai-status" role="status"></p><div class="ai-result"></div>`;
   const select=root.querySelector('.ai-sense'), button=root.querySelector('.ai-generate'), selectedBox=root.querySelector('.ai-selected-sense'), status=root.querySelector('.ai-status'), output=root.querySelector('.ai-result');
   senses.forEach(sense=>select.add(new Option(`${sense.label} — ${sense.definition}`,sense.value)));
   const chosen=aiChoices.get(entry.word);select.value=senses.some(sense=>sense.value===chosen)?chosen:senses[0].value;
@@ -857,7 +876,7 @@ function createAISection(entry,onSelection=()=>{}) {
         line.querySelector('button').onclick=event=>speak(example.text,event.currentTarget,audioOptions);examples.append(line);
       });output.append(examples);
     }
-    const dialogue=document.createElement('details');dialogue.className='ai-detail foldout';keepOpen(dialogue,'dialogue',true);dialogue.innerHTML='<summary>Short dialogue</summary>';
+    const dialogue=document.createElement('details');dialogue.className='ai-detail foldout';keepOpen(dialogue,'dialogue',true);dialogue.innerHTML=`<summary>${esc(ui('Short dialogue'))}</summary>`;
     lesson.dialogue.forEach((turn,index)=>{
       const line=document.createElement('div');line.className=`dialogue-line ${index%2?'dialogue-alt':''}`;
       line.innerHTML=`<strong>${esc(turn.speaker)}</strong><p>${esc(turn.text)} <button class="say example-say" type="button" aria-label="Hear dialogue line">🔊</button></p><p class="ai-translation">${esc(turn.translation)}</p>`;
@@ -920,12 +939,18 @@ loadAIStatus();
 async function updateWordTranslation() {
   const request = ++targetRequest, to = $('#target').value, result = lastResult;
   const box = $('#word-translation'); if (!box || !result) return;
-  showLoading(box,'Translating word…');
+  $('#query-translation-panel').hidden=false;$('#translation-direction').textContent=`${LANGS[result.from || 'en']} → ${LANGS[to]}`;showLoading(box,'Translating word…');
   try {
     const definition=result.entries?.[0]?.meanings?.[0]?.senses?.[0]?.definition || '';
     const senses=(result.entries || []).flatMap(entry=>(entry.meanings || []).flatMap(meaning=>(meaning.senses || []).slice(0,3).map(sense=>({pos:meaning.pos || '',definition:sense.definition?.slice(0,250) || ''})))).filter(sense=>sense.definition).slice(0,12);
-    const translated = (await tr([result.word], 'en', to, {kind:'headword',definition,senses}))[0];
-    if (request === targetRequest && result === lastResult) finishLoading(box,`${LANGS[to]}: ${translated}`);
+    const from=result.from || 'en',query=from==='en'?result.word:result.query || result.word;
+    const context=from==='en'?{kind:'headword',definition,senses}:to==='en'?{kind:'lookup'}:{};
+    const translated = (await tr([query], from, to, context))[0];
+    if (request === targetRequest && result === lastResult){
+      reverseTranslation={query,from,to,text:translated};
+      const panel=$('#query-translation-panel');panel.hidden=false;$('#translation-direction').textContent=`${LANGS[from]} → ${LANGS[to]}`;
+      finishLoading(box,`${LANGS[to]}: ${translated}`);
+    }
   } catch(error) { if (request === targetRequest) finishLoading(box,shortError(error,'Chưa dịch được từ này. Hãy thử lại.')); }
 }
 function render(d, scroll = true) {
@@ -936,7 +961,6 @@ function render(d, scroll = true) {
   if(d.savedOnDevice) out.insertAdjacentHTML('beforeend','<span class="saved-result">Đang xem dữ liệu đã lưu trên thiết bị này.</span>');
   if(d.offlinePartial) out.insertAdjacentHTML('beforeend','<span class="saved-result">Đã lưu nghĩa chính. Kết nối mạng để tải thêm.</span>');
   if (d.from !== 'en') out.insertAdjacentHTML('beforeend', `<div class="status">“${esc(d.query)}” in English: <strong>${esc(d.word)}</strong></div>`);
-  out.insertAdjacentHTML('beforeend', '<div class="status" id="word-translation" role="status"></div>');
   updateWordTranslation();
   d.entries.forEach(en => {
     const el = document.createElement('article'); el.className = 'entry';
@@ -956,7 +980,7 @@ function render(d, scroll = true) {
       guide.innerHTML=`<summary>Compare senses · ${senseChoices.length} meanings</summary><p>So sánh định nghĩa và câu ví dụ của từng nghĩa. Từ đồng nghĩa dưới mỗi nghĩa chỉ áp dụng cho nghĩa đó.</p><div class="sense-table-wrap"><table class="sense-table"><caption class="sense-evidence">${esc(en.word)} · Dictionary meanings</caption><thead><tr><th scope="col">Sense</th><th scope="col">Definition &amp; example</th></tr></thead><tbody></tbody></table></div>`;
       senseChoices.forEach(sense=>{
         const row=document.createElement('tr');
-        row.innerHTML=`<td><strong>${esc(sense.label)}</strong><br><button class="word-link" type="button">Practice this sense</button></td><td>${esc(sense.definition)}<p class="sense-evidence">${sense.examples.length?`“${esc(sense.examples[0])}”`:'Nguồn chưa có câu ví dụ cho nghĩa này.'}</p></td>`;
+        row.innerHTML=`<td><strong>${esc(sense.label)}</strong><br><button class="word-link" type="button">${esc(ui('Practice this sense'))}</button></td><td>${esc(sense.definition)}<p class="sense-evidence">${sense.examples.length?`“${esc(sense.examples[0])}”`:'Nguồn chưa có câu ví dụ cho nghĩa này.'}</p></td>`;
         row.querySelector('button').onclick=()=>practice(sense.value);guide.querySelector('tbody').append(row);
       });el.append(guide);
     }
@@ -993,8 +1017,8 @@ function render(d, scroll = true) {
           box.hidden = false; eye.setAttribute('aria-pressed','true'); eye.setAttribute('aria-label','Hide translation'); eye.textContent='🙈';
         };
         row.insertAdjacentHTML('beforeend', `<div class="sense-relations">
-          <div class="syn"><strong>Từ đồng nghĩa:</strong> ${s.synonyms?.length ? s.synonyms.map(esc).join(', ') : m.relationsPending ? 'Đang tải…' : m.relationsUnavailable ? 'Chưa tải được nguồn bổ sung. Hãy thử lại.' : 'Nguồn chưa ghi nhận cho nghĩa này; xem thêm Thesaurus bên dưới.'}</div>
-          <div class="syn"><strong>Từ trái nghĩa:</strong> ${s.antonyms?.length || s.indirectAntonyms?.length ? [...(s.antonyms || []).map(esc),...(s.indirectAntonyms || []).map(word=>`${esc(word)} (qua từ đồng nghĩa trong WordNet)`)].join(', ') : m.relationsPending ? 'Đang tải…' : m.relationsUnavailable ? 'Chưa tải được nguồn bổ sung. Hãy thử lại.' : 'Nguồn chưa ghi nhận đối nghĩa trực tiếp cho nghĩa này.'}</div>
+          <div class="syn"><strong>${esc(ui('Từ đồng nghĩa:'))}</strong> ${s.synonyms?.length ? s.synonyms.map(esc).join(', ') : m.relationsPending ? 'Đang tải…' : m.relationsUnavailable ? 'Chưa tải được nguồn bổ sung. Hãy thử lại.' : 'Nguồn chưa ghi nhận cho nghĩa này; xem thêm Thesaurus bên dưới.'}</div>
+          <div class="syn"><strong>${esc(ui('Từ trái nghĩa:'))}</strong> ${s.antonyms?.length || s.indirectAntonyms?.length ? [...(s.antonyms || []).map(esc),...(s.indirectAntonyms || []).map(word=>`${esc(word)} (qua từ đồng nghĩa trong WordNet)`)].join(', ') : m.relationsPending ? 'Đang tải…' : m.relationsUnavailable ? 'Chưa tải được nguồn bổ sung. Hãy thử lại.' : 'Nguồn chưa ghi nhận đối nghĩa trực tiếp cho nghĩa này.'}</div>
           ${s.relationNote ? `<p class="muted">${esc(s.relationNote)}</p>` : ''}
         </div>`);
         const value=HelenSenses.key(m.pos,s.definition), actions=document.createElement('div');actions.className='sense-actions';
@@ -1013,8 +1037,8 @@ function render(d, scroll = true) {
         m.thesaurus.forEach(group=>{
           const block=document.createElement('div');block.className='sense-relations';
           block.innerHTML=`${group.definition?`<p><strong>${esc(group.definition)}</strong>${group.scope==='partOfSpeech'?' (chú thích theo từ loại)':''}</p>`:''}
-            ${group.synonyms?.length?`<p><strong>Từ đồng nghĩa:</strong> ${group.synonyms.map(esc).join(', ')}</p>`:''}
-            ${group.antonyms?.length?`<p><strong>Từ trái nghĩa:</strong> ${group.antonyms.map(esc).join(', ')}</p>`:''}
+            ${group.synonyms?.length?`<p><strong>${esc(ui('Từ đồng nghĩa:'))}</strong> ${group.synonyms.map(esc).join(', ')}</p>`:''}
+            ${group.antonyms?.length?`<p><strong>${esc(ui('Từ trái nghĩa:'))}</strong> ${group.antonyms.map(esc).join(', ')}</p>`:''}
             ${group.note?`<p>${esc(group.note)}</p>`:''}<small>${esc(group.source || '')}${group.license?` · ${esc(group.license)}`:''}</small>`;
           if(group.sourceUrl?.startsWith('https://en.wiktionary.org/')) {
             const link=document.createElement('a');link.href=group.sourceUrl;link.target='_blank';link.rel='noopener';link.textContent=' — xem nguồn';block.append(link);
@@ -1041,7 +1065,7 @@ function render(d, scroll = true) {
     });
     let collocationData=en.collocations || {teaching:[],corpus:[],pending:true},combinationRequest=false;
     const phrases=document.createElement('details'); phrases.className='collocations foldout';phrases.setAttribute('data-panel','collocations');
-    phrases.innerHTML='<summary>Collocations</summary>';
+    phrases.innerHTML=`<summary>${esc(ui('Collocations'))}</summary>`;
     function addPhrases(items,container) {
       const groups=new Map();
       items.forEach(item=>{const list=groups.get(item.pattern)||[];list.push(item);groups.set(item.pattern,list);});
@@ -1058,7 +1082,7 @@ function render(d, scroll = true) {
       }
     }
     function drawCombinations() {
-    phrases.innerHTML='<summary>Collocations</summary>';
+    phrases.innerHTML=`<summary>${esc(ui('Collocations'))}</summary>`;
     if(collocationData.teaching?.length) {
       addPhrases(collocationData.teaching,phrases);
       phrases.insertAdjacentHTML('beforeend','<p class="src">Helen Dictionary — cụm từ và ví dụ biên soạn. Đối chiếu với từng nghĩa khi sử dụng.</p>');

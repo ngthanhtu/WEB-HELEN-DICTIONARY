@@ -11,6 +11,7 @@ const { voiceMetadata } = require('./lib/voice-labels');
 const { createTranslationService } = require('./lib/translation');
 const { createSpeechService } = require('./lib/speech-ai');
 const { createContextService, languages: contextLanguages } = require('./lib/context-ai');
+const languageConfig=require('./public/assets/languages');
 const dictionarySenses = require('./public/assets/sense-core');
 const { REVISION, words: relationWords, wiktionaryRelations, mergeRelations } = require('./lib/thesaurus');
 const { createDatabase } = require('./lib/database');
@@ -386,7 +387,8 @@ function beginLookup(word) {
   const task={first,complete}; lookups.set(word,task); return task;
 }
 app.get('/api/lookup', asyncHandler(async (req, res) => {
-  const raw=String(req.query.word||'').trim(), from=String(req.query.from||'en');
+  const raw=String(req.query.word||'').trim(), from=languageConfig.normalize(req.query.from ?? 'en');
+  if(!from)return res.status(400).json({error:'Unsupported search language.',code:'TRANSLATION_INVALID'});
   if (!raw) return res.status(400).json({error:'Type a word to search.'});
   if (raw.length>100) return res.status(400).json({error:'Use at most 100 characters for a lookup.'});
   let word;
@@ -443,7 +445,9 @@ app.post('/api/context',asyncHandler(async(req,res)=>{
 
 app.post('/api/translate', asyncHandler(async (req, res) => {
   try {
-    const { texts = [], from = 'en', to = 'vi', kind, definition, senses } = req.body;
+    const { texts = [], kind, definition, senses } = req.body;
+    const from=languageConfig.normalize(req.body.from ?? 'en'),to=languageConfig.normalize(req.body.to ?? 'vi');
+    if(!from || !to)return res.status(400).json({error:'Unsupported translation language.',code:'TRANSLATION_INVALID'});
     const deadline=Date.now()+6500;
     if (!Array.isArray(texts) || texts.length > 40 || !texts.every(text=>typeof text==='string' && text.trim() && text.length<=450)) return res.status(400).json({ error: 'Nội dung dịch không hợp lệ.', code:'TRANSLATION_INVALID' });
     if(kind==='definition'){

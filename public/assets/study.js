@@ -1,5 +1,6 @@
 (()=>{
   'use strict';
+  const localUI=(text,params)=>globalThis.HelenI18n?.t(text,params) || text;
   const core=window.HelenStudyCore,host=document.querySelector('#study');if(!core || !host)return;
   const $=selector=>host.querySelector(selector);let storage;try{storage=window.localStorage;}catch{}
   const library=window.HelenStudyLibrary;let learning=library.read(storage);
@@ -29,10 +30,10 @@
     const mode=$('#quiz-mode').value;
     const styleLabels={mixed:'Quick quiz',choice:'Multiple choice',cloze:'Fill in the blank',type:'Type the word',matching:'Matching pairs'};
     const ready=mode==='matching'?core.matchingPlan(list,()=>.5).length:core.quizCards(list).filter(item=>mode!=='cloze' || item.senses.some(sense=>!core.cloze(item.word,sense.definition) && sense.examples.some(example=>core.cloze(item.word,example)))).length;host.dataset.quizReady=String(ready>=3);
-    $('#quiz-readiness').textContent=ready>=3?`${styleLabels[mode]} ready · ${ready} từ có dữ liệu trong nhóm đang chọn.`:`${styleLabels[mode]} cần ít nhất 3 từ phù hợp · hiện ${ready}/3. ${mode==='cloze'?'Chỉ lấy từ có câu ví dụ chứa đúng từ đã lưu.':mode==='matching'?'Cần các cặp có nghĩa khác nhau.':'Lưu hoặc chuẩn bị thêm từ để bắt đầu.'}`;
+    $('#quiz-readiness').textContent=localUI(ready>=3?'{style} ready · {count} eligible words.':'{style} needs at least 3 suitable words · currently {count}/3.',{style:localUI(styleLabels[mode]),count:ready});
     $('#start-quiz').textContent=mode==='mixed'?'Quick quiz':mode==='matching'?'Start matching':mode==='cloze'?'Start fill-in-the-blank':mode==='type'?'Start typing':'Start multiple choice';
-    $('#study-count').textContent=`${due.length} cần ôn · ${list.length} sẵn sàng`;
-    $('#study-progress').textContent=topic?`${topicSource.title} · ${list.length} từ có thể luyện ngay. Muốn ôn theo lịch, lưu từ vào My words.`:list.length?`${due.length} từ đến hạn. ${missing.length?`${missing.length} từ cần chuẩn bị dữ liệu.`:'Nghĩa, ví dụ và tiến độ đã lưu trên thiết bị.'}`:'Lưu ☆ một từ khi tra cứu để bắt đầu. Từ yêu thích cũ có thể chuẩn bị bên dưới.';
+    $('#study-count').textContent=localUI('{due} due · {ready} ready',{due:due.length,ready:list.length});
+    $('#study-progress').textContent=topic?`${topicSource.title} · ${list.length} từ có thể luyện ngay. Muốn ôn theo lịch, lưu từ vào My words.`:list.length?`${localUI('{count} words due.',{count:due.length})} ${missing.length?localUI('{count} words need preparation.',{count:missing.length}):localUI('Nghĩa, ví dụ và tiến độ đã lưu trên thiết bị.')}`:localUI('Lưu ☆ một từ khi tra cứu để bắt đầu. Từ yêu thích cũ có thể chuẩn bị bên dưới.');
     $('#topic-practice-note').hidden=!topic;$('#topic-practice-note').textContent=topic?'Bạn đang luyện một nhóm từ trong Topics. Chọn kiểu bài bên dưới rồi Start. Quiz không tự thêm 20 từ vào kho cá nhân.':'';
     $('#start-review').disabled=due.length===0 || Boolean(session);
     $('#start-quiz').disabled=ready<3 || Boolean(session);
@@ -40,15 +41,15 @@
     $('#prepare-study').disabled=preparing || Boolean(session);
     $('#study-scope').disabled=Boolean(session);$('#quiz-mode').disabled=Boolean(session);$('#open-review').disabled=due.length===0 || Boolean(session);
     $('#create-deck').disabled=Boolean(session);$('#add-current-deck').disabled=Boolean(session);$('#deck-list').querySelectorAll('button').forEach(button=>button.disabled=Boolean(session));
-    $('#tile-due').textContent=`${due.length} từ đến hạn · ${list.length} đã sẵn sàng`;
-    $('#tile-decks').textContent=`${learning.decks.length} bộ từ cá nhân`;
+    $('#tile-due').textContent=localUI('{due} due · {ready} ready',{due:due.length,ready:list.length});
+    $('#tile-decks').textContent=localUI('{count} personal word sets',{count:learning.decks.length});
     const stats=library.statistics(learning,cards,favorites());$('#tile-progress').textContent=stats.answered?`${stats.accuracy}% đúng · ${stats.answered} lượt trả lời`:'Bắt đầu một lượt luyện tập';renderProgress(stats);
     $('#cancel-prepare').hidden=!preparing;
-    if(!topic && !due.length && list.length){const next=Math.min(...list.map(item=>item.dueAt));$('#study-next').textContent=`Lần ôn tiếp: ${new Date(next).toLocaleString('vi-VN',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})}.${ready>=3?' Quiz vẫn mở để luyện thêm.':''}`;}else $('#study-next').textContent='';
+    if(!topic && !due.length && list.length){const next=Math.min(...list.map(item=>item.dueAt));$('#study-next').textContent=`Lần ôn tiếp: ${new Date(next).toLocaleString(globalThis.HelenI18n?.locale || 'vi-VN',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})}.${ready>=3?' Quiz vẫn mở để luyện thêm.':''}`;}else $('#study-next').textContent='';
   }
   function renderDecks(){
     const select=$('#study-scope'),value=select.value;
-    select.innerHTML='<option value="all">All saved words</option>'+(topicSource?`<option value="topic">${esc(topicSource.title)} (20)</option>`:'')+learning.decks.map(deck=>`<option value="${esc(deck.id)}">${esc(deck.name)} (${deck.words.filter(word=>favorites().includes(word)).length})</option>`).join('');
+    select.innerHTML=`<option value="all">${esc(localUI('All saved words'))}</option>`+(topicSource?`<option value="topic">${esc(topicSource.title)} (20)</option>`:'')+learning.decks.map(deck=>`<option value="${esc(deck.id)}">${esc(deck.name)} (${deck.words.filter(word=>favorites().includes(word)).length})</option>`).join('');
     select.value=value==='topic' && topicSource?'topic':learning.decks.some(deck=>deck.id===value)?value:'all';$('#deck-count').textContent=String(learning.decks.length);
     $('#deck-list').innerHTML=learning.decks.length?learning.decks.map(deck=>`<article class="deck-card"><span class="section-kicker">WORD SET</span><h3>${esc(deck.name)}</h3><p>${deck.words.filter(word=>favorites().includes(word)).length} từ đã lưu · ${active().filter(item=>deck.words.includes(item.word)).length} sẵn sàng</p><div class="deck-actions"><button class="word-link" data-practice-deck="${esc(deck.id)}" type="button">Practice</button><button class="word-link" data-edit-deck="${esc(deck.id)}" type="button">Edit</button><button class="text-action" data-delete-deck="${esc(deck.id)}" type="button" aria-label="Delete word set ${esc(deck.name)}">Delete set</button></div></article>`).join(''):'<p class="empty-state">Kho từ đang chờ bộ đầu tiên của bạn. Thử “IELTS Reading” hoặc thêm một bộ mẫu bên dưới.</p>';
     $('#deck-list').querySelectorAll('[data-practice-deck]').forEach(button=>button.onclick=()=>{if(session){setStatus('Kết thúc lượt hiện tại trước khi đổi bộ từ.');return;}select.value=button.dataset.practiceDeck;refresh();$('#quiz-mode').focus();});
@@ -56,20 +57,20 @@
     $('#deck-list').querySelectorAll('[data-delete-deck]').forEach(button=>button.onclick=()=>{if(!confirm('Xóa bộ từ này? Từ yêu thích và lịch ôn vẫn được giữ.'))return;learning={...learning,decks:learning.decks.filter(deck=>deck.id!==button.dataset.deleteDeck)};saveLibrary();refresh();$('#create-deck').focus();});
   }
   function renderProgress(stats=library.statistics(learning,cards,favorites())){
-    $('#progress-panel').innerHTML=`<h3>Your learning snapshot</h3><div class="progress-metrics"><div><strong>${stats.answered}</strong><span>Answers</span></div><div><strong>${stats.accuracy===null?'—':stats.accuracy+'%'}</strong><span>Accuracy</span></div><div><strong>${stats.reviewed}</strong><span>Words reviewed</span></div><div><strong>${stats.due}</strong><span>Due now</span></div></div><p class="muted">Thống kê theo tối đa 500 lượt trả lời gần nhất trên thiết bị. Đây là kết quả luyện tập, không phải mức thành thạo được chứng nhận.</p><h4>Words to revisit</h4>${stats.difficult.length?stats.difficult.slice(0,12).map(item=>`<button class="word-link" data-revisit="${esc(item.word)}" type="button">${esc(item.word)} · ${item.wrong?item.wrong+' lần sai':'đã đánh dấu'}</button>`).join(' '):'<p>Chưa có từ hay sai. Kết quả sẽ xuất hiện sau khi bạn luyện tập.</p>'}<h4>Recent sessions</h4>${stats.sessions.length?`<ul>${stats.sessions.map(item=>`<li>${esc(item.mode==='review'?'Review':item.mode==='matching'?'Matching pairs':item.mode==='mixed'?'Quick quiz':item.mode)} · ${item.mode==='review'?`${item.total} thẻ`:`${item.correct}/${item.total}`} · ${esc(new Date(item.at).toLocaleString('vi-VN',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'}))}</li>`).join('')}</ul>`:'<p>Hoàn thành một phiên để xem kết quả ở đây.</p>'}`;
+    $('#progress-panel').innerHTML=`<h3>${esc(localUI('Your learning snapshot'))}</h3><div class="progress-metrics"><div><strong>${stats.answered}</strong><span>${esc(localUI('Answers'))}</span></div><div><strong>${stats.accuracy===null?'—':stats.accuracy+'%'}</strong><span>${esc(localUI('Accuracy'))}</span></div><div><strong>${stats.reviewed}</strong><span>${esc(localUI('Words reviewed'))}</span></div><div><strong>${stats.due}</strong><span>${esc(localUI('Due now'))}</span></div></div><p class="muted">Thống kê theo tối đa 500 lượt trả lời gần nhất trên thiết bị. Đây là kết quả luyện tập, không phải mức thành thạo được chứng nhận.</p><h4>${esc(localUI('Words to revisit'))}</h4>${stats.difficult.length?stats.difficult.slice(0,12).map(item=>`<button class="word-link" data-revisit="${esc(item.word)}" type="button">${esc(item.word)} · ${item.wrong?item.wrong+' lần sai':'đã đánh dấu'}</button>`).join(' '):'<p>Chưa có từ hay sai. Kết quả sẽ xuất hiện sau khi bạn luyện tập.</p>'}<h4>${esc(localUI('Recent sessions'))}</h4>${stats.sessions.length?`<ul>${stats.sessions.map(item=>`<li>${esc(item.mode==='review'?'Review':item.mode==='matching'?'Matching pairs':item.mode==='mixed'?'Quick quiz':item.mode)} · ${item.mode==='review'?`${item.total} thẻ`:`${item.correct}/${item.total}`} · ${esc(new Date(item.at).toLocaleString(globalThis.HelenI18n?.locale || 'vi-VN',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'}))}</li>`).join('')}</ul>`:'<p>Hoàn thành một phiên để xem kết quả ở đây.</p>'}`;
     $('#progress-panel').querySelectorAll('[data-revisit]').forEach(button=>button.onclick=()=>{if(session){setStatus('Kết thúc lượt hiện tại trước khi mở Review.');return;}start('review',[button.dataset.revisit]);});
   }
-  function setStatus(message){if(!volatile)$('#study-status').textContent=message;}
+  function setStatus(message){if(!volatile)$('#study-status').textContent=localUI(message);}
   const focus=()=>$('#study-stage').querySelector('button,input')?.focus({preventScroll:true});
   async function translateFeedback(question,panel=$('#quiz-translation')){
     if(!panel || !window.HelenQuizTranslation || typeof window.tr!=='function')return;
     const request=++translationRequest,target=document.querySelector('#target'),to=target?.value || 'vi';
     const language=target?.selectedOptions?.[0]?.textContent || 'Tiếng Việt';
-    if(window.showLoading)window.showLoading(panel,'Translating question…');else panel.textContent='Đang dịch câu hỏi…';
+    if(window.showLoading)window.showLoading(panel,'Translating question…');else panel.textContent=localUI('Đang dịch câu hỏi…');
     const rows=await window.HelenQuizTranslation.translate(question,to,window.tr);
     if(request!==translationRequest || !panel.isConnected)return;
     panel.removeAttribute('aria-busy');
-    panel.innerHTML=`<h4>Bản dịch · ${esc(language)}</h4>${rows.map(row=>`<p class="${row.error?'quiz-translation-error':'quiz-translated-line'}"><b>${esc(row.label)}:</b> ${esc(row.translation || row.error)}</p>`).join('')}${rows.some(row=>row.error)?'<button class="word-link" id="retry-quiz-translation" type="button">Retry translation</button>':''}`;
+    panel.innerHTML=`<h4>${esc(localUI('Translation'))} · ${esc(language)}</h4>${rows.map(row=>`<p class="${row.error?'quiz-translation-error':'quiz-translated-line'}"><b>${esc(localUI(row.label))}:</b> ${esc(row.translation || row.error)}</p>`).join('')}${rows.some(row=>row.error)?`<button class="word-link" id="retry-quiz-translation" type="button">${esc(localUI('Retry translation'))}</button>`:''}`;
     const retry=panel.querySelector('#retry-quiz-translation');if(retry)retry.onclick=()=>translateFeedback(question,panel);
   }
   function showCard(){
@@ -104,7 +105,7 @@
         $('#study-stage').querySelectorAll('button,input').forEach(node=>node.disabled=true);
         $('#study-stage').querySelectorAll('[data-choice]').forEach(node=>{if(node.dataset.choice===q.word)node.dataset.result='correct';else if(node.dataset.choice===value)node.dataset.result='incorrect';});
         const feedback=$('#quiz-feedback');feedback.className=correct?'quiz-feedback correct':'quiz-feedback incorrect';
-        feedback.innerHTML=`<strong>${correct?'✓ Đúng rồi!':'↻ Chưa đúng. Đáp án:'} ${esc(q.word)}</strong><p class="quiz-explanation"><b>${esc(q.word)}</b> (${esc(q.pos)}): ${esc(q.definition || q.prompt)}</p>${q.original?`<p class="study-example">Trong ngữ cảnh: “${esc(q.original)}”</p>`:''}<section class="quiz-translation" id="quiz-translation" aria-label="Question translation" role="status"></section>${!correct?'<p class="quiz-review-hint">Nhớ lại nghĩa và cách dùng trong câu. Từ này đã được thêm vào <b>Review mistakes</b> cuối lượt quiz để bạn ôn lại.</p>':''}<small class="muted">${esc(q.source)}</small><div class="quiz-feedback-actions"><button class="word-link" id="next-question" type="button">${session.index+1===session.items.length?'See results':'Next question'}</button></div>`;
+        feedback.innerHTML=`<strong>${correct?'✓ Đúng rồi!':'↻ Chưa đúng. Đáp án:'} ${esc(q.word)}</strong><p class="quiz-explanation"><b>${esc(q.word)}</b> (${esc(q.pos)}): ${esc(q.definition || q.prompt)}</p>${q.original?`<p class="study-example">Trong ngữ cảnh: “${esc(q.original)}”</p>`:''}<section class="quiz-translation" id="quiz-translation" aria-label="Question translation" role="status"></section>${!correct?`<p class="quiz-review-hint">Nhớ lại nghĩa và cách dùng trong câu. Từ này đã được thêm vào <b>${esc(localUI('Review mistakes'))}</b> cuối lượt quiz để bạn ôn lại.</p>`:''}<small class="muted">${esc(q.source)}</small><div class="quiz-feedback-actions"><button class="word-link" id="next-question" type="button">${session.index+1===session.items.length?'See results':'Next question'}</button></div>`;
         void translateFeedback(q);
         session.feedbackQuestion=q;feedbackTools(q,feedback);
         $('#next-question').onclick=()=>{session.index++;session.answered=false;showCard();};$('#next-question').focus({preventScroll:true});
@@ -155,7 +156,7 @@
       const panel=$('#matching-feedback');panel.className=`quiz-feedback ${correct?'correct':'incorrect'}`;
       panel.innerHTML=`<strong>${correct?'✓ Matched':'↻ Chưa đúng'} · ${esc(q.word)}</strong><p>${esc(q.definition)}</p>${q.original?`<p class="study-example">“${esc(q.original)}”</p>`:''}<small>${esc(q.source)}</small><section class="quiz-translation" id="quiz-translation" aria-label="Question translation" role="status"></section>${!correct?'<p>Hãy ghép lại. Từ này đã được ghi vào Words to revisit.</p>':''}`;
       session.feedbackQuestion=q;session.answered=true;void translateFeedback(q);feedbackTools(q,panel);
-      if(session.matched.size===session.questions.length){panel.insertAdjacentHTML('beforeend','<button class="word-link" id="matching-results" type="button">See results</button>');$('#matching-results').onclick=finish;$('#matching-results').focus({preventScroll:true});}
+      if(session.matched.size===session.questions.length){panel.insertAdjacentHTML('beforeend',`<button class="word-link" id="matching-results" type="button">${esc(localUI('See results'))}</button>`);$('#matching-results').onclick=finish;$('#matching-results').focus({preventScroll:true});}
       else $('#study-stage').querySelector('[data-match-word]:not(:disabled)')?.focus({preventScroll:true});
     };
     $('#study-stage').querySelectorAll('[data-match-word]').forEach(button=>button.onclick=()=>select('selectedWord',button.dataset.matchWord));
@@ -206,7 +207,7 @@
   function editDeck(id,selectedWord){
     if(!editor.open)returnFocus=document.activeElement;
     addingWord=selectedWord || null;const deck=learning.decks.find(item=>item.id===id);editingId=deck?.id || null;
-    const existing=document.querySelector('#deck-existing');existing.innerHTML='<option value="">Create a new set</option>'+learning.decks.map(item=>`<option value="${esc(item.id)}">${esc(item.name)}</option>`).join('');existing.value=editingId || '';
+    const existing=document.querySelector('#deck-existing');existing.innerHTML=`<option value="">${esc(localUI('Create a new set'))}</option>`+learning.decks.map(item=>`<option value="${esc(item.id)}">${esc(item.name)}</option>`).join('');existing.value=editingId || '';
     document.querySelector('#deck-editor-title').textContent=deck?'Edit word set':'New word set';document.querySelector('#deck-name').value=deck?.name || '';document.querySelector('#deck-filter').value='';document.querySelector('#deck-editor-error').textContent='';
     const chosen=new Set([...(deck?.words || []),...(selectedWord?[selectedWord]:[])]);
     document.querySelector('#deck-word-options').innerHTML=favorites().length?favorites().map(word=>`<label class="deck-word-option"><input type="checkbox" value="${esc(word)}" ${chosen.has(word)?'checked':''}><span>${esc(word)}</span></label>`).join(''):'<p>Chưa có từ đã lưu. Bạn có thể tạo bộ trống rồi thêm từ sau.</p>';

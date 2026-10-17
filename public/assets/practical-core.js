@@ -22,15 +22,15 @@
  function restore(value){
   if(!value || !scenario(value.scenario) || !levels.includes(value.level) || !Array.isArray(value.messages) || value.messages.length>25 || !value.messages.every(validTurn))return null;
   if(!value.messages.length || value.messages[0].role!=='assistant' || value.messages.at(-1).role!=='assistant' || value.messages.some((item,i)=>item.role!==(i%2?'user':'assistant')))return null;
-  return {scenario:value.scenario,level:value.level,messages:value.messages.map(item=>({role:item.role,text:item.text.trim(),...(typeof item.translation==='string' && item.translation.length<=900?{translation:item.translation}:{}),...(item.feedback && typeof item.feedback==='object'?{feedback:item.feedback}:{}),...(Array.isArray(item.pronunciation)?{pronunciation:item.pronunciation.slice(0,3)}:{})}))};
+  return {scenario:value.scenario,level:value.level,messages:value.messages.map(item=>({role:item.role,text:item.text.trim(),...(typeof item.translation==='string' && item.translation.length<=900?{translation:item.translation,translationLanguage:typeof item.translationLanguage==='string'?item.translationLanguage:'vi'}:{}),...(item.feedback && typeof item.feedback==='object'?{feedback:item.feedback}:{}),...(Array.isArray(item.pronunciation)?{pronunciation:item.pronunciation.slice(0,3)}:{})}))};
  }
  function fresh(id='coffee',level='B1'){
-  const item=scenario(id) || scenarios[0];return {scenario:item.id,level:levels.includes(level)?level:'B1',messages:[{role:'assistant',text:item.opening,translation:item.translation}]};
+  const item=scenario(id) || scenarios[0];return {scenario:item.id,level:levels.includes(level)?level:'B1',messages:[{role:'assistant',text:item.opening,translation:item.translation,translationLanguage:'vi'}]};
  }
  function context(state){return state.messages.slice(-11).map(({role,text})=>({role,text}));}
  function add(state,response){
   if(!response || typeof response.transcript!=='string' || !response.transcript.trim() || typeof response.reply!=='string' || !response.reply.trim())throw Error('Chưa nhận được phản hồi. Hãy thử lại.');
-  const messages=[...state.messages,{role:'user',text:response.transcript,feedback:{improved:response.improved,note:response.feedback,phrase:response.phrase,corrections:response.corrections || [],collocations:response.collocations || [],...(typeof response.liveTranscript==='string' && response.liveTranscript.length<=6000?{liveTranscript:response.liveTranscript}:{}),...(response.speakingFlow?{speakingFlow:response.speakingFlow}:{}),...(response.coachingPartial?{partial:true}:{})}},{role:'assistant',text:response.reply,translation:response.translation,pronunciation:response.pronunciation}];
+  const messages=[...state.messages,{role:'user',text:response.transcript,feedback:{translationLanguage:response.translationLanguage || 'vi',improved:response.improved,note:response.feedback,phrase:response.phrase,corrections:response.corrections || [],collocations:response.collocations || [],...(typeof response.liveTranscript==='string' && response.liveTranscript.length<=6000?{liveTranscript:response.liveTranscript}:{}),...(response.speakingFlow?{speakingFlow:response.speakingFlow}:{}),...(response.coachingPartial?{partial:true}:{})}},{role:'assistant',text:response.reply,translation:response.translation,translationLanguage:response.translationLanguage || 'vi',pronunciation:response.pronunciation}];
   // Keep the opening and the latest twelve complete exchanges, never half a turn.
   return {...state,messages:messages.length>25?[messages[0],...messages.slice(-24)]:messages};
  }

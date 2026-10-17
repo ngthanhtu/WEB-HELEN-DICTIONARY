@@ -11,7 +11,7 @@
   document.documentElement.dataset.page=active;
   function render({focus=false,scroll=false,notify=true,restore=true}={}){
     document.documentElement.dataset.page=active;
-    document.title=`${titles[active]} · Helen Dictionary`;
+    document.title=`${window.HelenI18n?.t(titles[active]) || titles[active]} · Helen Dictionary`;
     const current=document.getElementById(`page-${active}`);
     document.querySelectorAll('[data-app-page]').forEach(page=>page.hidden=page.dataset.appPage!==active);
     document.querySelectorAll('.main-nav [data-page-link]').forEach(link=>{
@@ -34,6 +34,7 @@
     return true;
   }
   window.HelenPages={go,current:()=>active};
+  document.addEventListener('helen:locale-change',()=>render({notify:false}));
   document.addEventListener('DOMContentLoaded',()=>{
     ready=true;if(legacy[location.hash])window.history.replaceState({helenPage:active},'',legacy[location.hash]);
     render({notify:false});

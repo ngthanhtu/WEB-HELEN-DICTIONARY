@@ -1,4 +1,5 @@
 (()=>{
+  const localUI=(text,params)=>globalThis.HelenI18n?.t(text,params) || text,markUI=node=>globalThis.HelenI18n?.markUI(node);
   const install=document.querySelector('#install-app'), help=document.querySelector('#install-help');
   const status=document.querySelector('#connection-status'), update=document.querySelector('#app-update');
   if(!install || !help || !status || !update)return;
@@ -24,16 +25,16 @@
       prompt=null;return;
     }
     const ios=/iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
-    document.querySelector('#install-steps').textContent=ios
+    document.querySelector('#install-steps').textContent=localUI(ios
       ? 'Cài miễn phí, không cần App Store. Mở trong Safari → Chia sẻ → Thêm vào Màn hình chính → Thêm. Bật Open as Web App nếu có.'
-      : 'Cài miễn phí từ web. Chrome → menu ⋮ → Cài đặt ứng dụng hoặc Thêm vào màn hình chính → xác nhận Cài đặt. Không cần CH Play.';
+      : 'Cài miễn phí từ web. Chrome → menu ⋮ → Cài đặt ứng dụng hoặc Thêm vào màn hình chính → xác nhận Cài đặt. Không cần CH Play.');
     showDialog(help);
   });
   document.querySelector('#close-install').addEventListener('click',()=>closeDialog(help));
   const library=document.createElement('details');library.className='offline-library';
   library.innerHTML='<summary>Saved offline <span id="offline-count">(0)</span></summary><p id="offline-summary" role="status">Đang kiểm tra dữ liệu trên thiết bị…</p><div class="offline-word-list"></div><button class="word-link" id="download-offline-pack" type="button" disabled>Download offline pack</button><p class="offline-note">Lưu tối đa 100 mục tra. Bấm mắt hoặc tạo AI khi có mạng để lưu thêm bản dịch và bài học. Từ mới và micro cần Internet.</p>';
   const offlinePage=document.querySelector('#offline-content');
-  (offlinePage || document.querySelector('.app-tools').parentElement).append(library);
+  markUI(library);(offlinePage || document.querySelector('.app-tools').parentElement).append(library);
   library.open=Boolean(offlinePage);
   if(offlinePage){
     const tools=document.createElement('div');tools.className='app-tools';tools.append(install);offlinePage.prepend(tools);
@@ -42,21 +43,21 @@
   // Saved offline is collapsed or service-worker installation has not finished.
   const audioPanel=document.createElement('section');audioPanel.id='offline-pronunciation';audioPanel.className='offline-audio';audioPanel.setAttribute('aria-label','Offline pronunciation');
   audioPanel.innerHTML='<div class="offline-audio-heading"><span class="offline-audio-icon" aria-hidden="true">🔊</span><div><h3>Offline pronunciation</h3><p id="offline-audio-summary" role="status">Âm thanh đã nghe được lưu tự động trên thiết bị.</p></div></div><div class="offline-actions"><button class="btn" id="download-favorite-audio" type="button">↓ Save favorite audio</button><button class="word-link" id="cancel-favorite-audio" type="button" hidden>Stop</button><button class="word-link" id="clear-offline-audio" type="button">Clear audio</button></div><p id="offline-audio-progress" role="status"></p><details class="offline-audio-help"><summary>How it works</summary><p class="offline-note">Lưu giọng của tối đa 10 từ yêu thích mỗi lượt, dùng hạn mức ElevenLabs. Chỉ tải giọng đang chọn; từ và câu đã nghe mở lại không cần mạng. Tối đa 100 âm thanh / 20 MiB. Xoá âm thanh không xoá từ hoặc lịch ôn.</p></details>';
-  library.insertAdjacentElement('afterend',audioPanel);
+  markUI(audioPanel);library.insertAdjacentElement('afterend',audioPanel);
   const packButton=library.querySelector('#download-offline-pack'), summary=library.querySelector('#offline-summary'), list=library.querySelector('.offline-word-list');
   const packDialog=document.createElement('dialog');packDialog.className='offline-dialog';
   packDialog.innerHTML='<h2>Offline pack</h2><p>Tải bộ từ tiếng Anh thông dụng và nghĩa tiếng Việt về thiết bị này? Chỉ tải khi bạn xác nhận; không gọi dịch vụ AI hay giọng đọc.</p><p>Các câu định nghĩa chỉ có bản dịch nếu bạn đã bấm mắt khi có mạng.</p><div class="offline-actions"><button class="btn" id="confirm-offline-pack" type="button">Download</button><button class="word-link" id="cancel-offline-pack" type="button">Cancel</button></div>';
-  document.body.append(packDialog);
+  markUI(packDialog);document.body.append(packDialog);
   const audioStore=window.HelenOfflineAudio,audioButton=audioPanel.querySelector('#download-favorite-audio'),audioSummary=audioPanel.querySelector('#offline-audio-summary'),audioProgress=audioPanel.querySelector('#offline-audio-progress'),audioStop=audioPanel.querySelector('#cancel-favorite-audio'),audioClear=audioPanel.querySelector('#clear-offline-audio');
   let audioController=null,audioVoice='',audioWords=[];
   const audioDialog=document.createElement('dialog');audioDialog.className='offline-dialog';
   audioDialog.innerHTML='<h2>Save favorite audio</h2><p id="offline-audio-confirm-copy"></p><p>Dùng hạn mức ElevenLabs. Không đổi giọng tự động. Mỗi lượt tải tối đa 10 từ; bạn có thể dừng bất cứ lúc nào.</p><div class="offline-actions"><button class="btn" id="confirm-favorite-audio" type="button">Download</button><button class="word-link" id="cancel-audio-dialog" type="button">Cancel</button></div>';
-  document.body.append(audioDialog);
+  markUI(audioDialog);document.body.append(audioDialog);
   const favoriteWords=()=>{try{const value=JSON.parse(localStorage.getItem('helen-favorites') || '[]');return Array.isArray(value)?value:[];}catch{return [];}};
   const chosenVoice=()=>typeof selectedVoice==='string'?selectedVoice:document.querySelector('#voice').value;
   async function refreshAudio(){
     const clips=await audioStore?.inventory() || [],bytes=clips.reduce((sum,clip)=>sum+clip.bytes,0);
-    audioSummary.textContent=audioStore?.available?`${clips.length} âm thanh · ${(bytes/1024/1024).toFixed(1)} MiB · ${clips.filter(clip=>clip.voice===chosenVoice()).length} cho giọng đang chọn.`:'Trình duyệt chưa hỗ trợ lưu âm thanh ngoại tuyến.';
+    audioSummary.textContent=audioStore?.available?localUI('{clips} clips · {size} MiB · {selected} for selected voice',{clips:clips.length,size:(bytes/1024/1024).toFixed(1),selected:clips.filter(clip=>clip.voice===chosenVoice()).length}):'Trình duyệt chưa hỗ trợ lưu âm thanh ngoại tuyến.';
     // Explain missing prerequisites on tap instead of leaving a dead disabled
     // button. Only an active download prevents another batch.
     audioButton.disabled=Boolean(audioController);
@@ -89,7 +90,7 @@
     dialog.innerHTML='<h2>Clear saved audio?</h2><p>Chỉ xoá âm thanh trên thiết bị này. Từ đã lưu, bài AI và lịch ôn được giữ.</p><div class="offline-actions"><button class="btn" type="button">Clear audio</button><button class="word-link" type="button">Cancel</button></div>';
     const [clear,cancel]=dialog.querySelectorAll('button');cancel.onclick=()=>{closeDialog(dialog);dialog.remove();};
     clear.onclick=async()=>{clear.disabled=true;const removed=await audioStore.clear();audioProgress.textContent=removed?'Đã xoá âm thanh. Từ và lịch ôn được giữ.':'Chưa xoá được. Hãy thử lại.';closeDialog(dialog);dialog.remove();await refreshAudio();};
-    document.body.append(dialog);showDialog(dialog);
+    markUI(dialog);document.body.append(dialog);showDialog(dialog);
     dialog.addEventListener('close',()=>dialog.remove(),{once:true});
   };
   audioDialog.querySelector('#confirm-favorite-audio').onclick=async()=>{
@@ -128,7 +129,7 @@
     try {
       const {words=[]}=await workerMessage({type:'OFFLINE_WORDS'});
       library.querySelector('#offline-count').textContent=`(${words.length})`;
-      summary.textContent=`${words.length} mục tra · ${localCount('helen-translations','values')} bản dịch · ${localCount('helen-ai-contexts')} bài AI đã lưu trên thiết bị này.`;
+      summary.textContent=localUI('{words} lookups · {translations} translations · {lessons} AI lessons saved on this device.',{words:words.length,translations:localCount('helen-translations','values'),lessons:localCount('helen-ai-contexts')});
       list.replaceChildren();
       words.forEach(item=>{
         const button=document.createElement('button');button.type='button';button.className='word-link';

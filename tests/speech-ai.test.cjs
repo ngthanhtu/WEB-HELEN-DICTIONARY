@@ -8,7 +8,7 @@ const answer=text=>Response.json({candidates:[{content:{role:'model',parts:[{tex
 test('speech rejects mismatched containers, oversized data, unsupported languages and long clips',()=>{
   assert.equal(validateRecording(clip).mimeType,'audio/mp4');
   assert.equal(validateRecording(clip).language,'en');
-  assert.equal(validateRecording({...clip,language:'zh-TW'}).language,'zh-TW');
+  assert.equal(validateRecording({...clip,language:'zh-TW'}).language,'zh-CN');
   for(const change of [{mimeType:'text/html'},{mimeType:'audio/webm'},{audio:'not-base64'},{language:'xx-XX'},{durationMs:18000},{audio:Buffer.alloc(MAX_AUDIO_BYTES+1).toString('base64')}]) {
     assert.throws(()=>validateRecording({...clip,...change}),error=>error.status===400);
   }

@@ -3,6 +3,8 @@
 html[data-page=dictionary] [data-app-page=dictionary],html[data-page=study] [data-app-page=study],html[data-page=topics] [data-app-page=topics],html[data-page=practical] [data-app-page=practical],html[data-page=words] [data-app-page=words],html[data-page=history] [data-app-page=history],html[data-page=offline] [data-app-page=offline]{display:block}
 #app-content{max-width:none;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;min-height:65dvh}
 .brand>a{color:var(--text-inverse);text-decoration:none}
+/* Change both navigation colors together, preserving contrast during page changes. */
+.main-nav a{transition:box-shadow var(--motion),transform var(--motion)}
 .main-nav a[aria-current=page]{background:var(--accent);color:var(--surface-strong);font-weight:700}
 .main-nav a[aria-current=page]:hover{background:var(--accent);color:var(--surface-strong)}
 .main-nav a:active{transform:translateY(1px)}

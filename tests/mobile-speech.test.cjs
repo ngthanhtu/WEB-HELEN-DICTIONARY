@@ -19,7 +19,7 @@ function phone({onStart=true,onStop=true,online=true,supported=true,secure=true,
     stop(){this.stops++;if(onStop)this.onend();}
     abort(){this.aborts++;this.onend();}
   }
-  const context=vm.createContext({
+  const context=vm.createContext({HelenLanguages:require('../public/assets/languages'),
     webkitSpeechRecognition:supported?Recognition:undefined,isSecureContext:secure,navigator:{onLine:online,userAgent:ios?'Mozilla/5.0 (iPhone) Version/18.0 Mobile Safari':''},HelenVoiceRecorder:recorder,
     addEventListener:(name,callback)=>windowEvents[name]=callback,
     document:{createElement:()=>node(`created-${nodes.size}`),addEventListener:(name,callback)=>documentEvents[name]=callback},

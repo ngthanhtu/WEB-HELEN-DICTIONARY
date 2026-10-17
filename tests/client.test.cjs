@@ -4,13 +4,14 @@ const vm = require('node:vm');
 const fs = require('node:fs');
 const script = fs.readFileSync(require('node:path').join(__dirname,'../index.html'),'utf8').split('<script>')[1].split('</script>')[0];
 function page(saved = {}, lookupFetch = null, browser = {}, actionFetch = null) {
+  browser={...browser,navigator:{language:'vi-VN',...browser.navigator}};
   const elements = new Map(), created = [];
   const element = id => {
     if (!elements.has(id)) elements.set(id,{value:'',textContent:'',events:{},innerHTML:'',append(){},insertAdjacentHTML(){},querySelector(){return null;},add(option){(this.options ||= []).push(option);},replaceChildren(){this.options=[];},setAttribute(name,value){(this.attributes ||= {})[name]=value;},getAttribute(name){return this.attributes?.[name];},removeAttribute(name){if(this.attributes) delete this.attributes[name];},addEventListener(name,fn){const before=this.events[name];this.events[name]=(...args)=>{before?.(...args);return fn(...args);};}});
     return elements.get(id);
   };
   const requests=[];
-  const context = vm.createContext({crypto:require('node:crypto').webcrypto,TextEncoder,TextDecoder,HelenSenses:require('../public/assets/sense-core'),document:{documentElement:{dataset:{}},createElement:()=>{ const node=element(`#created-${created.length}`), children=new Map(); node.querySelectorAll=sel=>[node.querySelector(sel)]; node.querySelector=sel=>{if(!children.has(sel)) children.set(sel,element(`#child-${created.length}-${sel}`)); return children.get(sel);}; created.push(node); return node; },querySelector:element,querySelectorAll:()=>[]}, localStorage:{getItem:k=>saved[k],setItem:(k,v)=>saved[k]=v}, Image:class {}, Option:class {constructor(text,value){this.text=text;this.value=value;}}, URL, Audio:class {}, setTimeout, clearTimeout, fetch:async(url,options)=>{
+  const context = vm.createContext({HelenLanguages:require('../public/assets/languages'),crypto:require('node:crypto').webcrypto,TextEncoder,TextDecoder,HelenSenses:require('../public/assets/sense-core'),document:{documentElement:{dataset:{}},createElement:()=>{ const node=element(`#created-${created.length}`), children=new Map(); node.querySelectorAll=sel=>[node.querySelector(sel)]; node.querySelector=sel=>{if(!children.has(sel)) children.set(sel,element(`#child-${created.length}-${sel}`)); return children.get(sel);}; created.push(node); return node; },querySelector:element,querySelectorAll:()=>[]}, localStorage:{getItem:k=>saved[k],setItem:(k,v)=>saved[k]=v}, Image:class {}, Option:class {constructor(text,value){this.text=text;this.value=value;}}, URL, Audio:class {}, setTimeout, clearTimeout, fetch:async(url,options)=>{
     requests.push({url,options});
     if(actionFetch) {const reply=actionFetch(url,options);if(reply!==undefined) return reply;}
     if(url.includes('/api/pronunciation')){const body=JSON.parse(options.body);return {ok:true,json:async()=>({...body,proof:`${Math.floor(Date.now()/1000)+3600}.fixture.fixture`})};}
@@ -480,4 +481,17 @@ test('late voice lists cannot replace a newer list or an explicit choice',async(
  pending[1](Response.json({in_use:'Rachel',voices:[{voice_id:'Bella',name:'Bella'},{voice_id:'Sarah',name:'Sarah'}]}));await latest;
  pending[0](Response.json({in_use:'Rachel',voices:[{voice_id:'Rachel',name:'Old voice'}]}));await new Promise(resolve=>setImmediate(resolve));
  assert.equal(p.element('#voice').value,'Bella');assert.equal(p.saved['helen-voice'],'Bella');assert.deepEqual(p.element('#voice').options.map(v=>v.value),['Bella','Sarah']);
+});
+
+test('phone language initializes translation only when there is no saved choice, without changing explicit source or target',()=>{
+ const phone=page({},null,{navigator:{language:'ko-KR'}});assert.equal(phone.element('#target').value,'ko');assert.equal(phone.element('#from').value,'en');
+ const saved=page({'helen-target':'fr','helen-from':'ja'},null,{navigator:{language:'ko-KR'}});assert.equal(saved.element('#target').value,'fr');assert.equal(saved.element('#from').value,'ja');
+ const legacy=page({'helen-target':'de','helen-from':'ru'},null,{navigator:{language:'ja-JP'}});assert.equal(legacy.element('#target').value,'ja');assert.equal(legacy.element('#from').value,'en');
+});
+test('non-English lookups translate the original query directly to the selected target and swap the translated text',async()=>{
+ const p=page({'helen-target':'ko','helen-from':'fr'});p.element('#q').value='bonjour';await vm.runInContext('searchWord()',p.context);await new Promise(resolve=>setImmediate(resolve));
+ const translated=p.requests.filter(request=>request.url.includes('/api/translate')).map(request=>JSON.parse(request.options.body));
+ assert.ok(translated.some(body=>body.from==='fr' && body.to==='ko' && body.texts[0]==='bonjour'));
+ assert.ok(!translated.some(body=>body.kind==='headword' && body.from==='en'),'must not translate the English pivot headword instead of the original French query');
+ p.element('#swap-languages').events.click();await new Promise(resolve=>setImmediate(resolve));assert.equal(p.element('#from').value,'ko');assert.equal(p.element('#target').value,'fr');assert.equal(p.element('#q').value,'ko:hello');
 });

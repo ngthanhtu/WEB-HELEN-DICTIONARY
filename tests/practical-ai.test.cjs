@@ -106,3 +106,14 @@ test('private retry cache remains scoped to the device when request ID and conte
  let calls=0;const input=body(),service=createPracticalService({apiKey:'test-only',fetchImpl:async()=>{calls++;return generated(output(input.text));}});
  await service.reply(input,{device:'a'.repeat(64)});await service.reply(input,{device:'a'.repeat(64)});await service.reply(input,{device:'b'.repeat(64)});assert.equal(calls,2);
 });
+
+test('speaking uses selected translation language separately from the phone interface and never translates learner English',async()=>{
+ for(const [translationLanguage,interfaceLanguage,target,ui] of [['ko','fr','Korean','French'],['vi','ja','Vietnamese','Japanese'],['en','es','English','Spanish']]){
+  const input={...body('Um I I work at a school. Um uh I teach English.'),translationLanguage,interfaceLanguage};let instruction;
+  const service=createPracticalService({apiKey:'test-only',model:'gemini-2.5-flash-lite',fetchImpl:async(url,options)=>{const payload=JSON.parse(options.body);instruction=payload.systemInstruction.parts[0].text;return generated(output(input.text));}});
+  const result=await service.reply(input);assert.equal(result.transcript,input.text);assert.equal(result.translationLanguage,translationLanguage);assert.equal(result.interfaceLanguage,interfaceLanguage);
+  assert.ok(instruction.includes(`Translate reply, phrase and collocation translation fields into ${target}.`));assert.ok(instruction.includes(`Write explanations, correction reasons, speech notes and assessment feedback in ${ui}.`));
+  assert.notEqual(result.feedback,'Thử dùng cụm gợi ý khi phù hợp, rồi trả lời câu hỏi tiếp theo bằng ý của bạn.');assert.notEqual(result.speakingFlow.strategy,'Khoảng nghỉ tự nhiên là bình thường. Thử dừng 1–2 giây, chọn một cụm phù hợp rồi nói ý chính → lý do → ví dụ. Đừng thay mọi “um” bằng cùng một câu học thuộc.');
+ }
+ assert.throws(()=>validateInput({...body(),translationLanguage:'de'}),error=>error.code==='PRACTICAL_INPUT');
+});
