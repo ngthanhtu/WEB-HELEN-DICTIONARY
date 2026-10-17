@@ -321,7 +321,7 @@ const LANGS = HelenLanguages.names;
 const ui=(text,params)=>globalThis.HelenI18n?.t(text,params) || text;
 
 const $ = s => document.querySelector(s);
-const opt = (sel, def) => { sel.innerHTML = Object.entries(LANGS).map(([k,v]) => `<option value="${k}">${v}</option>`).join(''); sel.value = def; };
+const opt = (sel, def) => { sel.innerHTML = Object.entries(LANGS).map(([k,v]) => `<option value="${k}">${HelenLanguages.flags[k]} ${v}</option>`).join(''); sel.value = def; };
 const stored = key => { try { return localStorage.getItem(key); } catch { return null; } };
 const remember = (key, value) => { try { localStorage.setItem(key, value); } catch {} };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
