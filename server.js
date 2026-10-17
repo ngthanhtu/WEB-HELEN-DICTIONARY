@@ -445,7 +445,8 @@ app.post('/api/context',asyncHandler(async(req,res)=>{
 
 app.post('/api/translate', asyncHandler(async (req, res) => {
   try {
-    const { texts = [], kind, definition, senses } = req.body;
+    const { texts = [], definition, senses } = req.body;
+    const kind=req.body.kind || 'direct';
     const from=languageConfig.normalize(req.body.from ?? 'en'),to=languageConfig.normalize(req.body.to ?? 'vi');
     if(!from || !to)return res.status(400).json({error:'Unsupported translation language.',code:'TRANSLATION_INVALID'});
     const deadline=Date.now()+6500;

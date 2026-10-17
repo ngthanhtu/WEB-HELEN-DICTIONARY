@@ -235,3 +235,20 @@ test('reverse-language lookup requests one headword and keeps its cache separate
   assert.equal(await service.translate('trung gian', 'vi', 'en'), 'intermediate; intermediary');
   assert.equal(await service.translate('trung gian', 'vi', 'en', { kind: 'lookup' }), 'intermediate');
 });
+
+test('direct multilingual translations bypass unverified memory results and use a separate durable namespace with the stable Lite model',async()=>{
+ let ai=0,primary=0;const writes=[],reserve=[],sourceTexts=['Bonjour','감사합니다'];
+ const store={get:async namespace=>namespace==='translation-v2'?{value:'Thank You'}:null,set:async(...args)=>{writes.push(args);return true;}};
+ const service=createTranslationService({apiKey:'test-only',store,beforeGenerate:async()=>reserve.push(1),fetchImpl:async(url,request)=>{
+  if(String(url).includes('mymemory')){primary++;return Response.json({responseStatus:200,responseData:{translatedText:'Thank You'}});}
+  ai++;assert.ok(String(url).includes('gemini-3.1-flash-lite'));const input=JSON.parse(JSON.parse(request.body).contents[0].parts[0].text);
+  if(input.sourceLanguage==='French')assert.equal(input.targetLanguage,'Japanese');else {assert.equal(input.sourceLanguage,'Korean');assert.equal(input.targetLanguage,'French');}
+  return gemini(request,()=>input.targetLanguage==='Japanese'?'こんにちは':'Merci');
+ }});
+ assert.equal(await service.translate(sourceTexts[0],'fr','ja',{kind:'direct'}),'こんにちは');assert.equal(await service.translate(sourceTexts[1],'ko','fr',{kind:'direct'}),'Merci');
+ assert.equal(await service.translate(sourceTexts[0],'fr','ja',{kind:'direct'}),'こんにちは');await service.drain();assert.equal(ai,2);assert.equal(reserve.length,2);assert.equal(primary,0);assert.equal(writes.length,2);assert.ok(writes.every(item=>item[0]==='translation-language-v1'));
+});
+test('direct language translations never fall back to a wrong-language memory when AI quota fails',async()=>{
+ let primary=0;const service=createTranslationService({apiKey:'test-only',fetchImpl:async(url)=>{if(String(url).includes('mymemory')){primary++;return Response.json({responseStatus:200,responseData:{translatedText:'Thank You'}});}return Response.json({error:{code:429,status:'RESOURCE_EXHAUSTED',message:'quota'}},{status:429});}});
+ await assert.rejects(service.translate('감사합니다','ko','fr',{kind:'direct'}),{code:'TRANSLATION_QUOTA'});assert.equal(primary,0);assert.equal(service.status().cachedTranslations,0);
+});

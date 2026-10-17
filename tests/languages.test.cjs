@@ -41,3 +41,15 @@ test('interface translations are local, parameterized and independent of learner
  i18n.setLocale('ja');assert.equal(i18n.t('Search'),'検索');assert.equal(i18n.t('2/5 lượt luyện'),'練習 2/5回');
  i18n.setLocale('fr');assert.equal(i18n.t('Meanings in'),'Traduire en');
 });
+
+test('structured direct translation routes all 42 pairs to their requested target without unverified memory fallback',async()=>{
+ const samples={en:'Good evening.',vi:'Chào buổi tối.',ko:'좋은 저녁입니다.',ja:'こんばんは。','zh-CN':'晚上好。',es:'Buenas noches.',fr:'Bonsoir.'};let calls=0;
+ const service=createTranslationService({apiKey:'test-only',fetchImpl:async(url,options)=>{
+  assert.ok(!String(url).includes('mymemory'));calls++;const input=JSON.parse(JSON.parse(options.body).contents[0].parts[0].text);
+  const from=Object.keys(languages.english).find(key=>languages.english[key]===input.sourceLanguage),to=Object.keys(languages.english).find(key=>languages.english[key]===input.targetLanguage);
+  assert.ok(from && to && from!==to);assert.ok(input.texts.every(item=>item.text===samples[from]));
+  return Response.json({candidates:[{content:{role:'model',parts:[{text:JSON.stringify({translations:input.texts.map(item=>({id:item.id,text:samples[to]}))})}]},finishReason:'STOP'}]});
+ }});
+ for(const from of Object.keys(samples))for(const to of Object.keys(samples))if(from!==to)assert.equal(await service.translate(samples[from],from,to,{kind:'direct'}),samples[to],`${from}→${to}`);
+ assert.equal(calls,42);
+});

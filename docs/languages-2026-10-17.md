@@ -9,7 +9,7 @@ Helen supports English (`en`), Vietnamese (`vi`), Korean (`ko`), Japanese (`ja`)
 - Non-English search input translates **directly from the original query to the selected target**. The English headword used to retrieve dictionary definitions does not replace that query for translation. A separate translation panel remains available even when there is no English dictionary entry.
 - Swap languages reverses the selectors and uses the last matching translated text when it fits the 100-character search limit. Editing or changing selection prevents reuse of an unrelated translation.
 - English dictionary definitions, example sentences and English speaking practice remain learning material in English. Definition eyes, quiz explanations, topic definitions and AI translations use the selected target. English as target needs no translation request for English material.
-- Translation cache keys retain the source, target, text and sense/purpose. Regional aliases share the canonical cache entry. Existing Vietnamese editorial meanings remain available immediately; other cached translations are reused across requests and restarts.
+- Direct translations and reverse lookups prefer structured Gemini translation with an explicit source and target, using the stable 3.1 Flash Lite model unless an environment model is selected. A live check found incorrect multilingual results from MyMemory, so direct requests do not fall back to unverified memories on AI failure. The new `translation-language-v1` namespace avoids reusing those results; older local translations remain accessible offline. Translation cache keys retain the source, target, text and sense/purpose. Regional aliases share the canonical cache entry. Existing Vietnamese editorial meanings remain available immediately; other cached translations are reused across requests and restarts.
 
 ## Practical AI and saved content
 
@@ -21,7 +21,7 @@ Interface localization applies only to explicitly marked interface copy and newl
 
 ## Validation and limits
 
-The full regression run passed 440 tests; three live MySQL integration tests were skipped because this local environment has no MySQL credentials. Browser checks passed with no reported WCAG violations in the tested views, and no mobile overflow.
+The full regression run passed 443 tests; three live MySQL integration tests were skipped because this local environment has no MySQL credentials. Browser checks passed with no reported WCAG violations in the tested views, and no mobile overflow.
 
 - Unit tests exercise all 42 distinct directions and all seven identity paths with controlled provider responses, including durable-cache reuse, alias normalization, invalid languages and preference migration. These verify routing and isolation, not a linguistic certification of every provider translation.
 - API tests reject removed languages and malformed language values. Practical AI tests verify that prompt language, translation language and original learner words stay separate.

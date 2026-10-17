@@ -137,7 +137,7 @@ test('partial preparation returns healthy translations even if another provider 
   await ready;const response=await fetch(`${base}/api/translate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({texts:['hello','quota-every-provider'],from:'en',to:'fr',partial:true})});
   assert.equal(response.status,200);const data=await response.json();assert.equal(data.translations[0],'fr:hello');assert.equal(data.errors[0],null);assert.equal(data.translations[1],null);assert.ok(data.errors[1].code.startsWith('TRANSLATION_'));
 });
-test('rejects provider errors delivered with HTTP 200 and does not cache them', async () => {
+test('structured translations reject quota responses without caching them and allow a recovered provider to retry', async () => {
   assert.equal((await translate('quota', 'fr')).status, 429);
   assert.equal((await translate('quota', 'fr')).status, 200);
 });
@@ -151,7 +151,7 @@ test('uses the explicit voice, separates audio cache and never falls back', asyn
   assert.equal((await fetch(`${base}/api/tts?text=hello&voice=Rachel`)).status, 200);
 });
 
-test('uses a valid exact match for empty translations and rejects empty-only responses', async () => {
+test('structured translations accept complete outputs and reject empty-only responses', async () => {
   assert.deepEqual((await (await translate('empty-with-match', 'ja')).json()).translations, ['ja:valid']);
   assert.equal((await translate('empty', 'ja')).status, 503);
 });

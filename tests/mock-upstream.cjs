@@ -1,3 +1,4 @@
+let directQuotaFailures=0;
 // Loaded only by the API test child process; no external requests or paid TTS calls.
 let quotaCalls = 0, aiCalls=0, translationFailureCalls=0;
 global.fetch = async (input, opts = {}) => {
@@ -61,10 +62,10 @@ global.fetch = async (input, opts = {}) => {
     }
     const input=JSON.parse(request.contents[0].parts[0].text);
     if(Array.isArray(input.texts)) {
-      if(input.texts.some(item=>item.text==='quota' || item.text==='quota-every-provider')) return Response.json({error:{code:429,message:'Test translation quota',status:'RESOURCE_EXHAUSTED'}},{status:429});
+      if(input.texts.some(item=>item.text==='quota-every-provider') || input.texts.some(item=>item.text==='quota') && ++directQuotaFailures===1) return Response.json({error:{code:429,message:'Test translation quota',status:'RESOURCE_EXHAUSTED'}},{status:429});
       if(input.texts.some(item=>item.text==='fallback-definition-transient') && ++translationFailureCalls===1) return Response.json({error:{code:503,message:'Transient upstream failure',status:'UNAVAILABLE'}},{status:503});
-      const to={Vietnamese:'vi',French:'fr',Japanese:'ja',Spanish:'es','Simplified Chinese':'zh-CN'}[input.targetLanguage] || input.targetLanguage;
-      return Response.json({candidates:[{content:{role:'model',parts:[{text:JSON.stringify({translations:input.texts.map(item=>({id:item.id,text:item.text==='empty' ? '' : item.text==='identity-only' ? item.text : `${to}:${item.text}`}))})}]},finishReason:'STOP'}]});
+      const to={Vietnamese:'vi',French:'fr',Japanese:'ja',Spanish:'es','Simplified Chinese':'zh-CN',Korean:'ko',English:'en'}[input.targetLanguage] || input.targetLanguage;
+      return Response.json({candidates:[{content:{role:'model',parts:[{text:JSON.stringify({translations:input.texts.map(item=>({id:item.id,text:item.text==='empty' ? '' : item.text==='identity-only' || item.text==='internet' ? item.text : item.text==='empty-with-match'?`${to}:valid`:item.text==='ambiguous-word'?'từ vay mượn':`${to}:${item.text}`}))})}]},finishReason:'STOP'}]});
     }
     if(input.word==='ai-model-retired' && url.pathname.includes('gemini-flash-lite-latest:')) return Response.json({error:{code:404,message:'Retired model',status:'NOT_FOUND'}},{status:404});
     if(input.word==='ai-quota') return Response.json({error:{code:429,message:'Test quota',status:'RESOURCE_EXHAUSTED'}},{status:429});

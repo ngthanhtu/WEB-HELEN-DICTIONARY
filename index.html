@@ -546,7 +546,7 @@ try {
     try {const parts=JSON.parse(item.key);if(!Array.isArray(parts[0]) || parts[0].length!==item.values.length)return;parts[0].forEach((text,i)=>{const key=JSON.stringify([[text],...parts.slice(1)]);translations.set(key,{key,at:item.at,values:[item.values[i]]});});}catch{}
   });
 } catch {}
-function translationKey(texts,from,to,context={}) {return JSON.stringify([texts,from,to,context.kind==='headword'?'headword-v4':context.kind || '',context.definition || '',...(context.kind==='headword'?[context.senses || []]:[])]);}
+function translationKey(texts,from,to,context={}) {return JSON.stringify([texts,from,to,context.kind==='headword'?'headword-v4':context.kind==='direct' || !context.kind?'direct-v1':context.kind==='lookup'?'lookup-v1':context.kind,context.definition || '',...(context.kind==='headword'?[context.senses || []]:[])]);}
 function rememberTranslations(){
   while(translations.size>5000)translations.delete(translations.keys().next().value);
   const items=[...translations.values()],kept=[];let bytes=2;
@@ -559,7 +559,7 @@ async function tr(texts, from, to, context = {}) {
   const keys=texts.map(text=>translationKey([text],from,to,context));
   const results=keys.map((key,i)=>{
     const ready=from==='en' && to==='vi'?globalThis.HelenTopicsCore?.translation(texts[i],context.kind):undefined;if(ready)return ready;
-    const saved=translations.get(key) || (offline() && context.kind==='headword'?(translations.get(JSON.stringify([[texts[i]],from,to,'headword-v3',context.definition || ''])) || translations.get(JSON.stringify([[texts[i]],from,to,'headword',context.definition || '']))):undefined) || (offline() && context.kind==='definition'?translations.get(JSON.stringify([[texts[i]],from,to,'',''])):undefined);
+    const saved=translations.get(key) || (offline() && (!context.kind || context.kind==='direct' || context.kind==='lookup')?translations.get(JSON.stringify([[texts[i]],from,to,context.kind==='lookup'?'lookup':'',context.definition || ''])):undefined) || (offline() && context.kind==='headword'?(translations.get(JSON.stringify([[texts[i]],from,to,'headword-v3',context.definition || ''])) || translations.get(JSON.stringify([[texts[i]],from,to,'headword',context.definition || '']))):undefined) || (offline() && context.kind==='definition'?translations.get(JSON.stringify([[texts[i]],from,to,'',''])):undefined);
     // The content and sense are part of the key. A valid translation need not
     // become a network request again every day, even while online.
     if(saved?.values.length===1){translations.delete(key);translations.set(key,{...saved,key});return saved.values[0];}
@@ -944,7 +944,7 @@ async function updateWordTranslation() {
     const definition=result.entries?.[0]?.meanings?.[0]?.senses?.[0]?.definition || '';
     const senses=(result.entries || []).flatMap(entry=>(entry.meanings || []).flatMap(meaning=>(meaning.senses || []).slice(0,3).map(sense=>({pos:meaning.pos || '',definition:sense.definition?.slice(0,250) || ''})))).filter(sense=>sense.definition).slice(0,12);
     const from=result.from || 'en',query=from==='en'?result.word:result.query || result.word;
-    const context=from==='en'?{kind:'headword',definition,senses}:to==='en'?{kind:'lookup'}:{};
+    const context=from==='en'?{kind:'headword',definition,senses}:to==='en'?{kind:'lookup'}:{kind:'direct'};
     const translated = (await tr([query], from, to, context))[0];
     if (request === targetRequest && result === lastResult){
       reverseTranslation={query,from,to,text:translated};
