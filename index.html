@@ -327,9 +327,9 @@ const remember = (key, value) => { try { localStorage.setItem(key, value); } cat
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const offline=()=>globalThis.navigator?.onLine===false;
 function shortError(error,fallback='Chưa kết nối được. Hãy thử lại.') {
-  if(offline()) return 'Đang ngoại tuyến. Nội dung này chưa được lưu.';
+  if(offline()) return ui('Đang ngoại tuyến. Nội dung này chưa được lưu.');
   const message=error?.message;
-  return typeof message==='string' && message && !/^(?:Failed to fetch|fetch failed|Load failed|NetworkError|Translation service is unavailable)/i.test(message)?message:fallback;
+  return ui(typeof message==='string' && message && !/^(?:Failed to fetch|fetch failed|Load failed|NetworkError|Translation service is unavailable)/i.test(message)?message:fallback);
 }
 // Stop indefinite waits on weak mobile connections; successful responses remain cached.
 async function apiFetch(url,options={}) {
@@ -356,7 +356,7 @@ async function apiFetch(url,options={}) {
 const HAMSTER='<span class="wheel-and-hamster" aria-hidden="true"><span class="wheel"></span><span class="hamster"><span class="hamster__body"><span class="hamster__head"><span class="hamster__ear"></span><span class="hamster__eye"></span><span class="hamster__nose"></span></span><span class="hamster__limb hamster__limb--fr"></span><span class="hamster__limb hamster__limb--fl"></span><span class="hamster__limb hamster__limb--br"></span><span class="hamster__limb hamster__limb--bl"></span><span class="hamster__tail"></span></span></span><span class="spoke"></span></span>';
 function loadingHTML(message,size='compact') {message=globalThis.HelenI18n?.t(message) || message;return `<span class="loading-ui loading-${size}" aria-busy="true">${HAMSTER}<span class="loading-copy">${esc(message)}</span></span>`;}
 function showLoading(node,message,size='compact') {node.innerHTML=loadingHTML(message,size);node.setAttribute('aria-busy','true');}
-function finishLoading(node,message) {node.removeAttribute('aria-busy');node.textContent=globalThis.HelenI18n?.t(message) || message;}
+function finishLoading(node,message) {node.removeAttribute('aria-busy');node.textContent=message;}
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
   $('#theme-toggle').checked = theme === 'dark';
@@ -375,7 +375,7 @@ $('#q').addEventListener('input', () => remember('helen-query', $('#q').value));
 $('#from').addEventListener('change', () => remember('helen-from', $('#from').value));
 let selectedVoice = stored('helen-voice'),voiceListRequest=0;
 function voiceMessage(message){
-  finishLoading($('#voice-status'),message);
+  finishLoading($('#voice-status'),ui(message));
   if(typeof CustomEvent==='function' && document.dispatchEvent)document.dispatchEvent(new CustomEvent('helen:voice-status',{detail:{message}}));
 }
 function voiceOptionsCache(){

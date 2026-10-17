@@ -17,11 +17,11 @@ Practical AI receives separate validated `translationLanguage` and `interfaceLan
 
 Saved reply translations carry their original language; older replies are treated as Vietnamese. Expanding a saved translation in a different target uses the English source and shared translation cache rather than relabelling Vietnamese text. New requests include language choices in their private deduplication key. Old conversations, word sets, reviews, history and audio are retained.
 
-Interface localization applies only to explicitly marked interface copy and newly constructed interface fragments. It never scans or rewrites saved words, dictionary definitions, examples, quiz answers or recordings. New interface copy should be added to `ui-messages.js` in all seven columns and marked with `data-i18n`, or formatted with `HelenI18n.t`. Dynamic controls retain their owner and event handlers.
+Interface localization applies only to explicitly marked interface copy and newly constructed interface fragments. The shared `finishLoading` helper also leaves completed content verbatim; only callers rendering interface messages localize them. It never scans or rewrites saved words, dictionary definitions, examples, quiz answers or recordings. New interface copy should be added to `ui-messages.js` in all seven columns and marked with `data-i18n`, or formatted with `HelenI18n.t`. Dynamic controls retain their owner and event handlers.
 
 ## Validation and limits
 
-The full regression run passed 439 tests; three live MySQL integration tests were skipped because this local environment has no MySQL credentials. Browser checks passed with no reported WCAG violations in the tested views, and no mobile overflow.
+The full regression run passed 440 tests; three live MySQL integration tests were skipped because this local environment has no MySQL credentials. Browser checks passed with no reported WCAG violations in the tested views, and no mobile overflow.
 
 - Unit tests exercise all 42 distinct directions and all seven identity paths with controlled provider responses, including durable-cache reuse, alias normalization, invalid languages and preference migration. These verify routing and isolation, not a linguistic certification of every provider translation.
 - API tests reject removed languages and malformed language values. Practical AI tests verify that prompt language, translation language and original learner words stay separate.

@@ -20,7 +20,7 @@
  mobileSettings.addEventListener?.('change',event=>{$('practical-settings-details').open=!event.matches;});
  function node(tag,text,className){const element=document.createElement(tag);if(text!==undefined)element.textContent=text;if(className)element.className=className;return element;}
  function travelIcon(){const element=document.createElementNS('http://www.w3.org/2000/svg','svg'),path=document.createElementNS(element.namespaceURI,'path');element.setAttribute('viewBox','0 0 24 24');element.setAttribute('aria-hidden','true');path.setAttribute('d','M5 19 19 5M5 5h14v14');element.append(path);return element;}
- function message(text,error=false,loading=false){status.classList.toggle('error',error);status.setAttribute('role',error?'alert':'status');if(loading)showLoading(status,text);else finishLoading(status,text);}
+ function message(text,error=false,loading=false){status.classList.toggle('error',error);status.setAttribute('role',error?'alert':'status');if(loading)showLoading(status,text);else finishLoading(status,t(text));}
  function save(){try{localStorage.setItem(SESSION,JSON.stringify(session));localStorage.setItem(KEY,JSON.stringify(state));storageFailed=false;}catch{storageFailed=true;}}
  function saveDraft(){clearTimeout(draftTimer);draftTimer=null;try{if(draft)localStorage.setItem(DRAFT,JSON.stringify({...draft,text:input.value}));else localStorage.removeItem(DRAFT);}catch{}}
  const comparable=text=>String(text || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();

@@ -495,3 +495,15 @@ test('non-English lookups translate the original query directly to the selected 
  assert.ok(!translated.some(body=>body.kind==='headword' && body.from==='en'),'must not translate the English pivot headword instead of the original French query');
  p.element('#swap-languages').events.click();await new Promise(resolve=>setImmediate(resolve));assert.equal(p.element('#from').value,'ko');assert.equal(p.element('#target').value,'fr');assert.equal(p.element('#q').value,'ko:hello');
 });
+
+
+test('finishing translated content never localizes it again into a different interface language',async()=>{
+ const i18n=require('../public/assets/i18n');i18n.setLocale('ko');
+ const p=page({'helen-target':'en'},null,{navigator:{language:'ko-KR'},HelenI18n:i18n});
+ assert.equal(i18n.t('Search'),'검색');
+ vm.runInContext("finishLoading(document.querySelector('#translated-content'),'Search')",p.context);
+ assert.equal(p.element('#translated-content').textContent,'Search');
+ vm.runInContext("finishLoading(document.querySelector('#translated-content'),'Let me think for a moment.')",p.context);
+ assert.equal(p.element('#translated-content').textContent,'Let me think for a moment.');
+ i18n.setLocale('en');
+});
