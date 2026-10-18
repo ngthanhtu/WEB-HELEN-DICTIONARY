@@ -102,7 +102,7 @@ test('persistent provider overload stops after two attempts with a safe actionab
 test('provider quota, authentication and unknown network failures never trigger automatic retry',async()=>{
  for(const status of [429,401,403,'network']){
   let calls=0;const service=createPracticalService({apiKey:'test-only',fetchImpl:async()=>{calls++;if(status==='network')throw Error('PRIVATE_NETWORK');return bad(status);}});
-  await assert.rejects(service.reply(input()),e=>e.code===(status===429?'PRACTICAL_QUOTA':'PRACTICAL_SERVICE') && !e.message.includes('PRIVATE'));assert.equal(calls,1);
+  await assert.rejects(service.reply(input()),e=>e.code===(status===429?'PRACTICAL_QUOTA':status==='network'?'PRACTICAL_SERVICE':'PRACTICAL_AUTH') && !e.message.includes('PRIVATE'));assert.equal(calls,1);
  }
 });
 test('a retry shares the original total deadline and its late response cannot become success',async t=>{

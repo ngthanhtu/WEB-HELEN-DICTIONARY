@@ -69,6 +69,6 @@ test('shared speaking cost cap fails closed across devices and includes transcri
 });
 test('session assessments have a separate daily allowance without reducing the 100 conversation replies',async()=>{
  const counts=new Map(),rulesSeen=[];const policy=createUsagePolicy({env:{NODE_ENV:'production'},database:{reserveUsage:async rules=>{rulesSeen.push(rules);for(const rule of rules)assert.ok(rule.bucket.length<=24,'every budget bucket must fit helen_usage_budget VARCHAR(24)');if(rules.some(rule=>(counts.get(rule.bucket)||0)+rule.units>rule.limit))return false;for(const rule of rules)counts.set(rule.bucket,(counts.get(rule.bucket)||0)+rule.units);return true;}}});
- await policy.reserve('practical',100,'a');await policy.reserve('practical-assessment',10,'a');assert.equal(counts.get('practical-reply-device'),100);assert.equal(counts.get('practical-assess-device'),10);assert.equal(counts.get('practical-day'),110);
+ await policy.reserve('practical',100,'a');await policy.reserve('practical-assessment',10,'a');assert.equal(counts.get('practical-reply-device'),100);assert.equal(counts.get('practical-report-device'),10);assert.equal(counts.get('practical-day'),110);
  await assert.rejects(policy.reserve('practical-assessment',1,'a'),{code:'USAGE_LIMIT'});assert.equal(rulesSeen.at(-1).at(-1).limit,10);
 });

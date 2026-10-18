@@ -30,7 +30,7 @@ app.use(webSecurity.headers);
 if (process.env.NODE_ENV === 'production') {
   const { rateLimit } = require('express-rate-limit');
   const limit = count => rateLimit({windowMs:60_000, limit:count, standardHeaders:'draft-8', legacyHeaders:false,
-    message:{error:'Bạn thao tác quá nhanh. Hãy đợi một phút rồi thử lại.'}});
+    message:{error:'Bạn thao tác quá nhanh. Hãy đợi một phút rồi thử lại.',code:'REQUEST_RATE_LIMIT'}});
   app.use('/api/tts', limit(12));
   app.use('/api/pronunciation', limit(30));
   app.post('/api/metrics',limit(30));
@@ -59,7 +59,7 @@ const persistDictionary = require('./lib/persist-dictionary').createDictionaryPe
 const contexts=createContextService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,store:database,beforeGenerate});
 const translations=createTranslationService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,store:database,beforeGenerate});
 const speech=createSpeechService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,beforeGenerate});
-const practical=require('./lib/practical-ai').createPracticalService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,beforeGenerate:({stage,device,network})=>usage.reserve(stage==='assess'?'practical-assessment':stage==='transcribe'?'practical-speech':'practical',1,device,network)});
+const practical=require('./lib/practical-ai').createPracticalService({apiKey:process.env.GEMINI_API_KEY,model:process.env.GEMINI_MODEL,beforeGenerate:({stage,device,network,retry})=>usage.reserve(stage==='assess'?'practical-assessment':stage==='transcribe'?'practical-speech':'practical',1,device,network,{retry})});
 const cache = new Map(); // successful results only
 const audioPending=new Map();
 const memo = async (k, fn) => {
@@ -138,7 +138,7 @@ app.post('/api/practical',asyncHandler(async(req,res)=>{
     if(process.env.NODE_ENV==='production' && !/^[a-f0-9]{64}$/.test(device))return res.status(400).json({error:'Tải lại trang để cập nhật luyện nói rồi thử lại.',code:'PRACTICAL_DEVICE'});
     const value=await practical.reply(req.body,{device,network:webSecurity.network(req),timing});durations();
     res.json(value.stage?value:{...value,pronunciation:[value.reply,value.improved,value.phrase.text].filter(text=>text.length<=2000).map(text=>({text,proof:pronunciation.issue(text)}))});
-  }catch(error){durations();res.status(error.status || 503).json({error:error.code?error.message:'Chưa kết nối được AI. Hãy thử lại.',code:error.code || 'PRACTICAL_SERVICE'});}
+  }catch(error){durations();if(error.resetAt)res.set('Retry-After',String(Math.max(1,Math.ceil((Date.parse(error.resetAt)-Date.now())/1000))));else if(error.retryAfter)res.set('Retry-After',String(error.retryAfter));res.status(error.status || 503).json({error:error.code?error.message:'Chưa kết nối được AI. Hãy thử lại.',code:error.code || 'PRACTICAL_SERVICE',...(error.scope?{scope:error.scope}:{}),...(error.resetAt?{resetAt:error.resetAt}:{}),...(error.retryAfter?{retryAfter:error.retryAfter}:{})});}
 }));
 const appPages={'/':'dictionary','/study':'study','/topics':'topics','/practical-ai':'practical','/words':'words','/history':'history','/offline':'offline'};
 const pageTitles={dictionary:'Dictionary',study:'Study',topics:'Topics',practical:'Practical AI',words:'My words',history:'History',offline:'Offline'};

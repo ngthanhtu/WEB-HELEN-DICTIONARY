@@ -221,7 +221,7 @@
   },1000);
   try{
    const response=await apiFetch('/api/practical',{method:'POST',headers:{'Content-Type':'application/json','X-Helen-Device':globalThis.HelenPronunciation.device()},body:JSON.stringify({...content,requestId}),signal,timeoutMs:core.requestBudget(value).clientMs});
-   const data=await response.json().catch(()=>({}));if(!response.ok)throw Object.assign(Error(data.error || 'Chưa nhận được phản hồi. Hãy thử lại.'),{code:data.code});
+   const data=await response.json().catch(()=>({}));if(!response.ok)throw globalThis.HelenApiErrors?HelenApiErrors.fromResponse(data,response):Object.assign(Error(data.error || 'Chưa nhận được phản hồi. Hãy thử lại.'),{code:data.code,status:response.status});
    globalThis.HelenPronunciation?.register(data);return data;
   }finally{clearInterval(progress);}
  }
