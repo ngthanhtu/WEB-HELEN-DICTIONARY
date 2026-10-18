@@ -101,7 +101,7 @@
   mic.disabled=ended || !core.canSend(session,'') || offline || configured===false || !globalThis.HelenVoiceRecorder?.available() || (busy && !['requesting','recording'].includes(phase));
   mic.setAttribute('aria-pressed',String(recording));mic.setAttribute('aria-label',recording?'Stop recording and send reply':'Record a speaking reply');mic.querySelector('span').textContent=recording?'Send recording':'Speak';
   $('practical-retry-recording').hidden=!audioAttempt;$('practical-retry-recording').disabled=disabled;
-  $('practical-cancel').hidden=!busy;$('practical-reset').disabled=busy;$('practical-level').disabled=busy;
+  $('practical-cancel').hidden=!busy;$('practical-discard').hidden=ended || phase==='assessing' || !(recording || phase==='transcribing' || phase==='replying' || draft || audioAttempt || input.value.trim());$('practical-reset').disabled=busy;$('practical-level').disabled=busy;
   $('practical-scenarios').querySelectorAll('button').forEach(button=>button.disabled=busy);
   $('practical-messages').querySelectorAll('.say').forEach(button=>button.disabled=busy || button.getAttribute('aria-busy')==='true');
   $('practical-use-hint').disabled=busy || ended;
@@ -180,14 +180,23 @@
  }
  function renderReport(){
   const box=$('practical-report'),report=session.report;box.hidden=!report;box.replaceChildren();if(!report)return;
-  box.append(node('span','SESSION COMPLETE','section-kicker'),node('h3','Your IELTS speaking estimate'),node('strong',report.overall===null?'Partial assessment':`Estimated band · ${report.overall.toFixed(1)}`,'practical-band'),node('p',report.notice),node('p',report.summary));
-  const grid=node('div',undefined,'practical-score-grid'),labels={fluency:'Fluency & coherence',vocabulary:'Lexical resource',grammar:'Grammar range & accuracy',pronunciation:'Pronunciation'};
-  for(const [key,label] of Object.entries(labels)){const item=report.criteria?.[key];if(!item)continue;const card=node('article');card.append(node('h4',label),node('strong',typeof item.band==='number'?`Band ${item.band.toFixed(1)}`:'Not enough audio'),node('p',item.feedback));if(item.quote)card.append(node('blockquote',item.quote));grid.append(card);}box.append(grid,node('h4','What to practise next'));
+  box.append(node('span',t('SESSION COMPLETE'),'section-kicker'),node('h3',t('Your IELTS speaking estimate')),node('strong',Number.isFinite(report.overall)?t('Estimated band · {score}',{score:report.overall.toFixed(1)}):t('Partial assessment'),'practical-band'),node('p',report.notice),node('p',report.summary),node('p',t('Four IELTS criteria · each contributes 25% to a complete estimate.')));
+  const grid=node('div',undefined,'practical-score-grid'),labels={fluency:'Fluency & coherence',vocabulary:'Lexical resource',grammar:'Grammatical range & accuracy',pronunciation:'Pronunciation'};
+  const descriptions={fluency:'Developing and connecting ideas with a natural speaking flow.',vocabulary:'Using precise words, paraphrases and natural collocations.',grammar:'Using varied sentence structures accurately.',pronunciation:'Being understandable through sounds, stress and rhythm.'};
+  for(const [key,label] of Object.entries(labels)){
+   const item=report.criteria?.[key],card=node('article');card.dataset.criterion=key;
+   const missingAudio=['fluency','pronunciation'].includes(key) && item?.unavailableReason!=='insufficient_evidence' && (item?.unavailableReason==='insufficient_audio' || (report.coverage?.assessedAudioSeconds ?? report.coverage?.audioSeconds ?? 0)<30);
+   card.append(node('h4',t(label)),node('p',t(descriptions[key]),'practical-criterion-description'),node('strong',Number.isFinite(item?.band)?`Band ${item.band.toFixed(1)}`:t(missingAudio?'Not enough audio':'Not enough evidence')),node('p',item?.feedback || t('Not enough evidence')));
+   if(item?.quote)card.append(node('p',t('From your original answer'),'practical-evidence-label'),node('blockquote',item.quote));grid.append(card);
+  }
+  box.append(grid,node('h4',t('What to practise next')));
   const steps=node('ol');for(const step of report.nextSteps || [])steps.append(node('li',step));box.append(steps,node('p',`${report.coverage?.turns || 0} replies · ${report.coverage?.words || 0} original words · ${report.coverage?.audioSeconds || 0}s audio`));
+  if(Number.isFinite(report.coverage?.assessedAudioSeconds))box.append(node('p',t('Audio with usable assessment evidence: {seconds}s.',{seconds:report.coverage.assessedAudioSeconds})));
  }
  async function endSession(){
   if(busy || session.report)return;
-  if(draft || input.value.trim()){message('Gửi hoặc xóa câu đang soạn trước khi kết thúc phiên.',true);input.focus();return;}
+  if(!input.value.trim() && (draft || audioAttempt))clearUnsentReply();
+  if(input.value.trim()){message('Send your draft or choose Discard reply before ending the session.',true);input.focus();return;}
   if(core.sessionWords(session)<80){message('Hãy nói thêm để đủ ít nhất 80 từ rồi kết thúc phiên.',true);return;}
   if(navigator.onLine===false){message('Cần Internet để chấm phiên mới. Hội thoại vẫn được giữ.',true);return;}
   stopPartner();const ticket=++run;busy=true;phase='assessing';controller=new AbortController();partnerState('thinking');controls();message('Đang đánh giá 4 tiêu chí IELTS từ lời bạn đã nói…',false,true);
@@ -244,7 +253,18 @@
  function accept(data){session.turns.push({question:state.messages.at(-1).text,text:data.transcript,...(draft?.speechReceipt?{speechReceipt:draft.speechReceipt}:{})});state=core.add(state,{...data,...(draft?.browserText?{liveTranscript:draft.browserText}:draft?.source==='live'?{liveTranscript:input.value}:{})});attempt=null;audioAttempt=null;draft=null;input.value='';saveDraft();save();render();const list=$('practical-messages');list.scrollTop=list.scrollHeight;message(storageFailed?'Bộ nhớ đầy. Hội thoại chỉ giữ trong phiên này.':'Đã có phản hồi. Bạn có thể nghe, xem bản dịch rồi trả lời tiếp.');}
  function finish(ticket,reply){if(ticket!==run)return;busy=false;recording=false;phase='idle';controller=null;partnerState('idle');controls();if(reply && autoplay.checked)void playReply(reply,$('practical-messages').querySelector('.practical-message.assistant:last-child .say'));}
  function cancel(announce=true){
-  liveCapture?.cancel();liveCapture=null;saveDraft();audioAttempt=null;stopPartner();if(!busy)return;++run;controller?.abort();if(recording)globalThis.HelenVoiceRecorder?.cancel();busy=false;recording=false;phase='idle';controller=null;partnerState('idle');controls();if(announce)message('Đã dừng. Câu của bạn vẫn giữ nguyên.');
+  // Invalidate the operation before stopping captions: cancel() can flush one
+  // last recognition result synchronously, and providers may finish after abort.
+  const wasBusy=busy;++run;liveCapture?.cancel();liveCapture=null;saveDraft();audioAttempt=null;controller?.abort();if(recording)globalThis.HelenVoiceRecorder?.cancel();busy=false;recording=false;phase='idle';controller=null;stopPartner();partnerState('idle');controls();if(announce && wasBusy)message('Đã dừng. Câu của bạn vẫn giữ nguyên.');
+ }
+ function clearUnsentReply(){
+  draft=null;attempt=null;audioAttempt=null;input.value='';saveDraft();
+  $('practical-live-status').textContent=t('Lời nói hiện trực tiếp khi trình duyệt hỗ trợ; chữ tạm có thể nghe nhầm.');
+  $('practical-live-original-text').textContent='';controls();
+ }
+ function discardReply(){
+  if(session.report || phase==='assessing')return;
+  cancel(false);clearUnsentReply();message('Đã hủy lượt nói. Hội thoại đã gửi vẫn được giữ.');input.focus();
  }
  $('practical-form').addEventListener('submit',async event=>{
   event.preventDefault();const sendLiveNow=busy && phase==='transcribing' && draft?.source==='live';
@@ -261,7 +281,7 @@
  mic.addEventListener('click',()=>{
   const recorder=globalThis.HelenVoiceRecorder;if(recording){if(phase==='requesting')cancel();else {void partnerAudio?.unlock({device:voice.value==='device' || quotaActive()});recorder?.stop();}return;}if(busy || session.report || !core.canSend(session,'') || !recorder?.available())return;
   if(input.value.trim()){message('Gửi hoặc xóa câu đang soạn trước khi thu bản mới.',true);input.focus();return;}
-  audioAttempt=null;stopPartner();const ticket=++run;let reply;busy=true;recording=true;phase='requesting';globalThis.HelenAudio?.stop();partnerState('requesting');controls();
+  clearUnsentReply();stopPartner();const ticket=++run;let reply;busy=true;recording=true;phase='requesting';globalThis.HelenAudio?.stop();partnerState('requesting');controls();
   const task=recorder.start({language:'en-US',mode:'conversation',submit:recorded,onState:info=>{
    if(ticket!==run)return;phase=info.state;if(info.state==='recording')$('practical-recording-time').textContent=`${Math.floor((info.elapsedMs || 0)/60000)}:${String(Math.floor((info.elapsedMs || 0)/1000)%60).padStart(2,'0')} / 3:00`;
    if(info.state==='transcribing'){liveCapture?.stop();saveDraft();}controls();
@@ -292,10 +312,10 @@
   catch(error){if(ticket===run)recordingError(error);}
   finally{finish(ticket,reply);if(ticket===run && draft)input.focus();}
  };
- $('practical-cancel').onclick=()=>cancel();$('practical-reset').onclick=()=>reset();$('practical-end').onclick=()=>void endSession();
+ $('practical-cancel').onclick=()=>cancel();$('practical-discard').onclick=discardReply;$('practical-reset').onclick=()=>reset();$('practical-end').onclick=()=>void endSession();
  $('practical-level').onchange=()=>reset(state.scenario,$('practical-level').value);
  $('practical-use-hint').onclick=()=>{input.value=core.scenario(state.scenario).hint;input.focus();controls();};
- input.addEventListener('input',()=>{if(draft){draft.text=input.value;draft.edited=true;saveDraft();}controls();});input.addEventListener('keydown',event=>{if(event.key==='Enter' && (event.ctrlKey || event.metaKey)){event.preventDefault();$('practical-form').requestSubmit();}});
+ input.addEventListener('input',()=>{if(!input.value.trim() && (draft || audioAttempt)){discardReply();return;}if(draft){draft.text=input.value;draft.edited=true;saveDraft();}controls();});input.addEventListener('keydown',event=>{if(event.key==='Enter' && (event.ctrlKey || event.metaKey)){event.preventDefault();$('practical-form').requestSubmit();}});
  voice.onchange=()=>{stopPartner();put(VOICE,voice.value);voiceChoices();deviceChoices();};
  aiVoice.onchange=()=>{stopPartner();chosenAI=aiVoice.value;put(AI_VOICE,chosenAI);};deviceVoice.onchange=()=>{stopPartner();chosenDevice=deviceVoice.value;put(DEVICE_VOICE,chosenDevice);};
  autoSend.onchange=()=>put(AUTO_SEND,autoSend.checked?'1':'0');

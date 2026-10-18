@@ -35,10 +35,20 @@
   return {...state,messages:messages.length>25?[messages[0],...messages.slice(-24)]:messages};
  }
  function sessionFrom(state){return {scenario:state.scenario,level:state.level,turns:state.messages.filter(turn=>turn.role==='user').map((turn,i)=>({text:turn.text,question:state.messages[i*2].text})),report:null};}
+ function validReport(report){
+  const score=value=>value===null || Number.isFinite(value) && value>=0 && value<=9 && Number.isInteger(value*2);
+  const text=(value,max)=>typeof value==='string' && value.trim() && value.length<=max;
+  if(!report || report.stage!=='assess' || !score(report.overall) || !text(report.summary,900) || !text(report.notice,2000) || !Array.isArray(report.nextSteps) || report.nextSteps.length<1 || report.nextSteps.length>3 || !report.nextSteps.every(step=>text(step,400)))return false;
+  if(!['fluency','vocabulary','grammar','pronunciation'].every(key=>{const item=report.criteria?.[key];return item && score(item.band) && text(item.feedback,1200) && typeof item.quote==='string' && item.quote.length<=1000;}))return false;
+  const coverage=report.coverage;
+  if(!coverage || !Number.isInteger(coverage.turns) || coverage.turns<1 || coverage.turns>100 || !Number.isInteger(coverage.words) || coverage.words<80 || coverage.words>60000 || !Number.isFinite(coverage.audioSeconds) || coverage.audioSeconds<0 || coverage.audioSeconds>18000)return false;
+  return report.overall===null || coverage.allSpoken===true && coverage.allAcoustic!==false && coverage.audioSeconds>=30 && ['fluency','vocabulary','grammar','pronunciation'].every(key=>report.criteria[key].band!==null);
+ }
  function restoreSession(value,state){
   if(!value || value.scenario!==state.scenario || value.level!==state.level || !Array.isArray(value.turns) || value.turns.length>100 || !value.turns.every(turn=>validTurn({role:'user',text:turn.text}) && validTurn({role:'assistant',text:turn.question}) && (!turn.speechReceipt || typeof turn.speechReceipt==='string' && turn.speechReceipt.length<=18000)))return sessionFrom(state);
   const last=state.messages.at(-2);if(last && value.turns.at(-1)?.text!==last.text)return sessionFrom(state);
-  return {...value,report:value.report?.stage==='assess'?value.report:null};
+  // A stale/corrupt report must never crash the composer or delete the journal.
+  return {...value,report:validReport(value.report)?value.report:null};
  }
  function sessionWords(session){return session.turns.reduce((sum,turn)=>sum+turn.text.trim().split(/\s+/).length,0);}
  function canSend(session,text){return !session.report && session.turns.length<100 && session.turns.reduce((sum,turn)=>sum+turn.text.length+turn.question.length,0)+text.length+800<=60000;}

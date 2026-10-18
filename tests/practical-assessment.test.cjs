@@ -33,10 +33,12 @@ test('typed or insufficient audio never fabricates fluency, pronunciation or an 
  }
  const mixed=prepareSession({turns:[{question:'Question',text:answer,speechReceipt:evidence.issue(answer,observations,120000,device)},{question:'Question',text:'An extra typed sentence.'}]},evidence,device);assert.equal(validateAssessment(result(),mixed).overall,null);
 });
-test('assessment rejects thin samples, invented quotations and out-of-range or malformed scores before accepting feedback',()=>{
+test('assessment rejects thin samples, wholly ungrounded reports and missing report structure',()=>{
  const evidence=createSpeechEvidence('test-only');assert.throws(()=>prepareSession({turns:[{question:'Question',text:'A short answer.'}]},evidence,device),{code:'PRACTICAL_TOO_SHORT'});
  const session=prepareSession({turns:[{question:'Question',text:answer}]},evidence,device);
- for(const value of [result('Never said this.'),{...result(),criteria:{...result().criteria,grammar:{band:6.3,feedback:'Wrong',quote:'I has'}}},{...result(),nextSteps:[]}])assert.throws(()=>validateAssessment(value,session),{code:'PRACTICAL_ASSESSMENT'});
+ for(const value of [result('Never said this.'),{...result(),nextSteps:[]}])assert.throws(()=>validateAssessment(value,session),{code:'PRACTICAL_ASSESSMENT'});
+ const report=validateAssessment({...result(),criteria:{...result().criteria,grammar:{band:6.3,feedback:'Wrong',quote:'I has'}}},session);
+ assert.equal(report.criteria.grammar.band,null);assert.equal(report.criteria.grammar.quote,'');assert.equal(report.criteria.vocabulary.band,6.5);assert.equal(report.partial,true);
 });
 test('transcribe then assess uses signed audio evidence, original speech, separate budget and one cached final evaluation',async()=>{
  const stages=[],payloads=[],service=createPracticalService({apiKey:'test-only',beforeGenerate:info=>stages.push(info.stage),fetchImpl:async(_url,options)=>{

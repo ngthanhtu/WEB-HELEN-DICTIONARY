@@ -77,6 +77,9 @@
 .practical-score-grid article{min-width:0;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-base);padding:var(--space-4)}
 .practical-score-grid h4{margin:0 0 var(--space-3);font-size:var(--font-base)}
 .practical-score-grid p{font-size:var(--font-small);line-height:1.6}
+.practical-score-grid .practical-criterion-description,.practical-score-grid .practical-evidence-label{color:var(--text-tertiary)}
+.practical-score-grid article>strong{display:inline-block;color:var(--action);font-size:1.125rem;margin-block:var(--space-2)}
+.practical-score-grid .practical-evidence-label{margin-bottom:var(--space-1);font-weight:600}
 .practical-score-grid blockquote{margin:var(--space-3) 0 0;padding-left:var(--space-3);border-left:3px solid var(--accent);font-size:var(--font-small)}
 @media(max-width:500px){.practical-score-grid{grid-template-columns:1fr}.practical-report{padding:var(--space-4)}}
 #page-practical :is(button,textarea,select,summary,input):focus-visible{outline:3px solid var(--focus);outline-offset:4px}
