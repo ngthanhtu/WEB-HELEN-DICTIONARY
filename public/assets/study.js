@@ -9,6 +9,8 @@
   if(soundButton)soundButton.onclick=()=>{sounds?.setEnabled(!sounds.enabled);soundLabel();};soundLabel();
   const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let cards=core.read(storage),session=null,preparing=false,controller=null,cancelled=false,volatile=false,translationRequest=0,topicSource=null;
+  const translationTarget=()=>session?.topic?(topicSource?.translationLanguage || 'vi'):(document.querySelector('#target')?.value || 'vi');
+  const translationWarmup=window.HelenTranslationWarmup?.create?.({translate:(...args)=>window.tr(...args),target:translationTarget,online:()=>navigator.onLine!==false,Observer:window.IntersectionObserver}) || window.HelenTranslationWarmup;
   function endSession(){translationRequest++;sounds?.stop();session=null;delete host.dataset.session;}
   function favorites(){try{const values=JSON.parse(storage.getItem('helen-favorites')||'[]');return Array.isArray(values)?[...new Set(values.filter(v=>typeof v==='string').map(core.answer))].slice(0,500):[];}catch{return [];}}
   const active=()=>{const selected=new Set(favorites());return cards.filter(item=>selected.has(item.word));};
@@ -64,8 +66,8 @@
   const focus=()=>$('#study-stage').querySelector('button,input')?.focus({preventScroll:true});
   async function translateFeedback(question,panel=$('#quiz-translation')){
     if(!panel || !window.HelenQuizTranslation || typeof window.tr!=='function')return;
-    const request=++translationRequest,target=document.querySelector('#target'),to=target?.value || 'vi';
-    const language=target?.selectedOptions?.[0]?.textContent || 'Tiếng Việt';
+    const request=++translationRequest,target=document.querySelector('#target'),to=translationTarget();
+    const language=window.HelenLanguages?.names?.[to] || target?.selectedOptions?.[0]?.textContent || 'Tiếng Việt';
     if(window.showLoading)window.showLoading(panel,'Translating question…');else panel.textContent=localUI('Đang dịch câu hỏi…');
     const rows=await window.HelenQuizTranslation.translate(question,to,window.tr);
     if(request!==translationRequest || !panel.isConnected)return;
@@ -94,7 +96,7 @@
       $('.study-audio').onclick=event=>window.speak?.(item.word,event.currentTarget,audioOptions(item.word));
     }else{
       const q=session.questions[session.index];
-      for(const question of [q,session.questions[session.index+1]].filter(Boolean))for(const item of window.HelenQuizTranslation.items(question))if(!(document.querySelector('#target').value==='vi' && item.translationVi))window.HelenTranslationWarmup?.prepare(window.HelenQuizTranslation.chunks(item.text),item.kind==='definition'?{kind:'definition'}:{});
+      for(const question of [q,session.questions[session.index+1]].filter(Boolean))for(const item of window.HelenQuizTranslation.items(question))if(!(translationTarget()==='vi' && item.translationVi))translationWarmup?.prepare(window.HelenQuizTranslation.chunks(item.text),item.kind==='definition'?{kind:'definition'}:{});
       $('#study-stage').innerHTML=`<p class="study-eyebrow">Quiz · ${session.index+1}/${session.items.length}</p><p>${q.type==='cloze'?'Điền từ đã lưu vào chỗ trống.':'Từ đã lưu nào phù hợp với nghĩa này?'}</p><span class="study-pos">${esc(q.pos)}</span><h3 class="study-prompt">${esc(q.prompt)}</h3>${q.type==='cloze'?`<p class="muted">${esc(q.definition)}</p>`:q.context?`<p class="quiz-context">${esc(q.context)}</p>`:''}${q.type==='choice'?`<div class="quiz-options">${q.choices.map(word=>`<button class="word-link" data-choice="${esc(word)}" type="button">${esc(word)}</button>`).join('')}</div>`:'<form id="quiz-form"><label for="quiz-answer">Your answer</label><input id="quiz-answer" autocomplete="off" autocapitalize="none" spellcheck="false" required maxlength="100"><button class="word-link" type="submit">Check answer</button></form>'}<div id="quiz-feedback" role="status"></div>`;
       const respond=value=>{
         if(session?.answered)return;session.answered=true;
@@ -133,7 +135,7 @@
     };
   }
   function showMatching(){
-    for(const q of session.questions)if(!(document.querySelector('#target').value==='vi' && q.definitionVi))window.HelenTranslationWarmup?.prepare(window.HelenQuizTranslation.chunks(q.definition),{kind:'definition'});
+    for(const q of session.questions)if(!(translationTarget()==='vi' && q.definitionVi))translationWarmup?.prepare(window.HelenQuizTranslation.chunks(q.definition),{kind:'definition'});
     const order=[...session.questions];for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}
     if(order.every((item,index)=>item.word===session.questions[index].word))order.reverse();
     $('#study-stage').hidden=false;
@@ -262,7 +264,11 @@
   window.addEventListener('storage',event=>{if([core.KEY,library.KEY,'helen-favorites'].includes(event.key)){cards=core.read(storage);learning=library.read(storage);endSession();if(editor.open)closeEditor();$('#study-stage').hidden=true;$('#end-study').hidden=true;refresh();setStatus('Đã cập nhật dữ liệu từ tab khác.');}});
   window.addEventListener('pageshow',refresh);window.addEventListener('online',refresh);window.addEventListener('offline',refresh);
   document.addEventListener('helen:page-change',event=>{if(event.detail.page==='study')refresh();});setInterval(()=>{if(!document.hidden && (!window.HelenPages || window.HelenPages.current()==='study'))refresh();},30000);
-  document.querySelector('#target')?.addEventListener('change',()=>{if(session?.answered && session.feedbackQuestion)void translateFeedback(session.feedbackQuestion);});
+  document.querySelector('#target')?.addEventListener('change',()=>{if(!session?.topic && session?.answered && session.feedbackQuestion)void translateFeedback(session.feedbackQuestion);});
+  document.addEventListener('helen:topic-language-change',event=>{
+    if(!topicSource)return;topicSource.translationLanguage=window.HelenLanguages?.normalize(event.detail?.language) || 'vi';
+    if(session?.topic && session.answered && session.feedbackQuestion)void translateFeedback(session.feedbackQuestion);
+  });
   window.HelenStudy={capture,captureMissing(result){if(!cards.some(c=>c.word===core.answer(result.word)))return capture(result);return false;},practiceTopic(value){
     if(session || preparing)throw Error('Kết thúc lượt học hoặc chuẩn bị dữ liệu hiện tại trước khi đổi nhóm từ.');
     if(!value || !/^[a-z]+$/.test(value.id) || !Number.isInteger(value.index) || value.index<0 || value.index>9 || !Array.isArray(value.results) || value.results.length!==20)throw Error('Nhóm từ chưa đủ dữ liệu.');

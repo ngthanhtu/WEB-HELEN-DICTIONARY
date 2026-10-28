@@ -4,6 +4,13 @@
   const core=window.HelenTopicsCore,host=document.querySelector('#topic-library');if(!core || !host)return;
   const $=selector=>host.querySelector(selector),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let storage;try{storage=localStorage;}catch{}
+  const target=$('#topic-target'),languages=window.HelenLanguages;
+  for(const [code,name] of Object.entries(languages.names))target.add(new Option(`${languages.flags[code]} ${name}`,code));
+  target.value=languages.topicTarget(storage,navigator);
+  try{storage?.setItem('helen-topic-target-v1',target.value);}catch{}
+  const warmup=window.HelenTranslationWarmup?.create?.({translate:(...args)=>window.tr(...args),target:()=>target.value,online:()=>navigator.onLine!==false,Observer:window.IntersectionObserver}) || window.HelenTranslationWarmup;
+  function languageNote(){$('#topic-translation-note').textContent=localUI('Topic meanings use this language; swapping Dictionary languages does not change it.');}
+  languageNote();
   const audioMode=$('#topic-audio-mode'),topicVoice=$('#topic-voice'),globalVoice=document.querySelector('#voice');
   let savedAudioMode;try{savedAudioMode=storage?.getItem('helen-topic-audio-mode-v1');}catch{}
   // Device speech remains opt-in; selecting any ElevenLabs voice always uses that voice.
@@ -78,19 +85,35 @@
     $('#topic-words').querySelectorAll('[data-save]').forEach(b=>b.onclick=()=>{try{saveWords([pack.entries.find(e=>e.word===b.dataset.save)]);b.textContent='★ Saved';status('Đã lưu từ để ôn theo lịch.');}catch(error){status(error.message);}});
     $('#topic-words').querySelectorAll('[data-translate]').forEach(b=>{
       const e=pack.entries.find(x=>x.word===b.dataset.translate),parts=window.HelenQuizTranslation.chunks(e.definition);
-      if(document.querySelector('#target').value!=='vi' || !e.definitionVi)window.HelenTranslationWarmup?.observe(b,parts,{kind:'definition'});
-      b.onclick=async()=>{const p=b.closest('article').querySelector('.topic-translation');if(!p.hidden){p.hidden=true;b.setAttribute('aria-expanded','false');return;}const target=document.querySelector('#target').value || 'vi';p.hidden=false;b.setAttribute('aria-expanded','true');b.disabled=true;window.showLoading?.(p,'Translating meaning…');try{const translated=target==='en'?e.definition:target==='vi' && e.definitionVi?e.definitionVi:(await window.tr(parts,'en',target,{kind:'definition'})).join(' ');if(document.querySelector('#target').value===target)p.textContent=translated;}catch{if(document.querySelector('#target').value===target)p.textContent='Chưa dịch được. Bấm mắt để đóng rồi thử lại khi có mạng.';}finally{p.removeAttribute('aria-busy');b.disabled=false;}};
+      if(target.value!=='vi' || !e.definitionVi)warmup?.observe(b,parts,{kind:'definition'});
+      let failed=false;
+      b.onclick=async()=>{
+        const p=b.closest('article').querySelector('.topic-translation');if(!p.hidden && !failed){p.hidden=true;b.setAttribute('aria-expanded','false');return;}failed=false;
+        const to=target.value;p.hidden=false;p.lang=to;b.setAttribute('aria-expanded','true');b.disabled=true;window.showLoading?.(p,'Translating meaning…');
+        try{
+          const translated=to==='en'?localUI('This definition is already in English. Choose another language above to translate it.'):to==='vi' && e.definitionVi?e.definitionVi:(await window.tr(parts,'en',to,{kind:'definition'})).join(' ');
+          if(target.value===to && b.isConnected){p.textContent=translated;if(to==='en')p.lang=window.HelenI18n?.locale || 'en';}
+        }catch(error){if(target.value===to && b.isConnected){failed=true;p.textContent=window.shortError?.(error,localUI('Translation is unavailable. Press the eye to try again.')) || localUI('Translation is unavailable. Press the eye to try again.');}}
+        finally{p.removeAttribute('aria-busy');b.disabled=false;}
+      };
     });
   }
   function prepareAudio(entries){if(pack && audioMode.value==='selected' && navigator.onLine!==false)void window.HelenPronunciation?.prepareWords((entries || core.lesson(pack,index)).slice(0,20).map(e=>e.word)).catch(()=>{});}
   function saveWords(entries){window.HelenDictionary.addFavorites(entries.map(e=>e.word));entries.forEach(e=>window.HelenStudy.captureMissing(core.result(e)));}
   async function downloaded(){const id=pack?.id;if(!id)return;let saved=false;try{saved=Boolean(await (await caches.open(CACHE)).match(`/assets/topics/v${pack.version}/${pack.id}.json`));}catch{}if(id===pack?.id)$('#download-topic').textContent=saved?'✓ Available offline':'↓ Save topic offline';}
   $('#download-topic').onclick=async event=>{if(!pack)return;const b=event.currentTarget,data=pack,url=`/assets/topics/v${pack.version}/${pack.id}.json`;b.disabled=true;try{if(!('caches' in window))throw Error('Trình duyệt chưa hỗ trợ tải ngoại tuyến.');const cache=await caches.open(CACHE);await cache.put(url,new Response(JSON.stringify(data),{headers:{'Content-Type':'application/json'}}));if(data.id!==pack?.id)return;b.textContent='✓ Available offline';status(navigator.serviceWorker?.controller?'Đã lưu 200 từ của chủ đề. Định nghĩa, bản dịch tiếng Việt và quiz dùng được ngoại tuyến; ngôn ngữ khác và giọng AI cần mạng.':'Đã lưu bộ từ. Mở lại trang sau khi app cài xong để dùng ngoại tuyến.');}catch(error){status(error.message || 'Chưa lưu được. Kiểm tra dung lượng thiết bị rồi thử lại.');}finally{b.disabled=false;}};
-  $('#practice-topic').onclick=()=>{if(!pack)return;try{window.HelenStudy.practiceTopic({id:pack.id,index,edition:pack.version,title:`${current.title} · Lesson ${index+1}`,results:core.lesson(pack,index).map(core.result)});}catch(error){status(error.message);}};
+  $('#practice-topic').onclick=()=>{if(!pack)return;try{window.HelenStudy.practiceTopic({id:pack.id,index,edition:pack.version,title:`${current.title} · Lesson ${index+1}`,translationLanguage:target.value,results:core.lesson(pack,index).map(core.result)});}catch(error){status(error.message);}};
   $('#save-topic-lesson').onclick=()=>{if(!pack)return;try{saveWords(core.lesson(pack,index));status('Đã lưu nhóm 20 từ. Mở Study → All saved words để ôn theo lịch.');}catch(error){status(error.message);}};
   $('#topic-back').onclick=()=>{request++;$('#topic-detail').hidden=true;$('#topics-catalog').hidden=false;status('');renderTopics();$('#topic-filter').focus({preventScroll:true});};
   $('#topic-filter').oninput=renderTopics;$('#topic-word-filter').oninput=renderWords;
-  document.querySelector('#target')?.addEventListener('change',()=>{host.querySelectorAll('.topic-translation').forEach(p=>p.hidden=true);host.querySelectorAll('[data-translate]').forEach(b=>{b.setAttribute('aria-expanded','false');const e=pack?.entries.find(x=>x.word===b.dataset.translate);if(e && document.querySelector('#target').value!=='vi')window.HelenTranslationWarmup?.observe(b,window.HelenQuizTranslation.chunks(e.definition),{kind:'definition'});});});
+  function changeLanguage(value){
+    target.value=languages.normalize(value) || 'vi';try{storage?.setItem('helen-topic-target-v1',target.value);}catch{}
+    renderWords();warmup?.refresh();document.dispatchEvent(new CustomEvent('helen:topic-language-change',{detail:{language:target.value}}));
+  }
+  target.onchange=()=>changeLanguage(target.value);
+  // An explicit Preferences choice applies here too. Dictionary's Swap button
+  // changes its own direction without sending this user-choice event.
+  document.querySelector('#target')?.addEventListener('change',()=>changeLanguage(document.querySelector('#target').value));
   document.addEventListener('helen:topic-completed',event=>{progress=core.completed(progress,event.detail);try{if(!storage)throw Error('storage unavailable');storage.setItem(core.KEY,JSON.stringify(progress));}catch{status('Bộ nhớ đầy. Kết quả chủ đề chỉ giữ trong phiên này.');}renderTopics();renderLesson();});
   document.addEventListener('helen:restore',()=>{progress=core.read(storage);renderTopics();renderLesson();});
   window.addEventListener('storage',e=>{if(e.key===core.KEY){progress=core.read(storage);renderTopics();renderLesson();}});

@@ -6,7 +6,7 @@ function page(saved={},available=true,speech={}){
  const document={querySelector:element,addEventListener(name,fn){events.set(name,fn);},dispatchEvent(e){events.get(e.type)?.(e);}};
  const voice=element('#voice');voice.options=[{text:'(Eng) Sarah',value:'Sarah'},{text:'(Ame) Bella',value:'Bella'}];voice.value='Sarah';
  voice.dispatchEvent=()=>{saved['helen-voice']=voice.value;document.dispatchEvent({type:'helen:voice-selected',detail:{voice:voice.value}});};
- const context=vm.createContext({document,localStorage:{getItem:k=>saved[k],setItem:(k,v)=>saved[k]=v},navigator:{onLine:true},Event:class{constructor(type){this.type=type;}},Option:class{constructor(text,value){this.text=text;this.value=value;}},HelenTopicsCore:{read:()=>({lessons:{}})},HelenDeviceSpeech:{available,...speech},HelenAudio:{stop(){stops++;}},HelenPages:{current:()=> 'dictionary'},loadVoices(){reloads++;},addEventListener(){}});context.window=context;
+ const context=vm.createContext({document,localStorage:{getItem:k=>saved[k],setItem:(k,v)=>saved[k]=v},navigator:{onLine:true},Event:class{constructor(type){this.type=type;}},Option:class{constructor(text,value){this.text=text;this.value=value;}},HelenLanguages:require('../public/assets/languages'),HelenTopicsCore:{read:()=>({lessons:{}})},HelenDeviceSpeech:{available,...speech},HelenAudio:{stop(){stops++;}},HelenPages:{current:()=> 'dictionary'},loadVoices(){reloads++;},addEventListener(){}});context.window=context;
  vm.runInContext(script,context);return {saved,element,document,get stops(){return stops;},get reloads(){return reloads;}};
 }
 test('Topics defaults to the selected ElevenLabs voice while device speech remains an explicit option',()=>{

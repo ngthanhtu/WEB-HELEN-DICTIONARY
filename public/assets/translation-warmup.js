@@ -2,7 +2,7 @@
   'use strict';
   if(typeof module==='object' && module.exports)module.exports=factory;
   else root.HelenTranslationWarmup=factory({translate:(...args)=>root.tr(...args),target:()=>root.document.querySelector('#target')?.value || 'vi',online:()=>root.navigator.onLine!==false,Observer:root.IntersectionObserver});
-})(typeof globalThis==='undefined'?this:globalThis,function({translate,target,online=()=>true,Observer,delay=80,batchSize=4}={}){
+})(typeof globalThis==='undefined'?this:globalThis,function createWarmup({translate,target,online=()=>true,Observer,delay=80,batchSize=4}={}){
   const waiting=new Map(),visible=new Map(),attempted=new Set();let timer,active=0,currentWord;
   const key=(texts,to,context)=>JSON.stringify([texts,to,context]);
   function mark(id){attempted.add(id);while(attempted.size>500)attempted.delete(attempted.values().next().value);}
@@ -55,5 +55,5 @@
     if(currentWord)prepareWord(currentWord.texts,currentWord.context);
     for(const [element,info] of visible){if(element.isConnected===false){observer?.unobserve(element);visible.delete(element);}else if(info.shown)prepare(info.texts,info.context);}
   }
-  return {observe,prepare,prepareWord,refresh};
+  return {observe,prepare,prepareWord,refresh,create:createWarmup};
 });

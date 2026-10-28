@@ -16,6 +16,18 @@ test('device interface language and saved translation directions stay independen
  assert.equal(languages.deviceLocale({languages:['de-DE','es-MX']}),'es');assert.equal(languages.deviceLocale({language:'de-DE'}),'en');
  assert.equal(languages.preferences({getItem(){throw Error('private mode');}},{language:'vi-VN'}).to,'vi');
 });
+test('Topics keeps an explicit learning language without inheriting English from a reversed dictionary lookup',()=>{
+ const values={'helen-from':'vi','helen-target':'en'},storage={getItem:key=>values[key]};
+ assert.equal(languages.topicTarget(storage,{language:'vi-VN'}),'vi');
+ assert.equal(languages.topicTarget(storage,{language:'ja-JP'}),'ja');
+ assert.equal(languages.topicTarget(storage,{language:'en-US'}),'vi');
+ values['helen-target']='fr';assert.equal(languages.topicTarget(storage,{language:'vi-VN'}),'fr');
+ values['helen-topic-target-v1']='ko';values['helen-target']='en';assert.equal(languages.topicTarget(storage,{language:'vi-VN'}),'ko');
+ values['helen-topic-target-v1']='en';assert.equal(languages.topicTarget(storage,{language:'vi-VN'}),'en','an explicit Topics choice is preserved');
+ values['helen-topic-target-v1']='de';assert.equal(languages.topicTarget(storage,{language:'vi-VN'}),'vi');
+ assert.equal(languages.topicTarget({getItem(){throw Error('private mode');}},{language:'es-MX'}),'es');
+ assert.equal(values['helen-from'],'vi');assert.equal(values['helen-target'],'en');
+});
 test('all 42 translation directions and seven identical-language paths preserve source, target and persistent cache isolation',async()=>{
  const samples={en:'Where is the train station?',vi:'Ga tàu ở đâu?',ko:'기차역이 어디에 있나요?',ja:'駅はどこですか？','zh-CN':'火车站在哪里？',es:'¿Dónde está la estación de tren?',fr:'Où est la gare ?'},calls=[],persisted=new Map();
  const store={get:async(namespace,key)=>persisted.get(namespace+key),set:async(namespace,key,value)=>{persisted.set(namespace+key,{value});return true;}};

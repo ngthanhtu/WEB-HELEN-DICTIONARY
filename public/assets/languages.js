@@ -24,5 +24,12 @@
     const locale=deviceLocale(navigator),get=key=>{try{return storage?.getItem(key);}catch{return null;}};
     return {locale,from:normalize(get('helen-from')) || 'en',to:normalize(get('helen-target')) || locale};
   }
-  return Object.freeze({names,flags,english,speech,normalize,deviceLocale,preferences});
+  function topicTarget(storage,navigator={}){
+    const get=key=>{try{return storage?.getItem(key);}catch{return null;}};
+    const saved=normalize(get('helen-topic-target-v1'));if(saved)return saved;
+    const dictionaryTarget=normalize(get('helen-target'));
+    if(dictionaryTarget && dictionaryTarget!=='en')return dictionaryTarget;
+    const locale=deviceLocale(navigator);return locale==='en'?'vi':locale;
+  }
+  return Object.freeze({names,flags,english,speech,normalize,deviceLocale,preferences,topicTarget});
 });

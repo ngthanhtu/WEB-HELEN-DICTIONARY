@@ -33,3 +33,12 @@ test('word warming is bounded, deduplicated and skips offline or English without
  online=true;warm.refresh();assert.deepEqual(calls.map(args=>args[0].length),[40,5]);await tick();
  to='en';warm.refresh();assert.equal(calls.length,2);
 });
+test('a Topics warmer uses its own target while sharing the translator cache with Dictionary and Study',async()=>{
+ let dictionaryTarget='en',topicTarget='vi';const calls=[];
+ const translate=async(...args)=>calls.push(args),dictionary=create({target:()=>dictionaryTarget,translate,delay:1});
+ const topics=dictionary.create({target:()=>topicTarget,translate,delay:1});
+ dictionary.prepare(['English definition'],{kind:'definition'});topics.prepare(['English definition'],{kind:'definition'});await tick();
+ assert.equal(calls.length,1);assert.equal(calls[0][2],'vi');
+ topicTarget='fr';topics.prepare(['English definition'],{kind:'definition'});await tick();assert.equal(calls.at(-1)[2],'fr');
+ assert.equal(dictionaryTarget,'en');
+});

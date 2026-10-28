@@ -19,6 +19,9 @@
 .topic-word p{line-height:1.6}.topic-example{font-style:italic;color:var(--text-tertiary)}.topic-word-actions{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2)}
 .topic-word-actions .say,.topic-word-actions .eye{width:44px;height:44px;min-width:44px}
 .topic-translation{background:var(--surface-muted);border-left:3px solid var(--accent);padding:var(--space-3);border-radius:var(--radius-xs)}
+.topic-translation-control{display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-3);margin-block:var(--space-4);padding:var(--space-4);border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-muted)}
+.topic-translation-control label{font-weight:700}.topic-translation-control select{font:inherit;max-width:100%;min-height:44px;padding:var(--space-2) var(--space-3);color:var(--text-primary);background:var(--surface-base);border:1px solid var(--border);border-radius:var(--radius-xs)}
+.topic-translation-control select:focus-visible{outline:3px solid var(--focus);outline-offset:3px}.topic-translation-control p{flex-basis:100%;margin:0;font-size:var(--font-small);color:var(--text-tertiary)}
 .topic-prompts{margin:var(--space-4) 0;padding:var(--space-4);border:1px solid var(--border);border-radius:var(--radius-sm)}.topic-prompts summary{cursor:pointer;min-height:44px;font-weight:700}.topic-prompts li{margin:var(--space-3) 0}
 .topic-source-note{font-size:var(--font-small);line-height:1.6;color:var(--text-tertiary)}.topic-study-note{padding:var(--space-4);border:1px solid var(--accent);border-radius:var(--radius-sm);background:var(--surface-muted)}
 @media(max-width:1000px){.topic-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
