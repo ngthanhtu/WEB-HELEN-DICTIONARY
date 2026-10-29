@@ -62,10 +62,10 @@
     $('#topics-grid').querySelectorAll('[data-topic]').forEach(button=>button.onclick=()=>openTopic(button.dataset.topic));
   }
   async function openTopic(id){
-    const token=++request;current=manifest?.topics.find(t=>t.id===id);if(!current)return;
-    pack=null;index=0;$('#topics-catalog').hidden=true;$('#topic-detail').hidden=false;$('#topic-title').textContent=localUI(current.title);$('#topic-description').textContent=localUI(current.description);$('#topic-words').replaceChildren();$('#topic-lessons').replaceChildren();$('#topic-actions').hidden=true;
+    window.HelenTopicPractice?.cancel(false);const token=++request;current=manifest?.topics.find(t=>t.id===id);if(!current)return;
+    pack=null;index=0;$('#topics-catalog').hidden=true;$('#topic-detail').hidden=false;$('#topic-title').textContent=localUI(current.title);$('#topic-description').textContent=localUI(current.description);$('#topic-words').replaceChildren();$('#topic-lessons').replaceChildren();$('#topic-actions').hidden=true;$('#topic-prompts').hidden=true;
     window.showLoading?.($('#topics-status'),'Opening word set…');$('#topic-title').focus({preventScroll:true});
-    try{let data=packs.get(id);if(data?.version!==manifest.version && navigator.onLine!==false)data=null;if(!data){try{data=core.validate(await json(current.url),id);}catch(error){if(navigator.onLine!==false)throw error;const saved=await (await caches.open(CACHE)).match(`/assets/topics/v1/${id}.json`);if(!saved)throw error;data=core.validate(await saved.json(),id);}}packs.set(id,data);if(token!==request)return;pack=data;core.registerSenses(data.entries);$('#topic-actions').hidden=false;$('#topic-prompts').innerHTML=`<summary>${esc(localUI('Use it in context'))}</summary><p>Đề luyện tự biên soạn: dùng 3–5 từ trong nhóm để trả lời hoặc viết một đoạn ngắn. Chưa có chấm điểm tự động.</p><ul>${current.prompts.map(p=>`<li>${esc(p)}</li>`).join('')}</ul>`;status(data.version===1 && manifest.version===2?'Đang dùng bộ cũ đã tải. Khi có mạng, mở lại chủ đề để tải bộ IELTS mới.':'');renderLesson();await downloaded();}
+    try{let data=packs.get(id);if(data?.version!==manifest.version && navigator.onLine!==false)data=null;if(!data){try{data=core.validate(await json(current.url),id);}catch(error){if(navigator.onLine!==false)throw error;const saved=await (await caches.open(CACHE)).match(`/assets/topics/v1/${id}.json`);if(!saved)throw error;data=core.validate(await saved.json(),id);}}packs.set(id,data);if(token!==request)return;pack=data;core.registerSenses(data.entries);$('#topic-actions').hidden=false;status(data.version===1 && manifest.version===2?'Đang dùng bộ cũ đã tải. Khi có mạng, mở lại chủ đề để tải bộ IELTS mới.':'');renderLesson();await downloaded();}
     catch(error){if(token!==request)return;status(error.name==='AbortError'?'Kết nối chậm. Thử lại hoặc mở bộ đã tải.':error.message);$('#topic-words').innerHTML='<button class="word-link" type="button" id="retry-pack">Retry opening topic</button>';$('#retry-pack').onclick=()=>openTopic(id);}
   }
   function renderLesson(){
@@ -73,6 +73,8 @@
     $('#topic-lessons').querySelectorAll('button').forEach(b=>b.onclick=()=>{index=Number(b.dataset.lesson);$('#topic-word-filter').value='';renderLesson();});
     $('#topic-lesson-title').textContent=localUI('Lesson {lesson} · words {start}–{end}',{lesson:index+1,start:index*20+1,end:index*20+20});
     const last=progress.lessons[core.progressKey(pack.id,index,pack.version)];$('#topic-progress').textContent=last?`Lượt gần nhất: ${last.correct}/${last.total} câu đúng. Đây là kết quả một lượt, không phải xác nhận đã thuộc cả 20 từ.`:'20 từ mỗi nhóm. Có thể luyện ngay mà không cần lưu vào kho cá nhân.';
+    window.HelenTopicPractice?.mount({topic:pack.id,lesson:index,entries:core.lesson(pack,index)});
+    $('#topic-prompts').hidden=false;
     renderWords();
   }
   function renderWords(){
@@ -104,7 +106,7 @@
   $('#download-topic').onclick=async event=>{if(!pack)return;const b=event.currentTarget,data=pack,url=`/assets/topics/v${pack.version}/${pack.id}.json`;b.disabled=true;try{if(!('caches' in window))throw Error('Trình duyệt chưa hỗ trợ tải ngoại tuyến.');const cache=await caches.open(CACHE);await cache.put(url,new Response(JSON.stringify(data),{headers:{'Content-Type':'application/json'}}));if(data.id!==pack?.id)return;b.textContent='✓ Available offline';status(navigator.serviceWorker?.controller?'Đã lưu 200 từ của chủ đề. Định nghĩa, bản dịch tiếng Việt và quiz dùng được ngoại tuyến; ngôn ngữ khác và giọng AI cần mạng.':'Đã lưu bộ từ. Mở lại trang sau khi app cài xong để dùng ngoại tuyến.');}catch(error){status(error.message || 'Chưa lưu được. Kiểm tra dung lượng thiết bị rồi thử lại.');}finally{b.disabled=false;}};
   $('#practice-topic').onclick=()=>{if(!pack)return;try{window.HelenStudy.practiceTopic({id:pack.id,index,edition:pack.version,title:`${current.title} · Lesson ${index+1}`,translationLanguage:target.value,results:core.lesson(pack,index).map(core.result)});}catch(error){status(error.message);}};
   $('#save-topic-lesson').onclick=()=>{if(!pack)return;try{saveWords(core.lesson(pack,index));status('Đã lưu nhóm 20 từ. Mở Study → All saved words để ôn theo lịch.');}catch(error){status(error.message);}};
-  $('#topic-back').onclick=()=>{request++;$('#topic-detail').hidden=true;$('#topics-catalog').hidden=false;status('');renderTopics();$('#topic-filter').focus({preventScroll:true});};
+  $('#topic-back').onclick=()=>{window.HelenTopicPractice?.cancel(false);request++;$('#topic-detail').hidden=true;$('#topics-catalog').hidden=false;status('');renderTopics();$('#topic-filter').focus({preventScroll:true});};
   $('#topic-filter').oninput=renderTopics;$('#topic-word-filter').oninput=renderWords;
   function changeLanguage(value){
     target.value=languages.normalize(value) || 'vi';try{storage?.setItem('helen-topic-target-v1',target.value);}catch{}

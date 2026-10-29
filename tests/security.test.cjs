@@ -5,7 +5,7 @@ const os=require('node:os');
 const path=require('node:path');
 const {spawnSync}=require('node:child_process');
 const {spawn}=require('node:child_process');
-const {findings,scan}=require('../scripts/check-secrets.cjs');
+const {findings,scan}=require('../scripts/security/check-secrets.cjs');
 const fakeKey=['sk_', 'a'.repeat(48)].join(''); // Deliberately generated; never a real credential.
 function fixture(t) {
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'helen-security-'));
@@ -33,7 +33,7 @@ test('history scanning detects deleted secrets and its CLI never prints their va
   const repo=fixture(t);repo.write('config.js',fakeKey);repo.git('add','.');repo.git('commit','-qm','Initial fixture');
   repo.write('config.js','no secret');repo.git('add','.');repo.git('commit','-qm','Remove fixture key');
   assert.deepEqual(scan(repo.root).findings,[]);assert.ok(scan(repo.root,'history').findings.length);
-  const result=spawnSync(process.execPath,[path.join(__dirname,'../scripts/check-secrets.cjs'),'--history'],{cwd:repo.root,encoding:'utf8'});
+  const result=spawnSync(process.execPath,[path.join(__dirname,'../scripts/security/check-secrets.cjs'),'--history'],{cwd:repo.root,encoding:'utf8'});
   assert.equal(result.status,1);assert.ok(!`${result.stdout}${result.stderr}`.includes(fakeKey));assert.match(result.stderr,/credential values are hidden/);
 });
 test('voice errors never expose reflected credentials in HTTP responses or server logs',async t=>{

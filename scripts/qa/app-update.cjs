@@ -1,7 +1,7 @@
 const {chromium}=require(process.env.HELEN_PLAYWRIGHT_MODULE || 'playwright');
 const {spawn}=require('node:child_process'),http=require('node:http'),fs=require('node:fs'),assert=require('node:assert/strict');
 const path=require('node:path'),os=require('node:os');
-const cwd=path.resolve(__dirname,'..'),output=process.env.HELEN_QA_OUTPUT || path.join(os.tmpdir(),'helen-app-update-qa');fs.mkdirSync(output,{recursive:true});
+const cwd=path.resolve(__dirname,'../..'),output=process.env.HELEN_QA_OUTPUT || path.join(os.tmpdir(),'helen-app-update-qa');fs.mkdirSync(output,{recursive:true});
 const builds=['aaa111aaa111','bbb222bbb222'];
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 (async()=>{

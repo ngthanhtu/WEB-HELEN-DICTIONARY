@@ -1,7 +1,7 @@
 // Validate every published entry against its source, then exercise all 200 lessons.
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
-const core=require('../public/assets/topics-core'),study=require('../public/assets/study-core');
-const root=path.join(__dirname,'..'),manifest=require('../public/assets/topics/v1/manifest.json'),originals=require('../data/topic-originals.json'),editorial=new Map(),buffers={};
+const core=require('../../public/assets/topics-core'),study=require('../../public/assets/study-core');
+const root=path.join(__dirname,'../..'),manifest=require('../../public/assets/topics/v1/manifest.json'),originals=require('../../data/topic-originals.json'),editorial=new Map(),buffers={};
 let section='';for(const line of fs.readFileSync(path.join(root,'data/topic-senses.txt'),'utf8').split('\n')){if(line.startsWith('[')){section=line.slice(1,-1);continue;}if(!line || line.startsWith('#'))continue;const [word,pos,definition,example]=line.split('|');editorial.set(`helen:${section}:${word}`,{pos,definition,examples:example?[example]:[]});}
 assert.equal(manifest.version,1);assert.equal(manifest.topics.length,20);assert.equal(manifest.totalWords,4000);assert.equal(manifest.lessonSize,20);
 const ids=new Set(),words=new Set(),report={topics:20,words:0,lessons:0,sourceChecked:0,wordnet:0,editorial:0,withExamples:0,clozeLessons:0,bytes:0,maxPackBytes:0};

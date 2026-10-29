@@ -3,8 +3,8 @@
 // Edit this list to change the downloadable pack; never put API keys here.
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const { vietnameseGloss } = require('../lib/vietnamese');
-const { teachingCollocations } = require('../lib/collocations');
+const { vietnameseGloss } = require('../../lib/vietnamese');
+const { teachingCollocations } = require('../../lib/collocations');
 
 const words = [
   ['intermediate'], ['experiment', 'thí nghiệm; cuộc thử nghiệm; thử nghiệm'],
@@ -26,7 +26,7 @@ const words = [
 ];
 
 async function buildOfflinePack() {
-  const lexicon = require('../lib/lexicon');
+  const lexicon = require('../../lib/lexicon');
   try {
     const licensePath = path.join(path.dirname(require.resolve('wordnet-db/package.json')), 'LICENSE');
     const license = await fs.readFile(licensePath, 'utf8');
@@ -64,7 +64,7 @@ async function main() {
   const contents = `${JSON.stringify(pack)}\n`;
   const bytes = Buffer.byteLength(contents);
   if (pack.entries.length > 100 || bytes > 750000) throw new Error('Offline pack exceeds the app download limit');
-  const assets = path.resolve(__dirname, '../public/assets');
+  const assets = path.resolve(__dirname, '../../public/assets');
   await fs.mkdir(assets, { recursive: true });
   await fs.writeFile(path.join(assets, 'offline-basics.json'), contents);
   await fs.writeFile(path.join(assets, 'wordnet-license.txt'), pack.license);

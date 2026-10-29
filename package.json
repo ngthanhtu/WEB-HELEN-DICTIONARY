@@ -4,14 +4,17 @@
   "private": true,
   "scripts": {
     "start": "node server.js",
-    "db:migrate": "node scripts/migrate-database.cjs",
-    "audit:lexicon": "node scripts/audit-lexicon.cjs",
-    "audit:study": "node scripts/audit-study.cjs",
-    "build:topics": "node scripts/build-topics.cjs",
-    "audit:topics": "node scripts/audit-topics.cjs",
-    "security:check": "node scripts/check-secrets.cjs",
-    "security:history": "node scripts/check-secrets.cjs --history",
-    "test": "node --test tests/*.test.cjs"
+    "db:migrate": "node scripts/database/migrate.cjs",
+    "audit:lexicon": "node scripts/audit/lexicon.cjs",
+    "audit:study": "node scripts/audit/study.cjs",
+    "build:topics": "node scripts/build/topics.cjs",
+    "audit:topics": "node scripts/audit/topics.cjs",
+    "security:check": "node scripts/security/check-secrets.cjs",
+    "security:history": "node scripts/security/check-secrets.cjs --history",
+    "test": "node --test tests/*.test.cjs",
+    "qa:topic-practice": "node scripts/qa/topic-practice.cjs",
+    "qa:topic-translations": "node scripts/qa/topic-translations.cjs",
+    "qa:languages": "node scripts/qa/languages.cjs"
   },
   "engines": {
     "node": ">=20"

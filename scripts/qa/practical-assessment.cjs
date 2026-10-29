@@ -1,7 +1,7 @@
 // Optional browser regression: no real generations or paid API requests.
 const {chromium}=require(process.env.HELEN_PLAYWRIGHT_MODULE || 'playwright');
 const {spawn}=require('node:child_process'),net=require('node:net'),assert=require('node:assert/strict'),path=require('node:path');
-const root=path.resolve(__dirname,'..');
+const root=path.resolve(__dirname,'../..');
 const answer='I work in a small technology company where I help customers solve problems with their online accounts. Last year our team introduced a new training programme, and I helped explain the changes to several colleagues. At first I found it difficult to speak confidently in meetings, but I started preparing short notes and asking more questions. This helped me express my ideas more clearly. In the future I would like to lead a project because I enjoy working with different people and finding practical solutions together.';
 (async()=>{
  const socket=net.createServer();await new Promise(resolve=>socket.listen(0,'127.0.0.1',resolve));const port=socket.address().port;await new Promise(resolve=>socket.close(resolve));

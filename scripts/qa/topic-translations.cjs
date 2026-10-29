@@ -1,7 +1,7 @@
 // Optional browser QA: real topic packs, fixture providers, no paid generations.
 const {chromium}=require(process.env.HELEN_PLAYWRIGHT_MODULE || 'playwright');
 const {spawn}=require('node:child_process'),net=require('node:net'),assert=require('node:assert/strict'),path=require('node:path');
-const root=path.resolve(__dirname,'..'),languages=require('../public/assets/languages'),pack=require('../public/assets/topics/v2/travel.json');
+const root=path.resolve(__dirname,'../..'),languages=require('../../public/assets/languages'),pack=require('../../public/assets/topics/v2/travel.json');
 const sample=pack.entries.find(entry=>entry.word==='responsible travel');
 const translated={vi:sample.definitionVi,fr:'Voyager en respectant les personnes et l’environnement.',es:'Viajar teniendo en cuenta a las personas y el medio ambiente.',ko:'사람과 환경을 배려하며 여행하는 것.',ja:'人々や環境に配慮して旅行すること。','zh-CN':'旅行时顾及他人与环境。'};
 (async()=>{

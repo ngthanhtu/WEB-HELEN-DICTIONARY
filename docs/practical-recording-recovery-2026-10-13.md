@@ -28,7 +28,7 @@ HELEN_PLAYWRIGHT_MODULE=/absolute/path/to/playwright \
 HELEN_CHROMIUM_PATH=/absolute/path/to/chromium \
 HELEN_AXE_PATH=/absolute/path/to/axe.min.js \
 HELEN_QA_OUTPUT=/tmp/helen-recording-qa \
-node scripts/qa-practical-recording.cjs
+node scripts/qa/practical-recording.cjs
 ```
 
 Without `HELEN_AXE_PATH`, the report explicitly records the accessibility run as absent. Fake capture cannot verify real microphone signal quality, Safari's concurrent capture support, dictation/Siri settings or the availability of Apple/Google speech services. If live captions are unavailable, Helen shows that state and retains full audio recognition rather than pretending to display live text. Gemini/provider outages and free quota limits remain external dependencies; no promise of zero future failures is made.

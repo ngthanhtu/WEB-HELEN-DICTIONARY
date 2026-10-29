@@ -1,7 +1,7 @@
 // Structural eligibility audit over every installed WordNet record; no remote translation calls.
-const fs=require('node:fs'),path=require('node:path'),study=require('../public/assets/study-core');
+const fs=require('node:fs'),path=require('node:path'),study=require('../../public/assets/study-core');
 const directory=require('wordnet-db').path;
-const {studyMeanings}=require('../lib/study-lexicon');
+const {studyMeanings}=require('../../lib/study-lexicon');
 const all=new Set(),review=new Set(),quiz=new Set(),cloze=new Set();let senses=0,errors=0;
 for(const file of ['noun','verb','adj','adv'])for(const line of fs.readFileSync(path.join(directory,`data.${file}`),'utf8').split('\n')){
   if(!/^\d{8} /.test(line))continue;

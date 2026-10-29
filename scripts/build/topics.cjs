@@ -1,6 +1,6 @@
 // Original bilingual curriculum. Explicitly curated combinations, never a Cartesian product.
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
-const root=path.join(__dirname,'..'),curriculum=require('../data/topic-curriculum.json'),actions=require('../data/topics-ielts/actions.json'),overrides=require('../data/topics-ielts/overrides.json');
+const root=path.join(__dirname,'../..'),curriculum=require('../../data/topic-curriculum.json'),actions=require('../../data/topics-ielts/actions.json'),overrides=require('../../data/topics-ielts/overrides.json');
 const examples=new Map(fs.readFileSync(path.join(root,'data/topics-ielts/examples.txt'),'utf8').split('\n').filter(s=>s && !s.startsWith('#')).map(s=>{const [id,word,en,vi]=s.split('|');return [`${id}:${word}`,{en,vi}];}));
 const cap=s=>s[0].toUpperCase()+s.slice(1),lower=s=>s[0].toLowerCase()+s.slice(1);
 function entriesFor(id){

@@ -5,3 +5,12 @@ node_modules/
 
 # Legacy local credentials
 env
+
+# Local tools, output and personal exports
+.DS_Store
+*.log
+coverage/
+playwright-report/
+test-results/
+artifacts/
+backups/

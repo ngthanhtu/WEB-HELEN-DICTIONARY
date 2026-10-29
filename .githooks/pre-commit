@@ -1,2 +1,2 @@
 #!/bin/sh
-exec node scripts/check-secrets.cjs --staged
+exec node scripts/security/check-secrets.cjs --staged

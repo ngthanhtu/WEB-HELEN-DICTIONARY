@@ -25,7 +25,7 @@ The full regression run passed 443 tests; three live MySQL integration tests wer
 
 - Unit tests exercise all 42 distinct directions and all seven identity paths with controlled provider responses, including durable-cache reuse, alias normalization, invalid languages and preference migration. These verify routing and isolation, not a linguistic certification of every provider translation.
 - API tests reject removed languages and malformed language values. Practical AI tests verify that prompt language, translation language and original learner words stay separate.
-- `scripts/qa-languages.cjs` checks eight browser locales on a 390-pixel screen, direct French→Japanese→French search, reload persistence, each destination's overflow, and a French desktop interface with Korean selected while offline. Provider responses in this script are fixtures; no paid generation is used.
+- `scripts/qa/languages.cjs` checks eight browser locales on a 390-pixel screen, direct French→Japanese→French search, reload persistence, each destination's overflow, and a French desktop interface with Korean selected while offline. Provider responses in this script are fixtures; no paid generation is used.
 - Existing recording and application-update browser checks remain applicable. Live physical iPhone microphones are not emulated as real hardware by browser fixtures.
 - A new translation still needs Internet and depends on upstream quota/availability. An uncached offline translation gives a message instead of displaying a different language. Local interface messages do not need a new API key.
 

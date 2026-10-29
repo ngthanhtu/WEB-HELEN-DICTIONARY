@@ -45,7 +45,7 @@ Nguồn chính thức để đối chiếu:
 455 kiểm thử đạt; 3 MySQL integration chưa chạy do workspace thiếu cấu hình database. QA trình duyệt 320/390/1440 px đạt cả 9 loại lỗi, retry, ngoại tuyến và Axe AA light/dark. Quét secret của file tracked/staged đạt.
 
 - `node --test tests/practical-reliability.test.cjs` tái hiện quota shared/device/network, ngày mới, hoàn lượt lỗi, dedup báo cáo, catalogue có model 404, quyền API và thông báo 7 ngôn ngữ.
-- `node scripts/qa-practical-assessment.cjs` kiểm tra nút End & see band, 9 loại lỗi, retry ID, giữ hội thoại, báo cáo qua reload ngoại tuyến ở 320/390/1440 px. Có thể bật Axe bằng `HELEN_AXE_PATH`.
+- `node scripts/qa/practical-assessment.cjs` kiểm tra nút End & see band, 9 loại lỗi, retry ID, giữ hội thoại, báo cáo qua reload ngoại tuyến ở 320/390/1440 px. Có thể bật Axe bằng `HELEN_AXE_PATH`.
 - Kiểm tra thật trên Render sau deploy dùng một phiên mẫu gõ chữ; chỉ kiểm chứng ngữ pháp/từ vựng và việc API trả báo cáo, không kiểm chứng chấm phát âm từ micro iPhone.
 
 Sau deploy: mở app, bấm Update app, mở phiên đang giữ và thử End & see band. Không cần gửi key vào chat, đổi key hoặc sửa SQL chỉ để áp dụng bản này. Nếu Google thật sự hết quota thì phải chờ nguồn mở lại hoặc chủ động cấu hình billing/nguồn khác; không có cách hợp lệ để bảo đảm quota miễn phí vô hạn.

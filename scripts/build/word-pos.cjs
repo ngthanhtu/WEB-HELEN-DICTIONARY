@@ -8,5 +8,5 @@ for(const [file,mask] of [['noun',1],['verb',2],['adj',4],['adv',8]]) {
   }
 }
 const license=fs.readFileSync(path.join(path.dirname(require.resolve('wordnet-db/package.json')),'LICENSE'),'utf8');
-fs.writeFileSync(path.join(__dirname,'../data/word-pos.json'),JSON.stringify({source:'Princeton WordNet 3.1',copyright:'WordNet 3.1 Copyright 2011 by Princeton University. All rights reserved.',license,entries})+'\n');
+fs.writeFileSync(path.join(__dirname,'../../data/word-pos.json'),JSON.stringify({source:'Princeton WordNet 3.1',copyright:'WordNet 3.1 Copyright 2011 by Princeton University. All rights reserved.',license,entries})+'\n');
 console.log(`Built ${Object.keys(entries).length} word POS entries; server can load the index before accepting requests.`);

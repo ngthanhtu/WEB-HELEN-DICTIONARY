@@ -1,7 +1,7 @@
 // Optional real-browser QA. All translation/AI responses are fixtures, never live generations.
 const {chromium}=require(process.env.HELEN_PLAYWRIGHT_MODULE || 'playwright');
 const {spawn}=require('node:child_process'),net=require('node:net'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const root=path.resolve(__dirname,'..'),languages=require('../public/assets/languages'),messages=require('../public/assets/ui-messages');
+const root=path.resolve(__dirname,'../..'),languages=require('../../public/assets/languages'),messages=require('../../public/assets/ui-messages');
 const outputs={en:'hello',vi:'xin chào',ko:'안녕하세요',ja:'こんにちは','zh-CN':'你好',es:'hola',fr:'bonjour'};
 const text=(source,locale)=>messages.rows.find(row=>row[0]===source)?.[messages.locales.indexOf(locale)] || source;
 (async()=>{

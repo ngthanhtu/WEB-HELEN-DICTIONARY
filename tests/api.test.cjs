@@ -198,7 +198,7 @@ test('redirects missing local backgrounds to the current branch after history cl
   fs.copyFileSync(path.join(__dirname,'..','public','assets','study-core.js'),path.join(tmp,'public','assets','study-core.js'));
   fs.copyFileSync(path.join(__dirname,'..','public','assets','sense-core.js'),path.join(tmp,'public','assets','sense-core.js'));
   fs.copyFileSync(path.join(__dirname,'..','public','assets','practical-core.js'),path.join(tmp,'public','assets','practical-core.js'));
-  for(const name of ['languages.js','i18n.js','ui-messages.js'])fs.copyFileSync(path.join(__dirname,'..','public','assets',name),path.join(tmp,'public','assets',name));
+  for(const name of ['languages.js','i18n.js','ui-messages.js','topic-practice-core.js'])fs.copyFileSync(path.join(__dirname,'..','public','assets',name),path.join(tmp,'public','assets',name));
   const child = spawn(process.execPath, [path.join(tmp, 'server.js')], {
     env: {...process.env, DATABASE_URL:'', MYSQL_HOST:'', PORT:'3201', NODE_PATH:path.join(__dirname,'..','node_modules')}, stdio:['ignore','pipe','pipe']
   });
